@@ -340,10 +340,10 @@ class weekreport extends atkNode
         $end_week = date("Y-m-d", mktime(12,0,0,substr($weekdata[$weekstamp]["enddate"],3,2),
                                substr($weekdata[$weekstamp]["enddate"],0,2),
                                substr($weekdata[$weekstamp]["enddate"],6,4)));
-        $weekdata[$weekstamp]["week"] = $weekstamp;
+        $weekdata[$weekstamp]["week"] = $weekstamp;        
         for ($i=0;$i<count($contracts);$i++)
         {       
-          if ($contracts[$i]["startdate"] <= $start_week && $contracts[$i]["enddate"] >= $end_week) $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["contract"] += $contracts[$i]["uc_hours"]*60;
+          if ($contracts[$i]["startdate"] <= $start_week && $contracts[$i]["enddate"] >= $start_week) $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["contract"] += $contracts[$i]["uc_hours"]*60;
           $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["name"] = $contracts[$i]["lastname"].", ".$contracts[$i]["firstname"];
         }
       }
