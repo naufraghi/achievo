@@ -21,8 +21,7 @@
   // the database to use and the user/password.
   //
   $config_databasehost = "localhost";
-  //$config_databasename = "achievo_plan42_conv";  
-  $config_databasename = "achievo_local";
+  $config_databasename = "achievo_1_0";
   $config_databaseuser = "demo";
   $config_databasepassword = "demo";
 
@@ -46,7 +45,6 @@
   // a language file is present in the languages directory.
   //
   $config_languagefile="english.lng";
-$config_mailreport = "ivo@oeli.org";
 
   // -------------------------------------------
   //           SECURITY CONFIGURATION
@@ -134,15 +132,8 @@ $config_mailreport = "ivo@oeli.org";
   // it can be found as the second parameter.
   //
   // module("somemodule","../achievo_modules/somemodule/");
-  module("autoduty", "../achievo_modules/autoduty/");
-  module("quotation", "../achievo_modules/quotation/");
-  module("moduleinfo", "../achievo_modules/moduleinfo/");
-  module("hourdeposit", "../achievo_modules/hourdeposit/");
-  module("billing", "../achievo_modules/billing/");  
-  module("weektimereg", "../achievo_modules/weektimereg/");
-  module("qdocument", "../achievo_modules/qdocument/");  
-  module("software", "../achievo_modules/software/");
-  $config_qdocumentpath = "./tmp";
+
+
   // -------------------------------------------
   //            END OF CONFIGURATION
   // -------------------------------------------
