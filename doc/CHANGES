@@ -12,6 +12,8 @@ Changes in Achievo 1.0.5
 + Added weekday stats to project- and employee stats. [Ivo]
 * Updated the support menu with new links to Achievo.org. [Ivo]
 * Fixed bug in example cron lines for cron documentation (cron/README). [Ivo]
++ Added Portuguese language file. [Pedro]
+* Updated German language file. [Christian]
 
 Changes in Achievo 1.0.4
 ------------------------
