@@ -12,6 +12,15 @@ Changes in Achievo 1.1.1
   and functionlevel [Harrie]
 + Made max bookable hours configurable [Boy]
 + Added ability to approve locked weeks [Boy]
++ Added ability to make a rate per projectphase and time [Boy]
++ Added 'commercial' and 'salary' ratetype [Boy]
++ Added ability to book on times instead of hours [Boy]
++ Added PDA mode for Achievo [Boy]
++ Added feature to let the user confirm to something upon first
+  timeregistration to a project [Boy]
++ Added banknumber and social security number to employee [Boy]
++ Made hoursurvey display rates and costs per timeregistration [Boy]
+* Minor PHP error bugfix to billing module [Boy]
 
 Changes in Achievo 1.1.0
 ------------------------

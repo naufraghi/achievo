@@ -1,15 +1,17 @@
 <?php
-  include_once("atk.inc");
-  atksession();
-  atksecure();
-  include_once("./theme.inc");
-  include_once("./version.inc");
+include_once("atk.inc");
+include_once("atk/atkbrowsertools.inc");
+atksession();
+atksecure();
+include_once("./theme.inc");
+include_once("./version.inc");
 
-  $g_layout->initGUI();
-  $g_layout->output('<html>');
-  $g_layout->head($txt_app_title);
-  $g_layout->body();
-
+$g_layout->initGUI();
+$g_layout->output('<html>');
+$g_layout->head($txt_app_title);
+$g_layout->body();
+if (!browserInfo::detectPDA())
+{
   $g_layout->ui_top($txt_app_title." ".$achievo_version.($achievo_state!="stable"?" ($achievo_state)":""));
 
   $table = $g_layout->ret_table_simple(0,true);
@@ -42,11 +44,30 @@
   $table.= $g_layout->ret_td($searchpiece, 'width="25%" align="right"');
 
   $table .= '</tr></table>';
-
   $g_layout->output($table);
-  $g_layout->ui_bottom();
-  $g_layout->output('</body>');
-  $g_layout->output('</html>');
+}
+else 
+{
+  $pdanodes = atkHarvestModules("pdaNodes");
+  $menuitems = array();
+  
+  foreach ($pdanodes as $key => $url)
+  {
+    $menuitems[text("menu_$key")] = '<a href="'.$url.'" target=\'main\'>'.text("menu_$key").'</a>';
+  }
+  
+  ksort($pdanodes);
+  
+  foreach ($menuitems as $url)
+  {
+    $g_layout->output($url);
+  }
+  
+  $g_layout->output('<a href="index.php?atklogout=1" target="_top">'.text("logout").'</a>');
+}
+$g_layout->ui_bottom();
+$g_layout->output('</body>');
+$g_layout->output('</html>');
 
-  $g_layout->outputFlush();
+$g_layout->outputFlush();
 ?>
