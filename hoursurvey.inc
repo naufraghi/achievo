@@ -187,8 +187,8 @@
      
     $g_layout->td(text("timespan").': ');
   
-    $startdateatt = new atkDateAttribute("startdate","F d Y","d F Y", 0, date("Ymd"));
-    $enddateatt = new atkDateAttribute("enddate","F d Y","d F Y", 0, date("Ymd"));
+    $startdateatt = new atkDateAttribute("startdate","F d Y","d F Y", 0, date("Ymd"),AF_OBLIGATORY);
+    $enddateatt = new atkDateAttribute("enddate","F d Y","d F Y", 0, date("Ymd"),AF_OBLIGATORY);
       
     $g_layout->td($startdateatt->edit($dummyrec).' &nbsp;'.
                     text("until").
@@ -268,7 +268,7 @@
     $g_layout->ui_bottom();
     $g_layout->ui_top(text("title_hoursurvey_hours")." ".text("of")." ".$userid." ".text("report_intimespan")." ".$startdate." t/m ".$enddate);
     $g_layout->output('<br><br>');
-    $g_layout->output($this->recordList($data, array(),true,$suppress));
+    $g_layout->output($this->recordList($data, array(),false,$suppress));
     $g_layout->output('<br><br>');
     $g_layout->ui_bottom(); 
    }
