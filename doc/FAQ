@@ -83,7 +83,12 @@ Note 2: The FAQ is targeted at the latest stable release of Achievo.
            box you will see is the one from the .htaccess file, not the one 
            from Achievo.
         
-        
+ 2.4. Achievo keeps logging me out, after login I am immediately presented
+      with a new login box.
+
+        On some PHP installations, the anti-session-highjack feature does
+        not work. Try if setting $config_session_regenerate to false in
+        config.inc.php helps.       
   
 3. Time Registration
 --------------------
