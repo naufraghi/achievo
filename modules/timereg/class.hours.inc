@@ -381,32 +381,50 @@ class hours extends atkNode
   //          "all"       - locked for everybody (can only be unlocked by administrator)
   function getLockType($userid, $date)
   {
+    static $s_locks = array();
     global $g_db;
-
+    
     $week = weekstamp(mktime(0,0,0,substr($date,5,2),
-                                   substr($date,8,2),
-                                   substr($date,0,4)));
-
-    $query = "SELECT
-                week, userid
-              FROM
-                hours_lock
-              WHERE
-                (userid = '$userid' OR userid IS NULL OR userid='')
-              AND
-                week = '$week'";
-    $res = $g_db->getrows($query);
-    for ($i=0;$i<count($res);$i++)
-    {
-      if (empty($res[$i]["userid"])) return "all";
-    }
-
-    // apparently not locked for everybody.
-    if (count($res)>0)
-    {
-      return "individual";
-    }
-    return "";
+                                     substr($date,8,2),
+                                     substr($date,0,4)));
+    
+    if ($s_locks[$userid][$week]=="")
+    {      
+      $query = "SELECT
+                  week, userid
+                FROM
+                  hours_lock
+                WHERE
+                  (userid = '$userid' OR userid IS NULL OR userid='')
+                AND
+                  week = '$week'";
+      $res = $g_db->getrows($query);
+      
+      if (count($res))
+      {
+        $all = false;
+        for ($i=0;$i<count($res);$i++)
+        {
+          if (empty($res[$i]["userid"])) 
+          {
+            $s_locks[$userid][$week] = "all";
+            $all = true;
+          }
+        }
+    
+        // apparently not locked for everybody.
+        if (!$all)
+        {
+          $s_locks[$userid][$week] = "individual";
+        }
+      }
+      else
+      {
+        $s_locks[$userid][$week]="none";
+      }
+    } 
+        
+    return ($s_locks[$userid][$week]=="none"?"":$s_locks[$userid][$week]);
   }
 
   function action_lock()
