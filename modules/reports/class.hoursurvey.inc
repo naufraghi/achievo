@@ -97,11 +97,6 @@
       $organizationid =     $organizationarr["organization.id"];
       $department_name =    $g_sessionManager->pageVar("departmentid");
       $functionlevelswitch =$g_sessionManager->pageVar("functionlevelswitch");
-
-       * 0 standard (onscreen in compliance with theme, default)
-       * 1 printable (onscreen in a format that easily can be printed on paper))
-       * 2 export ( to a file on local computer ex. achievo.csv)
-       */
       $outputType =         $this->m_postvars["outputType"];
 
       if (empty($outputType))
@@ -501,10 +496,13 @@
       }
       
       $orderbystatement = array();
-      foreach($orderby as $key => $itsOrderby)
+      if ($orderby)
       {
-        if ($itsOrderby && $itsOrderby != "-")
-          $orderbystatement[] = $itsOrderby . " " . $orderdirection[$key];
+        foreach($orderby as $key => $itsOrderby)
+        {
+          if ($itsOrderby && $itsOrderby != "-")
+            $orderbystatement[] = $itsOrderby . " " . $orderdirection[$key];
+        }
       }
       $data = $hoursnode->selectDb($filter,implode(",",$orderbystatement), "");
 
