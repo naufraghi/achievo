@@ -9,7 +9,7 @@ Changes in Achievo 1.0.4
 + Sender field of Achievo mails can now be configured with 
   $config_mail_sender. [Ivo]
 * Fixed bug in remark search in hoursurvey. [Ivo]
-* Fixed bug in locked weeks in employee weekreport. [Lineke]
+* Fixed bug in display of locked weeks in employee weekreport. [Lineke]
 + Added Catalan language file. [Lluis]
 * Updated Italian language file. [Andrea]
 
