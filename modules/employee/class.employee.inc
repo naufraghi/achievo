@@ -112,12 +112,7 @@ class employee extends person
              href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
                   '&view=all', text('showallemployees', $this->m_type, $this->m_module));
     }    
-  }
-
-  function action_stats()
-  {
-    include_once moduleDir("employee").'employeestats.inc';
-  }
+  }  
 
   function descriptor_def()
   {
@@ -146,6 +141,69 @@ class employee extends person
     }
     $this->redirect();
   }
+  
+  function graph_prjtime($params, $raw=false)
+    {      
+      global $g_db;
+      $data = $g_db->getrows("SELECT 
+                                project.id, project.name, SUM(time) as total
+                              FROM 
+                                hours, phase, project
+                              WHERE 
+                                hours.phaseid = phase.id      
+                                AND hours.userid = ".$params["employeeid"]."
+                                AND phase.projectid = project.id".
+                                ($params["viewstart"]!=""?" AND hours.activitydate>='".$params["viewstart"]."'":"").
+                                ($params["viewend"]!=""?" AND hours.activitydate<='".$params["viewend"]."'":"").
+                            " GROUP BY 
+                                project.id
+                              ORDER BY 
+                                project.name");
+                            
+      if ($raw)
+      {
+        return $data;
+      }
+                         
+       // convert records to graph-compatible array.
+      $dataset = array();                         
+      for ($i=0, $_i=count($data); $i<$_i; $i++)
+      {                    
+        $dataset[$data[$i]["name"]] = $data[$i]["total"];              
+      }
+      
+      return array("registeredtimeperproj"=>$dataset);
+    }
+    
+    function graph_activitytime($params, $raw=false)
+    {            
+      global $g_db;
+      $data = $g_db->getrows("SELECT 
+                                activity.id, activity.name, SUM(time) as total
+                              FROM 
+                                hours, activity
+                              WHERE 
+                                hours.activityid = activity.id ".                                
+                                ($params["viewstart"]!=""?" AND hours.activitydate>='".$params["viewstart"]."'":"").
+                                ($params["viewend"]!=""?" AND hours.activitydate<='".$params["viewend"]."'":"").
+                            "   AND hours.userid = ".$params["employeeid"]."
+                              GROUP BY 
+                                activity.name
+                              ORDER BY 
+                                activity.name");                                      
+      // In raw mode the data is sufficient.
+      if ($raw) return $data;
+       
+      // convert records to graph-compatible array.
+      $dataset = array();       
+      
+      for ($i=0, $_i=count($data); $i<$_i; $i++)
+      {                
+        $dataset[$data[$i]["name"]] = $data[$i]["total"];                
+      }
+      
+      return array("registeredtimeperactivity"=>$dataset);
+    }
 
 }
 
