@@ -6,6 +6,8 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changes in Achievo 1.0.5
 ------------------------
++ Added multisort capability to ATK backend, and to hoursurvey and
+  project admin screens. [Ivo]
 + Added weekday stats to project- and employee stats. [Ivo]
 * Fixed bug in example cron lines for cron documentation (cron/README). [Ivo]
 

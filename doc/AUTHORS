@@ -47,7 +47,8 @@ development of new features.
   of the Deposit add-on module, and some parts of the billing module.
 
 * Prosa.dk, Denmark (http://www.prosa.dk) sponsored the development of the
-  weektimereg add-on module, and the weekday stats.
+  weektimereg add-on module, the weekday stats and the multi-sort and 
+  subtotals/aggregation for the hoursurvey report.
   
 * Kern8, The Netherlands (http://www.kern8.nl) sponsored the development
   of cumulative usercontracts, the displaying of shortages in the employee 
