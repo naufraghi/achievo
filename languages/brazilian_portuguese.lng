@@ -150,6 +150,7 @@
   $txt_menu_costregistration_admin = "Registro de custo";
   $txt_menu_costregistration_costreport = "Relatório de Custo";
   $txt_menu_employeemanagement = "Gerenciar Colaboradores";
+  $txt_menu_employee_admin = "Employees"; // Missing string!!!
   $txt_menu_employee_personalstats = "Estatísticas Pessoais";
   $txt_menu_employee_stats = "Estatísticas de Colaboradores";
   $txt_menu_holiday_admin = "Feriados";
@@ -158,8 +159,10 @@
   $txt_menu_hours_lock = "Horas bloqueadas";
   $txt_menu_organizationmanagement = "Organizations"; // Missing string!!!
   $txt_menu_organizationreport = "Organization archive"; // Missing string!!!
+  $txt_menu_organization_admin = "Organizations"; // Missing string!!!
   $txt_menu_profile_admin = "Perfil de Segurança";
   $txt_menu_projectmanagement = "Gerenciar Projetos";
+  $txt_menu_project_admin = "Projects"; // Missing string!!!
   $txt_menu_project_edit = "Edit project"; // Missing string!!!
   $txt_menu_project_notesview = "Anotações de Projeto";
   $txt_menu_project_planning = "Planejamento de Projetos";

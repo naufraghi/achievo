@@ -147,6 +147,7 @@
   $txt_menu_costregistration_admin = "Betalingsregistrering";
   $txt_menu_costregistration_costreport = "Betalingsrapportering";
   $txt_menu_employeemanagement = "Håndter ansatte";
+  $txt_menu_employee_admin = "Employees"; // Missing string!!!
   $txt_menu_employee_personalstats = "Personstatistik";
   $txt_menu_employee_stats = "Ansatte statistik";
   $txt_menu_holiday_admin = "Ferier";
@@ -155,8 +156,10 @@
   $txt_menu_hours_lock = "Lås timer";
   $txt_menu_organizationmanagement = "Organisationer";
   $txt_menu_organizationreport = "Organisation arkiv";
+  $txt_menu_organization_admin = "Organizations"; // Missing string!!!
   $txt_menu_profile_admin = "Sikkerhedsprofiler";
   $txt_menu_projectmanagement = "Håndter projekter";
+  $txt_menu_project_admin = "Projects"; // Missing string!!!
   $txt_menu_project_edit = "Edit project"; // Missing string!!!
   $txt_menu_project_notesview = "Projektnoter";
   $txt_menu_project_planning = "Projektplanlægning";

@@ -147,6 +147,7 @@
   $txt_menu_costregistration_admin = "Регистрация затрат";
   $txt_menu_costregistration_costreport = "Отчет по затратам";
   $txt_menu_employeemanagement = "Управление сотрудниками";
+  $txt_menu_employee_admin = "Employees"; // Missing string!!!
   $txt_menu_employee_personalstats = "Персональная статистика";
   $txt_menu_employee_stats = "Статистика по сотруднику";
   $txt_menu_holiday_admin = "Праздники";
@@ -155,8 +156,10 @@
   $txt_menu_hours_lock = "Заблокировать часы";
   $txt_menu_organizationmanagement = "Organizations"; // Missing string!!!
   $txt_menu_organizationreport = "Organization archive"; // Missing string!!!
+  $txt_menu_organization_admin = "Organizations"; // Missing string!!!
   $txt_menu_profile_admin = "Профайлы безопасности";
   $txt_menu_projectmanagement = "Управление проектами";
+  $txt_menu_project_admin = "Projects"; // Missing string!!!
   $txt_menu_project_edit = "Edit project"; // Missing string!!!
   $txt_menu_project_notesview = "Заметки по проекту";
   $txt_menu_project_planning = "Планирование по проекту";

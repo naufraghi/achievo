@@ -147,6 +147,7 @@
   $txt_menu_costregistration_admin = "花费登记";
   $txt_menu_costregistration_costreport = "花费报告";
   $txt_menu_employeemanagement = "管理员工";
+  $txt_menu_employee_admin = "Employees"; // Missing string!!!
   $txt_menu_employee_personalstats = "个人状态统计";
   $txt_menu_employee_stats = "员工状态统计";
   $txt_menu_holiday_admin = "假期";
@@ -155,8 +156,10 @@
   $txt_menu_hours_lock = "锁定小时";
   $txt_menu_organizationmanagement = "Organizations"; // Missing string!!!
   $txt_menu_organizationreport = "Organization archive"; // Missing string!!!
+  $txt_menu_organization_admin = "Organizations"; // Missing string!!!
   $txt_menu_profile_admin = "安全管理";
   $txt_menu_projectmanagement = "管理项目";
+  $txt_menu_project_admin = "Projects"; // Missing string!!!
   $txt_menu_project_edit = "Edit project"; // Missing string!!!
   $txt_menu_project_notesview = "项目便条";
   $txt_menu_project_planning = "项目计划查看";
