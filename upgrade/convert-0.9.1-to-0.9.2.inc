@@ -65,7 +65,7 @@
  
   //set role = "contact" for all persons in person table
   //these persons are only contacts at this moment  
-  $g_db->query("UPDATE person SET role = 'contact'");  
+  $g_db->query("UPDATE person SET role = 'contact' WHERE role IS NULL OR role=''");  
 
   //copy employees to persons table  
   $employees = $g_db->getrows("SELECT * FROM employee");

@@ -4,6 +4,35 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changes in Achievo 1.0.0
+-------------------------
+* Fixed bug #213. [Ivo]
+* Fixed a few untranslated strings. (bug #224) [Martin, Ivo]
+* Updated Danish language file. [Junaid]
+
+Changes in Achievo 1.0RC3
+-------------------------
+* Fixed bug when setup.php was run with $config_auth_dropdown set to
+  true. (bug #180) [Sandy, Kevin]
+* Fixed several themes. (bug #200) [Kevin, Sandy, Ivo]
+* Fixed bug in schedule comparison. (bug #197) [Lineke]
+* Fixed project menu, notes disappeared when a project was selected. [Sandy]
++ Project edit has an extra tab with notes. [Sandy]
+* Fixed bugs #45, #92, #99, #172, #194, #210. [Ivo]
+* Fixed bug #207. [Sandy]
+* Fixed tiny bug in todo mailer. [Ivo]
+* Fixed conversion: Employees could be converted to contacts in some cases. [Ivo]
+* Updated German language file. [Nele]
+* Updated Brazilian-Portuguese language file. [Marcus]
+
+Changes in Achievo 1.0RC2
+-------------------------
+* Fixed logout problem. (bug #177) [Sandy]
+* Bugfixes for bugs #181, #183, #185, #187, #189. [Ivo]
+* Bugfix for bug #191. [Jaap]
+* Changed cron method so add-on modules can add custom crons. [Ivo]
+* Updated German language file. [Nele]
+
 Changes in Achievo 1.0RC1
 -------------------------
 + In employee management, inactive employees are now hidden by default. [Ivo]
