@@ -305,7 +305,7 @@
         $g_layout->register_script(atkconfig("atkroot")."javascript/timereg.js");
         $g_layout->td(text("lookbackperiod").': ');
         $output = '<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="33%">';
-        $output .= '<select name="startperiod" onchange="setStartEndDates(\'enddate\', \'startperiod\', '.date("Ymd").');">
+        $output .= '<select name="startperiod" onchange="setStartEndDates(\'enddate\', \'startperiod\', '.date("Ymd").'); document.entryform.endperiod.value = 0; setStartEndDates(\'startdate\', \'endperiod\', '.date("Ymd").');">
                         <option value="0" selected>---</option> 
                         <option value="1">1 '.strtolower(text("week")).'</option> 
                         <option value="2">2 '.strtolower(text("weeks")).'</option>
@@ -352,7 +352,7 @@
         $output .= '<option value="year'.(date("Y")-1).'">'.text("full").' '.(date("Y")-1).'</option>';
         $output .= '</select></td>';*/
         $output .= '<td width="34%" align="center">&nbsp;</td>';
-        $output .= '<td width="33%" align="right"><select name="endperiod" onchange="setStartEndDates(\'startdate\', \'endperiod\', '.date("Ymd").');">
+        $output .= '<td width="33%" align="right"><select name="endperiod" onchange="setStartEndDates(\'startdate\', \'endperiod\', '.date("Ymd").'); document.entryform.startperiod.value = 0; setStartEndDates(\'enddate\', \'startperiod\', '.date("Ymd").');">
                         <option value="0" selected>---</option> 
                         <option value="1">1 '.strtolower(text("week")).'</option> 
                         <option value="2">2 '.strtolower(text("weeks")).'</option>
