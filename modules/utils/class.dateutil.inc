@@ -48,6 +48,12 @@
     {
       return dateutil::str2arr(dateutil::stamp2str($timestamp));
     }
+    
+    function monthname($monthnumber)
+    {
+      $months = array("january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december");
+      return $months[$monthnumber-1];
+    }
 
   }
 
