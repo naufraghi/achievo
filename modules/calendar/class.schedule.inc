@@ -220,7 +220,10 @@
       if (method_exists($this, $this->m_view))
       {
         $funcname = $this->m_view;
-        $result = $this->$funcname($this->m_viewdate);
+              // link to weekview and monthview and employeeview
+        $result= href($_SERVER["PHP_SELF"]."?view=dayview&viewdate=$this->m_viewdate",text("dayview")) ."&nbsp;".href($_SERVER["PHP_SELF"]."?view=weekview&viewdate=$this->m_viewdate",text("weekview")) ."&nbsp;". href($_SERVER["PHP_SELF"]."?view=monthview&viewdate=$this->m_viewdate", text("monthview"))."&nbsp;".href($_SERVER["PHP_SELF"]."?view=employeeview&viewdate=$viewdate", text("employeeview"));
+
+        $result.= $this->$funcname($this->m_viewdate);
       }
       else
       {
@@ -366,10 +369,10 @@
       $legend .= $dummy->legend;
 
       // link to weekview and monthview and employeeview
-      $buff = href($_SERVER["PHP_SELF"]."?view=weekview&viewdate=$viewdate",text("weekview")) ."&nbsp;". href($_SERVER["PHP_SELF"]."?view=monthview&viewdate=$viewdate", text("monthview"))."&nbsp;".href($_SERVER["PHP_SELF"]."?view=employeeview&viewdate=$viewdate", text("employeeview"));
-
+      //$buff = href($_SERVER["PHP_SELF"]."?view=weekview&viewdate=$viewdate",text("weekview")) ."&nbsp;". href($_SERVER["PHP_SELF"]."?view=monthview&viewdate=$viewdate", text("monthview"))."&nbsp;".href($_SERVER["PHP_SELF"]."?view=employeeview&viewdate=$viewdate", text("employeeview"));
+     
       // assign our output buffer
-      $buff .= "<br><br><table width='".$dummy->viewerWidth."'><tr>";
+      $buff= "<br><br><table width='".$dummy->viewerWidth."'><tr>";
       $buff .= "<td valign='top' align='left'>".$dummy->dayNav()."</td>";
       $buff .= "<td valign='top' align='right'>$form</td>";
       $buff .= "</tr><tr><td valign='top' align='left'><b>".$dummy->title."</b></td>";
