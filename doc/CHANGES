@@ -17,6 +17,7 @@ Changes in Achievo 1.0.4
   this week link to the weekview. (bug #247) [Sandy]
 * Fixed bug in adding Phases. [Sandy]
 * Updated German language file. (bug #267 & #268) [Christian]
+* Updated adodb-time.inc.php to latest version (bug #273) [Sandy]
 
 Changes in Achievo 1.0.3
 ------------------------
