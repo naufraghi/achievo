@@ -152,7 +152,7 @@
   $txt_menu_holiday_admin = "Feestdagen";
   $txt_menu_hours_admin = "Tijd Registratie";
   $txt_menu_hours_hoursurvey = "Uren overzicht";
-  $txt_menu_hours_lock = "Uren blokkeren";
+  $txt_menu_hours_lock = "Weken blokkeren";
   $txt_menu_organizationmanagement = "Organisaties";
   $txt_menu_organizationreport = "Organisatie archief";
   $txt_menu_organization_admin = "Organisaties";
@@ -404,5 +404,6 @@
   $txt_workingdays = "Werkdagen";
   $txt_yearly = "Jaar";
   $txt_zipcode = "Postcode";
-
+  $txt_error_invalidweek = "Een week-entry moet een geldig jaar en een geldig weeknummer bevatten.";
+  $txt_profile_hours_lock = "Globale week-blokkering";
 ?>

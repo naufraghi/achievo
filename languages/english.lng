@@ -152,7 +152,7 @@
   $txt_menu_holiday_admin = "Holidays";
   $txt_menu_hours_admin = "Time Registration";
   $txt_menu_hours_hoursurvey = "Time Survey";
-  $txt_menu_hours_lock = "Lock hours";
+  $txt_menu_hours_lock = "Lock weeks";
   $txt_menu_organizationmanagement = "Organizations";
   $txt_menu_organizationreport = "Organization archive";
   $txt_menu_organization_admin = "Organization administration";
@@ -404,5 +404,6 @@
   $txt_workingdays = "Workingdays";
   $txt_yearly = "Year";
   $txt_zipcode = "Zipcode";
-
+  $txt_error_invalidweek = "A week-entry must contain a valid year and a valid week number.";
+  $txt_profile_hours_lock = "Global week locks";
 ?>
