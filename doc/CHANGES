@@ -11,6 +11,7 @@ Changes in Achievo 1.1.0
 * Fixed bug in recent project dropdown for projects without teammembers. [Ivo]
 * Fixed 2 PHP5 incompatibilities. [Brian]
 * Bugfix in phase display; it compared planned minutes to booked hours. [Ivo]
+* Gantt chart now displays phase bars according to phase start/enddates. [Ivo]
 
 Changes in Achievo 1.1RC3
 -------------------------
