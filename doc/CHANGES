@@ -18,6 +18,7 @@ Changes in Achievo 1.1.1
   timeregistration to a project. [Boy]
 + Added banknumber and social security number to employee. [Boy]
 + Made hoursurvey display rates and costs per timeregistration. [Boy]
++ Added vcard export for employees/contacts/organizations. [Ivo]
 
 Changes in Achievo 1.1.0
 ------------------------
