@@ -71,7 +71,7 @@
     function storePhases($phases)
     {
       global $g_db;
-      atk_var_dump($phases,"PHASES");
+      
       foreach ($phases as $phaseid=>$persons)
       {
         foreach ($persons as $personid=>$current_planning)
@@ -81,9 +81,10 @@
             $recs = $g_db->getrows("SELECT count(*) as cnt
                                    FROM project_phaseplanning
                                    WHERE phaseid='$phaseid' AND personid='$personid'");
-            $record = array("phaseid"=>$phaseid, "personid"=>$personid, "current_planning"=>($current_planning!=""?$current_planning:0));
+            $record = array("phaseid"=>$phaseid, "personid"=>$personid);
             $record["phaseid"] = $this->m_attribList["phaseid"]->db2value($record);
             $record["personid"] = $this->m_attribList["personid"]->db2value($record);
+            $record["current_planning"] = $this->m_attribList["current_planning"]->_string2minutes($current_planning);
             if(!count($recs)|| $recs[0]["cnt"]==0)
             {
               $record["initial_planning"]=0;
