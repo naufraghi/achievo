@@ -21,4 +21,5 @@
   $config_securityscheme = "group";
   $config_debug = 0;
   $config_auth_accountenableexpression = "role='employee' AND status='active'";
+  $config_auth_grantall_privilege = "employee.profile.grantall";
 ?>

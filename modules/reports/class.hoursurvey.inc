@@ -13,6 +13,7 @@
     {
       global $g_layout, $g_user;
       $atkorderby = $this->m_postvars["atkorderby"];
+      if ($atkorderby=="") $atkorderby = "activitydate";
       $activity_id = $this->m_postvars["activity_id"];
       $projectid = $this->m_postvars["projectid"];
       $selectedprojectid = $this->m_postvars["selectedprojectid"];
@@ -20,7 +21,8 @@
       $userid = $this->m_postvars["userid"];
       $nameswitch = $this->m_postvars["nameswitch"];
       $roleid = $this->m_postvars["roleid"];
-
+      $remark = $this->m_postvars["remark"];
+ 
       /** $outputType gives control over the kind of output:
        * 0 standard (onscreen in compliance with theme, default)
        * 1 printable (onscreen in a format that easily can be printed on paper))
@@ -42,10 +44,10 @@
       $organizationid = $organizationarr["organization.id"];
 
       $hoursnode = &getNode("timereg.hours");
-
+      $hoursnode->m_postvars = $this->m_postvars; // Share postvars.
       
       // Determine collumn suppresslist:  
-      $arr_col = $this->getHourSurveyColumns();
+      $arr_col = $hoursnode->getHourSurveyColumns();
 
       $suppress = array();
       if (!is_array($col)||count($col)==0)
@@ -141,6 +143,7 @@
                           "enddate"=>array("year"=>substr($enddate,0,4),
                                            "month"=>substr($enddate,5,2),
                                           "day"=>substr($enddate,8,2)),
+                          "remark"=>$remark,
                           "atkorderby"=>$atkorderby);
 
         $g_layout->td($projectatt->edit($dummyrec));
@@ -195,11 +198,38 @@
 
         $g_layout->output('</tr><tr>');
         $g_layout->td('<hr>','colspan="2"');
+        $g_layout->output('</tr><tr>');                
+        
+        $remarkattr = new atkAttribute("remark", 0, 80);
+        $g_layout->td(text('remark').': ');
+        $g_layout->td($remarkattr->edit($dummyrec));
+        
         $g_layout->output('</tr><tr>');
+        $g_layout->td('<hr>','colspan="2"');
+        $g_layout->output('</tr>');
+
+        // Get default selection items.
+        $selitems = $hoursnode->getSelectionItems();
+
+        if (is_array($selitems))
+        {
+          foreach ($selitems as $label=>$html)
+          {
+            $g_layout->output('<tr>');
+            $g_layout->td(text($label, $hoursnode->m_type).":");
+            $g_layout->td($html);
+            $g_layout->output('</tr><tr>');
+            $g_layout->td('<hr>','colspan="2"');
+            $g_layout->output('</tr>');
+          }
+        }
+
+
+        $g_layout->output('<tr>');
 
         $g_layout->td('<b>'.text("report_output_options").'</b>','colspan="2"');
 
-        $g_layout->output('</tr><tr>');
+        $g_layout->output('</tr><tr>');        
 
         $g_layout->td(text("report_output_type"));
         $g_layout->td('<select name="outputType">
@@ -209,10 +239,6 @@
                          </select>');
 
         $g_layout->output('</tr><tr>');
-
-        //$g_layout->td(text("PDF"));
-        //$g_layout->td('<input type="checkbox" name="pdf" value="1">');
-        //$g_layout->output('</tr><tr>');
 
         $g_layout->td(text("report_output_showcollumns"));
 
@@ -234,7 +260,7 @@
         $orderatt = new atkListAttribute("atkorderby",$arr_col, $listcol);
 
         $g_layout->td($orderatt->edit($dummyrec));
-
+        
         $g_layout->output('</tr></table><input type="submit" value="'.text("refresh").'"></form><br>');
 
       }
@@ -244,6 +270,7 @@
       if(!empty($activity_id)&&$activity_id!="") $filter.=" AND hours.activityid=".$activity_id;
       if(!empty($phaseid)&&$phaseid!="") $filter.=" AND hours.phaseid=".$phaseid;
       if(!empty($projectid)&&$projectid!="") $filter.=" AND A.projectid=".$projectid;
+      if(!empty($remark)&&$remark!="") $filter.="AND hours.remark LIKE '%$remark%'";
       //if(!empty($customerid)&&$customerid!="") $filter.= " AND B.customer=".$customerid;
 
       // employee table is not yet added to the query. Force that by adding a manytoonerel,
@@ -277,10 +304,12 @@
       if ($outputType=="0")
       {
         $g_layout->ui_bottom();
-        $g_layout->ui_top(text("title_hoursurvey_hours")." ".text("report_intimespan")." ".$startdate." t/m ".$enddate);
-        $g_layout->output('<br><br>');
+        $g_layout->ui_top(text("title_hoursurvey_hours")." ".text("report_intimespan")." ".$startdate." t/m ".$enddate);        
+        
+        $g_layout->output('<br>'.(atkLevel()>0?atkButton('<< '.text("back"), "", SESSION_BACK)."<br>":"").'<br>');
         $g_layout->output($hoursnode->recordList($data, $hoursnode->defaultActions("list"),false,$suppress));
-        $g_layout->output('<br><br>');
+        $g_layout->output('<br>'.(atkLevel()>0?atkButton('<< '.text("back"), "", SESSION_BACK)."<br>":"").'<br>');
+        
         $g_layout->ui_bottom();
        }
       if ($outputType=="1")
@@ -295,11 +324,6 @@
 
     }
     
-    function getHourSurveyColumns()
-    {
-      return array("activitydate","userid","phaseid","activityid","remark","time");
-    }
-
     function get_activities($act_id)
     {
       global $g_db;

@@ -60,7 +60,7 @@ class hours extends atkNode
     $this->add(new atkProjectPhaseAttribute("phaseid",AF_OBLIGATORY|AF_JS_UPDATEACTIVITY));
     $this->add(new atkListAttribute("activityid",array("dummy","dummy","dummy","dummy","dummy"),array(0,0,0,0,0),AF_OBLIGATORY, 10));
     $this->add(new atkTextAttribute("remark", 1, 0));
-    $this->add(new atkDurationAttribute("time",'15m', '10h',AF_OBLIGATORY|AF_TOTAL));
+    $this->add(new atkDurationAttribute("time",atkconfig("timereg_resolution", "15m"), '10h',AF_OBLIGATORY|AF_TOTAL));
     $this->add(new atkDateAttribute("entrydate",AF_HIDE|AF_OBLIGATORY));
     $this->add(new atkDummyAttribute("javascript", "seebelow", AF_NO_LABEL|AF_HIDE_LIST));
 
@@ -411,15 +411,13 @@ class hours extends atkNode
 
   function action_lock()
   {
-    global $g_db;
-
     $viewdate = $this->m_postvars["viewdate"];
-    $userid = $this->m_postvars["userid"];
-    $week = weekstamp(mktime(0,0,0,substr($viewdate,5,2),
+    $record["userid"]["id"] = $this->m_postvars["userid"];
+    $record["week"] = weekstamp(mktime(0,0,0,substr($viewdate,5,2),
                                    substr($viewdate,8,2),
                                    substr($viewdate,0,4)));
-    $query = "INSERT INTO hours_lock (week, userid) VALUES ('$week','$userid')";
-    $g_db->query($query);
+    $locknode = &getNode("timereg.hours_lock");
+    $locknode->addDb($record);
     $this->redirect();
   }
 
@@ -450,25 +448,27 @@ class hours extends atkNode
     $start = startOfWeek($date);
     $end = endOfWeek($date);
 
-    $query = "SELECT (uc_hours*60)-sum(time) as leftover
+    // first get the total of contract hours
+    $sql = "SELECT sum(uc_hours*60) as contract FROM usercontract WHERE startdate <= '$start'
+                AND (enddate > '$start' OR enddate IS NULL) AND userid = '$userid'";
+    $result = $g_db->getRows($sql);
+    
+    // get the total of time already registered this week
+    $query = "SELECT sum(time) as totaal
               FROM
-                hours LEFT JOIN usercontract
-                ON hours.userid = usercontract.userid
+                hours
               WHERE
-                startdate <= '$start'
-                AND enddate > '$start'
-                AND hours.userid = '$userid'
-                AND activitydate between '$start' and '$end'
-              GROUP BY hours.userid";
+                hours.userid = '$userid'
+                AND activitydate between '$start' and '$end'";
     $res = $g_db->getrows($query);
-    if (count($res)==0)
+    if (count($res)==0 || count($result)==0)
     {
       // either no contract in this period, or no hours booked at all..
       return false;
     }
     else
     {
-      return ($res[0]["leftover"]<=0);
+      return ($result[0]["contract"] - $res[0]["totaal"]<=0);
     }
   }
 
@@ -542,6 +542,23 @@ class hours extends atkNode
     // continue with original validation
     atkNode::validate($record, $mode);
   }
+
+ /**
+   * This method is called by the hoursurvey to get custom search fields.
+   * Derived classes (for example in overloaders) can override this method and
+   * Add their own custom search fields.
+   */
+
+  function getSelectionItems()
+  {
+    return array();
+  }
+
+  function getHourSurveyColumns()
+  {
+    return array("activitydate","userid","phaseid","activityid","remark","time");
+  }
+
   
   function exceed_hrs_in_day($userid, $date, $new_minutes, $recordid="")
   {

@@ -13,6 +13,7 @@ class timeDisplayAttribute extends atkAttribute
   {
     $time = $rec[$this->fieldName()];
     if ($time==0) return "";
+    if ($time < 0) return sprintf("-%02d",(floor(abs($time)/60))).':'.sprintf("%02d",(abs($time)%60));
     return sprintf("%02d",floor($time/60)).':'.sprintf("%02d",$time%60);
   }
 }
@@ -303,13 +304,13 @@ class weekreport extends atkNode
         if ($userid!="all") $query.= " usercontract.userid =".$userid." AND ";
       }
       $query.= "  startdate <= '$enddate'
-                  AND enddate >= '$startdate'
+                  AND (enddate >= '$startdate' OR enddate IS NULL)
                   AND usercontract.userid = person.id
                 ORDER BY
                   startdate";
       $contracts = $g_db->getrows($query);
   
-      for ($i=0;$i<count($contracts);$i++)
+      /*for ($i=0;$i<count($contracts);$i++)
       {
         $start_week = mktime(12,0,0,substr($contracts[$i]["startdate"],5,2),
                                    substr($contracts[$i]["startdate"],8,2),
@@ -321,12 +322,29 @@ class weekreport extends atkNode
         for ($j=$start_week;$j<=$end_week;$j+=ONEWEEK)
         {          
           $weekstamp = weekstamp($j);
+          atk_var_dump($weekstamp);
           if ($weekstamp>=$report_start_week && $weekstamp <= $report_end_week) // check if week is within report boundary.
           {        
             $weekdata[$weekstamp]["week"] = $weekstamp;            
             $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["contract"] = $contracts[$i]["uc_hours"]*60;
             $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["name"] = $contracts[$i]["lastname"].", ".$contracts[$i]["firstname"];
           }
+        }
+      }*/
+      for ($j=$startstamp;$j<=$endstamp;$j+=ONEWEEK)
+      {          
+        $weekstamp = weekstamp($j);
+        $start_week = date("Y-m-d", mktime(12,0,0,substr($weekdata[$weekstamp]["startdate"],3,2),
+                                 substr($weekdata[$weekstamp]["startdate"],0,2),
+                                 substr($weekdata[$weekstamp]["startdate"],6,4)));
+        $end_week = date("Y-m-d", mktime(12,0,0,substr($weekdata[$weekstamp]["enddate"],3,2),
+                               substr($weekdata[$weekstamp]["enddate"],0,2),
+                               substr($weekdata[$weekstamp]["enddate"],6,4)));
+        $weekdata[$weekstamp]["week"] = $weekstamp;        
+        for ($i=0;$i<count($contracts);$i++)
+        {       
+          if ($contracts[$i]["startdate"] <= $start_week && ($contracts[$i]["enddate"] >= $start_week || $contracts[$i]["enddate"]==NULL)) $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["contract"] += $contracts[$i]["uc_hours"]*60;
+          $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["name"] = $contracts[$i]["lastname"].", ".$contracts[$i]["firstname"];
         }
       }
   
@@ -430,7 +448,8 @@ class weekreport extends atkNode
             $record["userid"] = $userdata["name"];
             $record["total"] = $userdata["total"];
             $record["contract"] = $userdata["contract"];
-            $record["overtime"] = max(0,($userdata["total"]-$userdata["contract"]));
+            $record["overtime"] = $userdata["total"]-$userdata["contract"];
+            
             if ($userdata["status"]!="")
             {
               $record["status"] = $userdata["status"];
