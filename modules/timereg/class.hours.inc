@@ -283,7 +283,7 @@ class hours extends atkNode
       $rec = $data[$i];
       $key = $rec["phaseid"]["projname"]."-".$rec["phaseid"]["phasename"];
       $date = $rec["activitydate"]["year"]."-".$rec["activitydate"]["month"]."-".$rec["activitydate"]["day"];
-      $time = ($rec["time"]["hours"]*60)+$rec["time"]["minutes"];
+      $time = $rec["time"];
       $week[$key][$date] += $time;
       $projtotals[$key] += $time;
       $daytotals[$date] += $time;
@@ -437,16 +437,14 @@ class hours extends atkNode
       }
       
       $percentage = $balancenode->getPercentage($rec["workperiod"]["id"]);
-      if ($rec["time"]["minutes"] > 0) $hours = $rec["time"]["hours"] + ($rec["time"]["minutes"]/60);
-      else $hours = $rec["time"]["hours"];
+      $hours = $rec["time"]/60;      
       //atk_var_dump($balance);
       
       if ($mode == "add") $newbalance = ($balance["balance"] + (($percentage/100) * $hours));
       elseif ($mode == "edit")
       {
-        $oldpercentage = $balancenode->getPercentage($rec["atkorgrec"]["workperiod"]["id"]);
-        if ($rec["atkorgrec"]["time"]["minutes"] > 0) $oldhours = $rec["atkorgrec"]["time"]["hours"] + ($rec["atkorgrec"]["time"]["minutes"]/60);
-        else $oldhours = $rec["atkorgrec"]["time"]["hours"];
+        $oldpercentage = $balancenode->getPercentage($rec["atkorgrec"]["workperiod"]["id"]);        
+        $oldhours = $rec["atkorgrec"]["time"]/60;
         $newbalance = (($balance["balance"] - (($oldpercentage/100) * $oldhours)) + (($percentage/100) * $hours));
       }
       elseif($mode == "delete") $newbalance = ($balance["balance"] - (($percentage/100) * $hours));
@@ -639,7 +637,7 @@ class hours extends atkNode
     if ($record["activitydate"]["multi"]!=1)
     {
       $activitydate = sprintf("%04d-%02d-%02d", $record["activitydate"]["year"], $record["activitydate"]["month"], $record["activitydate"]["day"]);
-      $new_minutes = $record["time"]["hours"]*60 + $record["time"]["minutes"];
+      $new_minutes = $record["time"];
 
       if ($this->exceed_hrs_in_day($record["userid"]["id"], $activitydate, $new_minutes, $record["id"]))
       {
