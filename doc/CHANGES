@@ -8,6 +8,7 @@ Changed in Achievo 1.1RC3
 -------------------------
 * Fixed problem with empty manytoone relations. (bug #333) [Sandy]
 * Fixed bug in manytoone when there is only 1 record. [Sandy]
+* Fixed bug in registering time. (bug #331) [Sandy]
 
 Changed in Achievo 1.1RC2
 -------------------------
