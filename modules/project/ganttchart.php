@@ -218,18 +218,9 @@ foreach ($gant as $id=>$gantphase)
         $tempp = $gantphase['planned'];
         $activity[$i]->progress->Set($tempb);        
 
-        $caption .= '['.round($gantphase['booked']/60).', ';
-        $caption .= round($gantphase['planned']/60).', ';
-        $caption .= round($gantphase['maxhours']- ($gantphase['planned']/60) - ($gantphase['booked']/60)).']';
-      }
-      else
-      {
-        $tempb = $gantphase['booked'] / (($gantphase['maxhours'])*60);
-        $activity[$i]->progress->Set($tempb);
-
-        $caption .= '['.round($gantphase['booked']/60).', ';
-        $caption .= round($gantphase['maxhours'] - ($gantphase['booked']/60)).']';
-      }
+        $caption .= '['.round($gantphase['booked']/60).'/';
+        $caption .= round($gantphase['planned']/60).']';
+      }      
     }
     else
     {
@@ -238,14 +229,8 @@ foreach ($gant as $id=>$gantphase)
         $tempp = $gantphase['planned'] / (($gantphase['maxhours'])*60);
         $activity[$i]->planned->Set((0.0000000001), $tempp);
 
-        $caption .= '['.round($gantphase['planned']/60).', ';
-        $caption .= round($gantphase['maxhours'] - ($gantphase['planned']/60)).']';
-
-      }
-      else
-      {
-        $caption .='['.round($gantphase['maxhours']).']';
-      }
+        $caption .= '[0/'.round($gantphase['planned']/60).']';
+      }      
     }        
   }
   else
