@@ -19,7 +19,7 @@
       $this->m_flags |= NF_NO_EDIT|NF_NO_ADD;
       $this->m_type = "contract_project";
       
-      // Anyone who may edit deposits, may remove a project from the
+      // Anyone who may edit contracts, may remove a project from the
       // deposit. 
       $this->m_securityMap["remove"] = "contracts.edit";
       

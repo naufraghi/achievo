@@ -20,7 +20,7 @@
   {
     function project($name="project", $flags=0)
     {
-      global $ATK_VARS, $g_sessionManager;
+      global $ATK_VARS, $g_sessionManager, $g_db;
 
       $this->atkNode($name,$flags|NF_EDITAFTERADD|NF_EXT_SORT);
 
@@ -29,12 +29,8 @@
       $this->add(new atkAttribute("name",AF_UNIQUE|AF_OBLIGATORY|AF_SEARCHABLE, 50));
       $this->add(new atkAttribute("abbreviation", AF_SEARCHABLE|AF_HIDE_LIST, 10));
 
-      $this->add(new atkManyToOneRelation("coordinator","employee.employee",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));
-      
-      //TODO: When you edit a project of which the contract isn't valid anymore, you will get None in the dropdown
-      $preFilter = new atkManyToOneRelation("contract_id","organization.contracts",AF_HIDE_ADD|AF_HIDE_LIST);
-      $preFilter->m_destinationFilter = "contract.status='active' AND contract.startdate<='".date('Y-m-d')."' AND contract.enddate>'".date('Y-m-d')."'";
-      $this->add($preFilter);
+      $this->add(new atkManyToOneRelation("coordinator","employee.employee",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));            
+      $this->add(new atkManyToOneRelation("contract_id","organization.contracts",AF_HIDE_ADD|AF_HIDE_LIST));
       $this->add(new atkTextAttribute("description",TEXT_LARGE, AF_HIDE_LIST|AF_HIDE_ADD));
       $this->add(new atkNumberAttribute("fixed_price",AF_HIDE_LIST|AF_HIDE_ADD, 13, 5));      
 
@@ -476,6 +472,27 @@
         return text("youareinthearchive")." ".href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
                     '&view=active', text('clicktoviewactiverecords', $this->m_type, $this->m_module))."<br>";
       }
+    }
+    
+    function contract_id_edit($record, $mode)
+    {      
+      $fromdate = $this->m_attribList["startdate"]->value2db($record);      
+      
+      $filter = "(contract.status='active'";
+      if ($fromdate!="NULL")
+      {
+        $filter.= " AND '$fromdate' BETWEEN contract.startdate AND contract.enddate";
+      }
+      $filter.=") ";
+      if ($record["contract_id"]["id"]!="")
+      {
+        // if a current record is selected, we must include that record, even if it falls outside the filter
+        $filter.= " OR contract.id=".$record["contract_id"]["id"];
+      }
+      
+      $this->m_attribList["contract_id"]->m_destinationFilter = $filter;
+      
+      return $this->m_attribList["contract_id"]->edit($record, $mode);
     }
 
   }
