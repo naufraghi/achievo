@@ -412,7 +412,7 @@ class hours extends atkNode
   function action_lock()
   {
     $viewdate = $this->m_postvars["viewdate"];
-    $record["userid"] = $this->m_postvars["userid"];
+    $record["userid"]["id"] = $this->m_postvars["userid"];
     $record["week"] = weekstamp(mktime(0,0,0,substr($viewdate,5,2),
                                    substr($viewdate,8,2),
                                    substr($viewdate,0,4)));
