@@ -317,5 +317,10 @@ class atkProjectPhaseAttribute extends atkAttribute
   {
     return "number";
   }
+  
+  function equal($recA, $recB)
+  {
+    return $recA["phaseid"]["phaseid"]==$recB["phaseid"]["phaseid"];
+  }
 }
 ?>
