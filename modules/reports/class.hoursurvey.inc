@@ -270,7 +270,7 @@
       if(!empty($activity_id)&&$activity_id!="") $filter.=" AND hours.activityid=".$activity_id;
       if(!empty($phaseid)&&$phaseid!="") $filter.=" AND hours.phaseid=".$phaseid;
       if(!empty($projectid)&&$projectid!="") $filter.=" AND A.projectid=".$projectid;
-      if(!empty($remark)&&$remark!="") $filter.="AND hours.remark LIKE '%$remark%'";
+      if(!empty($remark)&&$remark!="") $filter.=" AND hours.remark LIKE '%$remark%'";
       //if(!empty($customerid)&&$customerid!="") $filter.= " AND B.customer=".$customerid;
 
       // employee table is not yet added to the query. Force that by adding a manytoonerel,
