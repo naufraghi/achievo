@@ -14,6 +14,7 @@
   // translations@achievo.org or request an account for the Achievo
   // Translation Tool.
   //
+  $txt_manualovertime_delete = "undo correction";
   $txt_abbreviation = "Abbreviation";
   $txt_active = "Active";
   $txt_activity = "Activity";

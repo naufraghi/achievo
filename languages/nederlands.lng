@@ -14,6 +14,7 @@
   // translations@achievo.org or request an account for the Achievo
   // Translation Tool.
   //
+  $txt_manualovertime_delete = "correctie opheffen";
   $txt_abbreviation = "Afkorting";
   $txt_active = "Aktief";
   $txt_activity = "Activiteit";
