@@ -12,6 +12,7 @@ Changes in Achievo 1.0.3
 + The project stats now contain detail links to the hoursurvey. [Ivo]
 + Added 'grant all' privilege, which allows users to grant rights they do not
   explicitly have themselves. [Ivo]
++ The resolution for time entry can now be configured. (bug #256) [Ivo]
 + The 'time survey' report can now be filtered by remark. [Ivo]
 + Contact persons now have their own menu item. [Ivo]
 * Contacts found with the searchbox now show their company. (bug #227) [Ivo]

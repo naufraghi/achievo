@@ -103,8 +103,15 @@
 
   // Default view in time registration. Can be "week" or "day"
   //
-  $config_timereg_defaultview = "day";
+  $config_timereg_defaultview = "day";    
 
+  // Resolution for time registration. By default, time can be registered in
+  // steps of 15 minutes. You can increase or decrease this.
+  // You can specify a resolution in minutes or in hours.
+  // Examples: 1m, 5m, 10m, 20m, 30m, 1h, 2h etc.
+  //
+  $config_timereg_resolution = "15m";    
+  
   // This variable indicates whether the user may directly register
   // time on each day in a week when he is in weekview.
   // If set to false, the user must first go to the dayview of a day,
@@ -133,7 +140,7 @@
   //
   // module("somemodule","../achievo_modules/somemodule/");
 
-
+  
   // -------------------------------------------
   //            END OF CONFIGURATION
   // -------------------------------------------
