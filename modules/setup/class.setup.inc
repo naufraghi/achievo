@@ -77,7 +77,7 @@
         // This can't be trusted. Mysql returns DB_SUCCESS even
         // if the user doesn't have access to the database. We only get an
         // error for this after we performed the first query.
-        $tmp = $g_db->getrows("show tables");  // TODO FIXME: 'show tables' is NOT database independent
+        $g_db->getrows("show tables");  // TODO FIXME: 'show tables' is NOT database independent
         $res = $g_db->_translateError($g_db->m_errno);
       }
           
@@ -336,7 +336,7 @@
       
       if ($this->installModule("setup", $result))
       {      
-        foreach ($g_modules as $modname=>$moduledir)
+        foreach (array_keys($g_modules) as $modname)
         {
           if ($modname!="setup") // we already installed setup when we started.
           {
