@@ -175,12 +175,12 @@
 
   
     function rowColor($record)
-    {
-      if($record["spend_hours"]>$record["current_planning"]) 
+    {      
+      if($record["spend_hours"]>($record["current_planning"]/60)) 
       {
         return COLOR_ERROR;
       }
-      elseif($record["spend_hours"]>=$record["current_planning"]*0.9)
+      elseif($record["spend_hours"]>=($record["current_planning"]/60)*0.9)
       {
         return COLOR_WARNING;
       }
