@@ -244,7 +244,8 @@
                                      contain an Achievo database. This database probably belongs to a different application.
                                      <br>It is strongly recommended to install Achievo to a new, empty database.
                                      <br><br>If you are intentionally installing Achievo into a non-empty database, you can 
-                                     continue, but keep this in mind: The installation process may fail if there are conflicting tables                                      already present in the database, and it might even try to modify or drop existing tables. 
+                                     continue, but keep this in mind: The installation process may fail if there are conflicting tables
+                                     already present in the database, and it might even try to modify or drop existing tables. 
                                      <br><br><b>Continue at your own risk</b>.",
                                      "installdb");
         }
