@@ -450,7 +450,7 @@ class hours extends atkNode
 
     // first get the total of contract hours
     $sql = "SELECT sum(uc_hours*60) as contract FROM usercontract WHERE startdate <= '$start'
-                AND enddate > '$start' AND userid = '$userid'";
+                AND (enddate > '$start' OR enddate IS NULL) AND userid = '$userid'";
     $result = $g_db->getRows($sql);
     
     // get the total of time already registered this week

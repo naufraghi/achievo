@@ -304,7 +304,7 @@ class weekreport extends atkNode
         if ($userid!="all") $query.= " usercontract.userid =".$userid." AND ";
       }
       $query.= "  startdate <= '$enddate'
-                  AND enddate >= '$startdate'
+                  AND (enddate >= '$startdate' OR enddate IS NULL)
                   AND usercontract.userid = person.id
                 ORDER BY
                   startdate";
@@ -343,7 +343,7 @@ class weekreport extends atkNode
         $weekdata[$weekstamp]["week"] = $weekstamp;        
         for ($i=0;$i<count($contracts);$i++)
         {       
-          if ($contracts[$i]["startdate"] <= $start_week && $contracts[$i]["enddate"] >= $start_week) $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["contract"] += $contracts[$i]["uc_hours"]*60;
+          if ($contracts[$i]["startdate"] <= $start_week && ($contracts[$i]["enddate"] >= $start_week || $contracts[$i]["enddate"]==NULL)) $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["contract"] += $contracts[$i]["uc_hours"]*60;
           $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["name"] = $contracts[$i]["lastname"].", ".$contracts[$i]["firstname"];
         }
       }
