@@ -56,7 +56,7 @@
         else if ($hasresults==1)
         {
           // autoview first url
-          return $this->redirect($firsturl);
+          return $this->redirect(session_url($firsturl, SESSION_REPLACE));
         }
       }
       else
