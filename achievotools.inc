@@ -189,13 +189,15 @@
 
   function usermail($to, $subject, $body, $add_header="")
   {
+    $sender = atkconfig("mail_sender", "achievo");
+
     if (is_array($to) && count($to)>0)
     {
       $to = implode(",",$to);
     }
     if ($to!="" && $subject!="")
     {
-      mail($to,"[achievo notice] ".$subject,$body,"From: achievo\r\n".$add_header);
+      mail($to,"[achievo notice] ".$subject,$body,"From: ".$sender."\r\n".$add_header);
       atkdebug("Sent mail to $to");
     }
     else
