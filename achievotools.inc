@@ -168,7 +168,8 @@
     } else {
       $daysLost -= 2;
     }
-    $week = bcdiv(strftime("%j",$timestamp)+$daysLost+7,7,0);
+    // $week = bcdiv(strftime("%j",$timestamp)+$daysLost+7,7,0);
+    $week = "".floor((strftime("%j",$timestamp)+$daysLost+7)/7);
             
     /*
     atkdebug("(weekstamp): date: ".strftime("%a %d %m %Y",$timestamp).
