@@ -6,6 +6,8 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changes in Achievo 1.0.3
 ------------------------
++ Added possibility for cumulative usercontracts and display of shortages
+  in the employee weekreport. [Lineke]
 + Readded textual stats to the project stats. (bug #248) [Ivo]
 + The project stats now contain detail links to the hoursurvey. [Ivo]
 + Added 'grant all' privilege, which allows users to grant rights they do not
