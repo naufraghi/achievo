@@ -18,7 +18,8 @@ Changes in Achievo 1.0.4
 * Fixed bug in adding Phases. [Sandy]
 * Updated German language file. (bug #267 & #268) [Christian]
 * Updated adodb-time.inc.php to latest version (bug #273) [Sandy]
-* Fixed problem in 1 Phase Ganttchart (part of bug #272) [Sandy]
+* Fixed problem in 1 Phase Ganttchart. (part of bug #272) [Sandy]
+* Fixed problem with top frame layout. (bug #229) [Sandy]
 
 Changes in Achievo 1.0.3
 ------------------------
