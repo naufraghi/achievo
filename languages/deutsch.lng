@@ -13,6 +13,7 @@
   //   Rainer Wedrich <rainer.wedrich@ebd-networks.de>
   //   Nele Vogel <nele.vogel@hamburg.de>
   //   Stephan Reichhelm <reichhelm@grit.de>
+  //   Christian Veron <veronc@schneiderkreuznach.com>
   //
   // If you want to add a new language to achievo, please translate this
   // file and send it to translations@achievo.org
@@ -52,7 +53,7 @@
   $txt_bgcolor = "Hintergrundfarbe";
   $txt_bill = "Fakturierung";
   $txt_billing_period = "Rechnungszeit";
-  $txt_birthdate = "Date of birth"; // Missing string!!!
+  $txt_birthdate = "Geburtsdatum";
   $txt_booked = "Gebucht";
   $txt_both = "Beide";
   $txt_calendar_defaultuserview = "Standardansicht";
@@ -89,7 +90,7 @@
   $txt_email = "Email";
   $txt_employee = "Mitarbeiter";
   $txt_employees = "Mitarbeiter";
-  $txt_employeestats_nodata = "No time has been registered for %s in this period."; // Missing string!!!
+  $txt_employeestats_nodata = "Keine Zeitregistratur durch %s in diesem Zeitraum.";
   $txt_employeeview = "Zeitpl&auml;ne vergleichen";
   $txt_employee_select = "Einen Mitarbeiter ausw&auml;hlen";
   $txt_employee_showallemployees = "Alle anzeigen";
@@ -151,7 +152,7 @@
   $txt_lowest = "Niedrigste";
   $txt_mailnotification = "EMail wenn Aufgabe sich &auml;ndert";
   $txt_mail_address = "Adresse";
-  $txt_mail_address2 = "Address 2"; // Missing string!!!
+  $txt_mail_address2 = "Zweitadresse";
   $txt_mail_city = "Ort";
   $txt_mail_country = "Land";
   $txt_mail_state = "Bundesland";
@@ -164,7 +165,7 @@
   $txt_menu_achievo_license = "Achievo Lizenz";
   $txt_menu_activity_admin = "Schablonen 'Aktivit&auml;ten'";
   $txt_menu_activity_stats = "Aktivit&auml;tenstatistiken";
-  $txt_menu_contact_admin = "Contacts"; // Missing string!!!
+  $txt_menu_contact_admin = "Kontakte";
   $txt_menu_contracts = "Kundenvertr&auml;ge";
   $txt_menu_contracttype = "Kundenvertragsarten";
   $txt_menu_costregistration_admin = "Kosten registrieren";
@@ -234,7 +235,7 @@
   $txt_percentage = "Prozent";
   $txt_period_price = "Preis pro Abrechnungszeitraum";
   $txt_permission_admin = "Zugangsberechtigung";
-  $txt_permission_grantall = "Grant all"; // Missing string!!!
+  $txt_permission_grantall = "Alle gew&auml;hren";
   $txt_permission_report = "Zugangsberechtigung";
   $txt_personalstats = "Mitarbeiterstatistiken";
   $txt_personid = "Person";
@@ -397,7 +398,7 @@
   $txt_todocheck_mail_subject = "Erinnerung f&uuml;r zu erledigende Aufgaben";
   $txt_todo_assignedto = "Zugewiesen zu";
   $txt_todo_changedby = "Ver&auml;ndert durch";
-  $txt_todo_completed = "Vervollst&auml;ndigt";
+  $txt_todo_completed = "Erledigt";
   $txt_todo_history_updated = "Aktualisiert";
   $txt_todo_in_progress = "In Bearbeitung";
   $txt_todo_new = "Neu";
@@ -421,7 +422,7 @@
   $txt_usercontracts = "Mitarbeitervertr&auml;ge";
   $txt_userid = "BenutzerID";
   $txt_userprefs = "Benutzereinstellungen";
-  $txt_vatnumber = "VAT number/Tax ID"; // Missing string!!!
+  $txt_vatnumber = "VAT Nummer/Steuer ID";
   $txt_version = "Version";
   $txt_viewschedule = "Zeitplan ansehen";
   $txt_view_all = "Alle Benutzer anzeigen";
@@ -436,5 +437,4 @@
   $txt_workingdays = "Abeitstage";
   $txt_yearly = "Jahr";
   $txt_zipcode = "PLZ";
-
 ?>
