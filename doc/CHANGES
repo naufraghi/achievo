@@ -16,14 +16,13 @@ Changes in Achievo 1.1RC1
 + Added configurable function levels to employee admin. [Lineke]
 + The employee admin screen now visually indicates employees whose contract
   is expired (red) or about to expire (orange). [Ivo]
-+ Phases now show the number of already booked hours. [Sandy]
 + Phases now visually indicate if the number of hours registered exceeds
   the planning. [Sandy]
 + Added startdate/enddate to phases. [Ivo]
 + Estimated time per phase can now be detailed per employee. [Ivo]
 + Initially planned time for phases is now remembered. [Ivo]
 + Project screen now displays already booked hours per phase with clickthrough
-  to hoursurvey for details. [Sandy, Ivo]
+  to hoursurvey for details. (bug #224) [Sandy, Ivo]
 + Added multisort capability to ATK backend, and to time survey and
   project admin screens. [Ivo]
 + Added archive feature to project and employee screens. [Ivo]
