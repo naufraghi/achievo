@@ -86,6 +86,12 @@
   //
   $config_auth_dropdown = false;
 
+  // As an extra security measure, to prevent session highjacking, Achievo
+  // will regenerate it's session id on each hit. This does not work 
+  // properly on some (usually older) PHP installations. If you experience
+  // login trouble, set the next value to false.
+  $config_session_regenerate = true;
+
   
   // -------------------------------------------
   //            MAIL CONFIGURATION
