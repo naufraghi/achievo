@@ -125,7 +125,7 @@ class todo extends atkNode
 
    // obtain some project info
    $assignTo = $rec["assigned_to"]["id"];
-   $assigner = $rec["owner"];
+   $assigner = $rec["owner"]["id"];
    $pid      = $rec["projectid"]["id"];
 
    // get project name

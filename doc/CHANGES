@@ -14,6 +14,7 @@ Changes in Achievo 1.0.0
 + Project edit has an extra tab with notes. [Sandy]
 * Fixed bugs #45, #92, #99, #172, #194, #210. [Ivo]
 * Fixed bug #207. [Sandy]
+* Fixed tiny bug in todo mailer. [Ivo]
 
 Changes in Achievo 1.0RC2
 -------------------------
