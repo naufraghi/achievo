@@ -19,6 +19,18 @@ function date_format($datestamp,$dateformat)
   return date("m-d",$datestamp)." (".text(strtolower(date("D",$datestamp))).")";
 }
 
+class to_date extends atkDateAttribute 
+{
+  function to_date()
+  {
+    $this->atkDateAttribute("todate", "F d Y","d F Y", 0, date("Ymd"), AF_NO_LABEL);
+  }  
+  
+  function load() {}
+  function store() {}  
+  function addtoeditarray() {}
+}
+
 class hours extends atkNode
 {
   var $m_lock = "";
@@ -55,6 +67,7 @@ class hours extends atkNode
     $this->add(new atkAttribute("id",AF_AUTOKEY));
 
     $this->add(new atkDateAttribute("activitydate","F d Y","d F Y", 0, date("Ymd"), AF_OBLIGATORY|AF_FORCE_LOAD|($this->m_weekview?0:AF_HIDE_LIST)));
+    $this->add(new to_date());                
 
     // force_load flag is set for userid, since several features rely on the 
     // userid, even if it's not displayed on screen.
@@ -113,7 +126,8 @@ class hours extends atkNode
                   "entrydate"=>Array("year"=>date("Y"),
                              "month"=>date("m"),
                              "day"=>date("d")),
-                  "activitydate"=>$this->getInitialDate()
+                  "activitydate"=>$this->getInitialDate(),
+                  "todate"=>$this->getInitialDate()
                   );
   }
 
@@ -730,7 +744,7 @@ class hours extends atkNode
       if ($this->m_insertmode=="multi")
       {
         $res = $this->m_attribList["activitydate"]->edit($record, $prefix, $mode);
-        $toDate = new atkDateAttribute("todate", "F d Y","d F Y", 0, date("Ymd"), AF_OBLIGATORY);
+        $toDate = new atkDateAttribute("todate", "F d Y","d F Y", 0, date("Ymd"), AF_OBLIGATORY);                
         
         $res.= " ".text("uptoandincluding")." ".$toDate->edit($record, $prefix, $mode);
         $res.= '<input type="hidden" name="'.$prefix.'activitydate[multi]" value="1">';
@@ -875,7 +889,7 @@ class hours extends atkNode
       // Week is locked
       return ' <img src="'.atkconfig("atkroot").'atk/images/lock.gif" border="0">';
     }
-  }
+  }  
 
 }
 
