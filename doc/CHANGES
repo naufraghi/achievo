@@ -6,9 +6,9 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changes in Achievo 1.0.3
 ------------------------
-+ Added possibility for cumulative usercontracts and display of shortages
-  in the employee weekreport. [Lineke]
++ Added support for cumulative usercontracts. [Lineke]
 + Readded textual stats to the project stats. (bug #248) [Ivo]
++ Added piecharts and textual stats for employees. [Ivo]
 + The project stats now contain detail links to the hoursurvey. [Ivo]
 + Added 'grant all' privilege, which allows users to grant rights they do not
   explicitly have themselves. [Ivo]
@@ -16,6 +16,7 @@ Changes in Achievo 1.0.3
 + Added decimals to employee contracts. [S.Leblanc]
 * Modified employee add screen so contracts will not be overlooked. [Ivo]
 * Setup.php now accepts include_paths with only ".". (bug #237) [Mike]
+* The employee weekreport now displays negative overtime (shortage). [Lineke]
 + Roles that are not in use can now be deleted. (bug #236) [Ivo]
 * The project stats page now has the project name in the title box. [Ivo]
 * Added several untranslated strings to the language files. [Nele]
