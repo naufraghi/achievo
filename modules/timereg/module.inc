@@ -5,6 +5,7 @@
     function getNodes()
     {
       registerNode("timereg.hours", array("admin","add","edit","delete","lock","unlock", "any_user", "any_project")); 
+      registerNode("timereg.hours_approve", array("admin","add","delete")); // niet
       registerNode("timereg.hours_lock", array("admin","add","delete")); // niet
       registerNode("timereg.workperiod", array("admin", "add", "edit", "delete"));
       registerNode("timereg.overtime_balance", array("edit", "delete"));
@@ -16,7 +17,7 @@
       menuitem("hours_admin", dispatch_url("timereg.hours", "admin"),"time_registration",true);
       menuitem("-","","time_registration");
       menuitem("hours_lock", dispatch_url("timereg.hours_lock", "admin"),"time_registration",array("timereg.hours_lock","admin"));
-      
+      if (is_allowed("timereg.hours_approve", "admin"))menuitem("hours_approve", dispatch_url("timereg.hours_approve", "admin"),"time_registration",array("timereg.hours_approve","admin"));
       menuitem("workperiod_admin", dispatch_url("timereg.workperiod", "admin"), "setup", array("timereg.workperiod", "admin"));
       //menuitem("overtimebalance_admin", dispatch_url("timereg.overtime_balance", "admin"), "setup", array("timereg.overtime_balance", "admin"));
     
