@@ -61,10 +61,11 @@ class employee extends person
       $this->addFilter("person.status","active");
     }
     $this->add(new atkOneToManyRelation("contract","employee.usercontracts","userid",AF_HIDE_LIST|AF_HIDE_ADD));
+    
+    $this->add(new useridAttribute("userid" ,AF_OBLIGATORY|AF_UNIQUE|AF_SEARCHABLE), 1); // first field
 
     if (atkconfig("authentication")=="db")
-    {
-      $this->add(new useridAttribute("userid" ,AF_OBLIGATORY|AF_UNIQUE|AF_SEARCHABLE), 1); // first field
+    {      
       $this->add(new atkDummyAttribute("passwordexplanation", text("password_leaveblankifunchanged"), AF_HIDE_ADD|AF_HIDE_LIST|AF_HIDE_SEARCH|AF_HIDE_VIEW));
       $this->add(new atkPasswordAttribute("password", false, AF_HIDE_LIST|AF_PASSWORD_NOVALIDATE, 40));
     }
@@ -152,8 +153,8 @@ class employee extends person
                               FROM
                                 hours, phase, project
                               WHERE
-                                hours.phaseid = phase.id
-                                AND hours.userid = ".$params["employeeid"]."
+                                hours.phaseid = phase.id ".
+                                ($params["employeeid"]!=""?" AND hours.userid = ".$params["employeeid"]:"")."
                                 AND phase.projectid = project.id".
                                 ($params["viewstart"]!=""?" AND hours.activitydate>='".$params["viewstart"]."'":"").
                                 ($params["viewend"]!=""?" AND hours.activitydate<='".$params["viewend"]."'":"").
@@ -188,7 +189,7 @@ class employee extends person
                                 hours.activityid = activity.id ".
                                 ($params["viewstart"]!=""?" AND hours.activitydate>='".$params["viewstart"]."'":"").
                                 ($params["viewend"]!=""?" AND hours.activitydate<='".$params["viewend"]."'":"").
-                            "   AND hours.userid = ".$params["employeeid"]."
+                            ($params["employeeid"]!=""?" AND hours.userid = ".$params["employeeid"]:"")."
                               GROUP BY
                                 activity.name
                               ORDER BY
