@@ -506,10 +506,13 @@
       }
       $data = $hoursnode->selectDb($filter,implode(",",$orderbystatement), "");
 
-      $hoursnode->add(new fakeAttrib("rate"));
-      $hoursnode->add(new fakeAttrib("costs"));
+      if (moduleExists("billing"))
+      {
+        $hoursnode->add(new fakeAttrib("rate"));
+        $hoursnode->add(new fakeAttrib("costs"));
 
-      $this->_addRateAndCosts($data);
+        $this->_addRateAndCosts($data);
+      }
         
       if ($outputType=="0")
       {
