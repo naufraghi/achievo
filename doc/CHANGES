@@ -11,8 +11,9 @@ Changes in Achievo 1.0.0
 * Fixed bug in schedule comparison. (bug #197) [Lineke]
 * Fixed bugs #92, #99, #172. [Ivo]
 * Fixed bug in project menu, project notes appear again when
-  a project is selected [Sandy]
-+ Project edit has an extra tab with Notes [Sandy]
+  a project is selected. [Sandy]
++ Project edit has an extra tab with Notes. [Sandy]
+* Fixed bug #207. [Sandy]
 
 Changes in Achievo 1.0RC2
 -------------------------
