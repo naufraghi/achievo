@@ -9,6 +9,7 @@
       registerNode("employee.usercontracts", array("admin", "add", "edit", "delete"));
       registerNode("employee.userprefs", array("edit"));
       registerNode("employee.functionlevel", array("admin", "add", "edit", "delete"));
+      registerNode("employee.department", array("admin","add","edit","delete"));
     }
 
     function getMenuItems()
