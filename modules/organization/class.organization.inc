@@ -57,6 +57,8 @@ class organization extends atkNode
     $this->add(new atkOneToManyRelation("contracts","organization.contracts","customer",AF_HIDE_LIST));
     //$this->addAttribute(new atkOneToManyRelation("projects","project.project","customer",AF_HIDE_LIST));
     $this->add(new atkParserAttribute("projects", "see_below", AF_HIDE_LIST|AF_HIDE_ADD));
+    $this->add(new atkParserAttribute("vcard", href("?atkaction=vcard&id=[id]", text("vcard"), SESSION_NESTED), AF_NO_LABEL|AF_HIDE_LIST), NULL, 10000);
+    $this->m_securityMap["vcard"] = "view";
     
     $this->setTable("organization", "organization");
     $this->setOrder("organization.name");
@@ -100,5 +102,42 @@ class organization extends atkNode
     return text("none");
   }
   
+   function action_vcard()
+  {
+    return $this->createVCard($this->m_postvars["id"]);
+  }
+  
+  function createVCard($id)
+  {
+    include_once(moduleDir("utils")."vcard.php");
+    $v = new vCard();
+    
+    $recs = $this->selectDb("id='".$id."'", "", "", "", array("phone", "fax", "name", 
+                                                              "address", "city", "state", "zipcode", 
+                                                              "country", "mail_address", "mail_city", "mail_state", 
+                                                              "mail_zipcode", "mail_country", "email", "website", "remark"));
+    $record = $recs[0];
+
+    $v->setPhoneNumber($record["phone"], "PREF;WORK;VOICE");
+    $v->setPhoneNumber($record["fax"], "FAX");    
+    $v->setName($record["name"], "", "", "");    
+    $v->setAddress("", "", $record["address"], $record["city"], $record["state"], $record["zipcode"], $record["country"], "HOME");
+    $v->setAddress("", "", $record["mail_address"], $record["mail_city"], $record["mail_state"], $record["mail_zipcode"], $record["mail_country"], "POSTAL");
+    $v->setEmail($record["email"]);
+    $v->setURL($record["website"]);
+    $v->setNote($record["remark"]);    
+    
+    $output = $v->getVCard();
+    $filename = $v->getFileName();
+
+    Header("Content-Disposition: attachment; filename=$filename");
+    Header("Content-Length: ".strlen($output));
+    Header("Connection: close");
+    Header("Content-Type: text/x-vCard; name=$filename");
+
+    echo $output; 
+  }
+  
 }
+
 ?>
