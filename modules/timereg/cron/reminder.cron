@@ -67,7 +67,7 @@
 
     for ($i=0;$i<count($contracts);$i++)
     {
-      $time[$contracts[$i]["id"]]["contract"] = $contracts[$i]["uc_hours"]*60;
+      $time[$contracts[$i]["id"]]["contract"] += $contracts[$i]["uc_hours"]*60;
       $time[$contracts[$i]["id"]]["email"] = $contracts[$i]["email"];
       $time[$contracts[$i]["id"]]["supervisor"] = $contracts[$i]["supervisor"];
     }

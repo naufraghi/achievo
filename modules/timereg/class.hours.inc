@@ -448,25 +448,27 @@ class hours extends atkNode
     $start = startOfWeek($date);
     $end = endOfWeek($date);
 
-    $query = "SELECT (uc_hours*60)-sum(time) as leftover
+    // first get the total of contract hours
+    $sql = "SELECT sum(uc_hours*60) as contract FROM usercontract WHERE startdate <= '$start'
+                AND enddate > '$start' AND userid = '$userid'";
+    $result = $g_db->getRows($sql);
+    
+    // get the total of time already registered this week
+    $query = "SELECT sum(time) as totaal
               FROM
-                hours LEFT JOIN usercontract
-                ON hours.userid = usercontract.userid
+                hours
               WHERE
-                startdate <= '$start'
-                AND enddate > '$start'
-                AND hours.userid = '$userid'
-                AND activitydate between '$start' and '$end'
-              GROUP BY hours.userid";
+                hours.userid = '$userid'
+                AND activitydate between '$start' and '$end'";
     $res = $g_db->getrows($query);
-    if (count($res)==0)
+    if (count($res)==0 || count($result)==0)
     {
       // either no contract in this period, or no hours booked at all..
       return false;
     }
     else
     {
-      return ($res[0]["leftover"]<=0);
+      return ($result[0]["contract"] - $res[0]["totaal"]<=0);
     }
   }
 
