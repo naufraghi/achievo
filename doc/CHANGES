@@ -10,7 +10,8 @@ Changed in Achievo 1.1RC3
 * Fixed bug in manytoone when there is only 1 record. [Sandy]
 * Fixed bug in registering time. (bug #331) [Sandy]
 * Fixed bug with getvars in the help popup. (bug #348) [Sandy]
-+ Contacts attribute in project module can now be made obligatory from the config.inc.php file (feature #4464) [Harrie]
++ Contacts attribute in project module can now be made 
+  obligatory from the config.inc.php file [Harrie]
 
 Changed in Achievo 1.1RC2
 -------------------------
