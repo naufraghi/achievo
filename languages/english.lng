@@ -477,4 +477,16 @@
   $txt_youareinthearchive = "You are viewing the archive.";
   $txt_zipcode = "Zipcode";
 
+  $txt_alldepartments = "All departments";
+  $txt_allfunctionlevels = "All functionlevels";
+  $txt_department = "Department";
+  $txt_hours_approve = "Approve weeks";
+  $txt_hours_approve_color_explain = "(red stands for disapproved or not approved yet, green is approved)";
+  $txt_select = "Chose";
+  $txt_approval = "Approving";
+  $txt_approve = "Approve";
+  $txt_approved = "Approved";
+  $txt_disapprove = "Disapprove";
+  $txt_menu_hours_approve = "Approve weeks";
+
 ?>

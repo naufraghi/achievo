@@ -31,6 +31,8 @@
   $txt_allactivities = "Alle activiteiten";
   $txt_allday = "Hele dag";
   $txt_allday_appointments = "Dag afspraken";
+  $txt_alldepartments = "Alle afdelingen";
+  $txt_allfunctionlevels = "Alle funktieniveaus";
   $txt_allprojects = "Alle projecten";
   $txt_allroles = "Alle rollen";
   $txt_allusers = "Alle gebruikers";
@@ -85,6 +87,7 @@
   $txt_deactivate = "Deactiveren";
   $txt_deadline = "Deadline";
   $txt_defaultrate = "Standaard";
+  $txt_department = "Afdeling";
   $txt_dependencies = "Afhankelijkheden";
   $txt_description = "Omschrijving";
   $txt_details = "Details";
@@ -132,6 +135,8 @@
   $txt_hourlock_userid_explanation = "Selecteer de medewerker die je wilt blokkeren, of selecteer 'Geen' om alle medewerkers te blokkeren";
   $txt_hourlock_week_explanation = "Vul 4 cijferig jaar gevolgd door 2 cijferig weeknummer in (bijv. 200234)";
   $txt_hours = "Uren";
+  $txt_hours_approve = "Weken goedkeuren";
+  $txt_hours_approve_color_explain = "(rood staat voor afgekeurd of nog niet goedgekeurd, groen staat voor goedgekeurd)";
   $txt_hoursleft = "Uren nog beschikbaar";
   $txt_hoursurvey = "Uren overzicht";
   $txt_hours_lock = "Uren blokkeren";
@@ -350,6 +355,7 @@
   $txt_search_again = "Opnieuw zoeken";
   $txt_search_emptysearchstring = "Geen trefwoord opgegeven.";
   $txt_search_noresults = "Je zoekoprdacht '%s' leverde geen resultaat op.";
+  $txt_select = "Kies";
   $txt_seluserdate = "Selecteer medewerkers en een datum om agenda's te vergelijken";
   $txt_setcostsfilter = "Selecteer welke kosten U wilt zien:";
   $txt_sethoursfilter = "Selecteer welke uren u wilt zien:";
@@ -476,5 +482,11 @@
   $txt_yearly = "Jaar";
   $txt_youareinthearchive = "Je bent in het archief.";
   $txt_zipcode = "Postcode";
-
+  
+  
+  $txt_approval = "Goedgekeurd";
+  $txt_approve = "Keur goed";
+  $txt_approved = "Goed gekeurd";
+  $txt_disapprove = "Keur af";
+  $txt_menu_hours_approve = "Keur weken goed";
 ?>
