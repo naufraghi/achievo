@@ -250,6 +250,7 @@
   $txt_project_tab_documents = "Documents";
   $txt_project_tab_planning = "Planning";
   $txt_project_tab_todos = "Todo's";
+  $txt_project_tab_notes = "Notes";
   $txt_project_title_select = "Select a project";
   $txt_project_todoview = "Project todo's";
   $txt_publicitem = "Public item";
