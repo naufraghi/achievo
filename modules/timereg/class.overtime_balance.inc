@@ -30,6 +30,11 @@
     {
       $this->deleteBalance($rec["userid"]["id"], date("Y-m-d", mktime(0,0,0,$rec["day"]["month"],$rec["day"]["day"],$rec["day"]["year"])));
     }
+    
+    function postDel($rec)
+    {
+      $this->deleteBalance($rec["userid"]["id"], date("Y-m-d", mktime(0,0,0,$rec["day"]["month"],$rec["day"]["day"],$rec["day"]["year"])));
+    }
 
     function getOvertimeLink($rec)
     {      
@@ -49,16 +54,22 @@
         $res = href($url, $res, SESSION_NESTED);
       }
       $manual = $this->getLatestManualCorrection($rec["balance"]["userid"]["id"], 0, date("Y-m-d", mktime(0,0,0,$rec["balance"]["day"]["month"],$rec["balance"]["day"]["day"],$rec["balance"]["day"]["year"])));
+      $manualid = $manual["id"];
       if ($manual != 0)
       {
         // check if this manualcorrection was made in the current week
         $enddate = date("Y-m-d", mktime(0,0,0,$rec["balance"]["day"]["month"],$rec["balance"]["day"]["day"],$rec["balance"]["day"]["year"]));
         $startdate = startOfWeek($enddate);
-        $manualdate = date("Y-m-d", mktime(0,0,0,$manual["month"],$manual["day"],$manual["year"]));
+        $manualdate = date("Y-m-d", mktime(0,0,0,$manual["day"]["month"],$manual["day"]["day"],$manual["day"]["year"]));
         if ($manualdate <= $enddate && $manualdate >= $startdate) $manual = 1;
         else $manual = 0;
       }
-      return $res.($manual ? ' *' : '');
+      if ($this->allowed("delete") && $manual)
+      {
+        $deletelink = href(dispatch_url("timereg.overtime_balance", "delete", array("atkselector"=>"overtime_balance.id = ".$manualid)), text("manualovertime_delete"), SESSION_NESTED);
+      }
+      else $deletelink = "";
+      return $res.($manual ? ' *' : '').' '.$deletelink;
     }
     
     function getBalance($day, $userid)
@@ -106,7 +117,7 @@
       //$result = $g_db->getRows("SELECT day FROM overtime_balance WHERE userid = $userid AND manual = 1 ORDER BY day DESC");
       $node = &getNode("timereg.overtime_balance");
       $result = $node->selectDb("userid.id = '$userid' AND manual = 1 ".($day != "" ? "AND day <= '$day' " : ""), "day DESC", 1);
-      return (count($result[0]) ? $result[0]["day"] : $default);
+      return (count($result[0]) ? $result[0] : $default);
     }
     
     function deleteBalance($userid, $day)

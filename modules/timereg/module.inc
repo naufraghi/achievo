@@ -7,7 +7,7 @@
       registerNode("timereg.hours", array("admin","add","edit","delete","lock","unlock", "any_user", "any_project")); // niet
       registerNode("timereg.hours_lock", array("admin","add","delete")); // niet
       registerNode("timereg.workperiod", array("admin", "add", "edit", "delete"));
-      registerNode("timereg.overtime_balance", array("edit"));
+      registerNode("timereg.overtime_balance", array("edit", "delete"));
     }
     
     function getMenuItems()
