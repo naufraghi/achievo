@@ -211,7 +211,7 @@
   
   $dbs = array("mysql"=>"mysql_pconnect",
                "oci8"=>"OCILogon",
-               "oci9"=>"OCILogin",
+               "oci9"=>"OCILogon",
                "pgsql"=>"pf_connect");
   if (!function_exists($dbs[atkconfig("database")]))
   {
