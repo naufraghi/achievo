@@ -12,6 +12,7 @@ Changed in Achievo 1.1RC3
 * Fixed bug with getvars in the help popup. (bug #348) [Sandy]
 + Contact person field in project edit screen can be made 
   obligatory with a config setting. [Harrie]
++ If only one search result is found, it is displayed directly. [Ivo]
 + Added Slovak translation. [Danielk]
 
 Changed in Achievo 1.1RC2
