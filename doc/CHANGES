@@ -8,6 +8,7 @@ Changes in Achievo 1.1.0
 ------------------------
 + Session highjacking prevention is now configurable (default off). [Ivo]
 * Removed requirement that php should be compiled with --enable-bcmath. [Ivo]
+* Fixed 2 PHP5 incompatibilities. [Brian]
 
 Changes in Achievo 1.1RC3
 -------------------------

@@ -22,7 +22,6 @@
     var $showGlobal;
     var $owner;
     var $viewerWidth  = "100%";
-    var $title        = "";
 
   /**
    * constructor
