@@ -43,6 +43,10 @@ class employee extends person
 
     $this->addFilter("person.role='employee'");
     $this->add(new atkDateAttribute("birthdate","F d Y","d F Y", 0, date("Ymd"), AF_HIDE_LIST));
+    
+    $this->add(new atkAttribute("banknumber", AF_HIDE_LIST));
+    $this->add(new atkAttribute("socialsecuritynumber", AF_HIDE_LIST));
+    
     $this->add(new atkManyToOneRelation("functionlevel", "employee.functionlevel",AF_HIDE_ADD|AF_HIDE_LIST));
     $this->add(new atkManyToOneRelation("department","employee.department",AF_HIDE_ADD|AF_HIDE_LIST|AF_RELATION_AUTOLINK));
     
