@@ -106,11 +106,13 @@
   $txt_endtime = "Eindtijd";
   $txt_entity = "Profiel";
   $txt_entrydate = "Invoerdatum";
+  $txt_error_begintime_before_endtime = "Starttijd ligt voor of tijdens eindtijd";
   $txt_error_date = "Einddatum omet na startdatum liggen";
   $txt_error_hoursindayexceeded = "Je kunt niet meer dan 24 uur per dag boeken";
   $txt_error_invalidweek = "Een week-entry moet een geldig jaar en een geldig weeknummer bevatten.";
   $txt_error_startbiggerthanend = "De start-datum moet voor de eind-datum liggen";
   $txt_error_time = "Eindtijd moet na starttijd liggen";
+  $txt_error_time_already_registered = "De geselecteerde tijd is al geregistreerd in een eerdere tijdregistratie";
   $txt_error_timereg_members_only = "Alleen teamleden mogen tijd registreren op dit project";
   $txt_evening = "Avond";
   $txt_fax = "Fax";
