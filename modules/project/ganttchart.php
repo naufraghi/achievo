@@ -607,16 +607,16 @@ function cmp ($a, $b) {
 
 usort ($gant, "cmp");
 
-$year = $dbrecordsphase[1]['project_startdate'][0].
-        $dbrecordsphase[1]['project_startdate'][1].
-        $dbrecordsphase[1]['project_startdate'][2].
-        $dbrecordsphase[1]['project_startdate'][3];
+$year = $dbrecordsphase[0]['project_startdate'][0].
+        $dbrecordsphase[0]['project_startdate'][1].
+        $dbrecordsphase[0]['project_startdate'][2].
+        $dbrecordsphase[0]['project_startdate'][3];
 
-$month = $dbrecordsphase[1]['project_startdate'][5].
-         $dbrecordsphase[1]['project_startdate'][6];
+$month = $dbrecordsphase[0]['project_startdate'][5].
+         $dbrecordsphase[0]['project_startdate'][6];
 
-$day = $dbrecordsphase[1]['project_startdate'][8].
-       $dbrecordsphase[1]['project_startdate'][9];
+$day = $dbrecordsphase[0]['project_startdate'][8].
+       $dbrecordsphase[0]['project_startdate'][9];
 
 $datestamp = mktime(0,0,0,$month, $day, $year);
 
