@@ -27,10 +27,21 @@ class employee extends person
   {
     global $ATK_VARS,$g_user;
 
-    $this->person("employee");
+    $this->person("employee", NF_EDITAFTERADD);
+    
+    // In employee edit screen, we hide most fields in the add screen.
+    foreach (array_keys($this->m_attribList) as $attribname)
+    {
+      if (!in_array($attribname, array("lastname", "firstname","email")))
+      {
+        $p_attrib = &$this->m_attribList[$attribname];
+        $p_attrib->m_flags|=AF_HIDE_ADD;
+      }
+    }
+    
     $this->addFilter("person.role='employee'");
 
-    $this->add(new atkManyToOneRelation("entity", "employee.profile",AF_RELATION_AUTOLINK));
+    $this->add(new atkManyToOneRelation("entity", "employee.profile",AF_RELATION_AUTOLINK|AF_HIDE_ADD));
 
     // you can't be your own supervisor neither can a nonactive employee be a supervisor
     $preFilter = new atkManyToOneRelation("supervisor","employee.employee",AF_HIDE_ADD|AF_HIDE_LIST|AF_RELATION_AUTOLINK);
@@ -40,14 +51,14 @@ class employee extends person
     // If we are in employee administration mode, we show all users. Otherwise, we only show active users.
     if ($ATK_VARS["atknodetype"]=="employee.employee"&& in_array($ATK_VARS["atkaction"],array("admin","add","update","edit")))
     {
-      $this->add(new atkListAttribute("status", array("active","nonactive"), array()));
+      $this->add(new atkListAttribute("status", array("active","nonactive"), array(), AF_HIDE_ADD));
     }
     else
     {
-      $this->add(new atkListAttribute("status", array("active","nonactive"), array(), AF_HIDE_LIST));
+      $this->add(new atkListAttribute("status", array("active","nonactive"), array(), AF_HIDE_LIST|AF_HIDE_ADD));
       $this->addFilter("person.status","active");
     }
-    $this->add(new atkOneToManyRelation("contract","employee.usercontracts","userid",AF_HIDE_LIST));
+    $this->add(new atkOneToManyRelation("contract","employee.usercontracts","userid",AF_HIDE_LIST|AF_HIDE_ADD));
 
     if (atkconfig("authentication")=="db")
     {
