@@ -261,7 +261,7 @@
           // Perform some checks to determine what version this database might be.
           // We do this by looking at some tables that exist, that were created in
           // several Achievo versions.
-          $orgversion = "";
+          $orgversion = "";      
           
           if (in_array("projectactivity", $tablenames) && in_array("templateactivity", $tablenames))
           {
@@ -717,6 +717,20 @@
         return false;
       }
       return true;
+    }
+    
+    function columnExists($table, $column)
+    {
+      global $g_db;
+      $meta = $g_db->metadata($table, true);                
+      for ($i=0, $_i=count($meta); $i<$_i; $i++)
+      {
+        if (strtolower($meta[$i]["name"]) == strtolower($column))
+        {
+          return true;
+        }
+      }
+      return false;
     }
     
     function setVersion($version, $module="")
