@@ -41,18 +41,6 @@
       if ($rec["balance"]["balance"] != text("not_inserted")) $res = time_format(60*$rec["balance"]["balance"], true);
       else $res = $rec["balance"]["balance"];
 
-      if ($this->allowed("edit") && $rec["balance"]["outputtype"] == 0)
-      {        
-        if ($rec["balance"]["id"] != "")
-        {
-          $url = dispatch_url("timereg.overtime_balance", "edit", array("atkselector"=>"overtime_balance.id = ".$rec["balance"]["id"]));
-        }
-        else
-        {
-          $url = dispatch_url("timereg.overtime_balance", "add", array("userid[id]"=>$rec["balance"]["userid"]["id"], "day[day]"=>$rec["balance"]["day"]["day"], "day[month]"=>$rec["balance"]["day"]["month"], "day[year]"=>$rec["balance"]["day"]["year"], "balance"=>"0.00"));
-        }
-        $res = href($url, $res, SESSION_NESTED);
-      }
       $manual = $this->getLatestManualCorrection($rec["balance"]["userid"]["id"], 0, date("Y-m-d", mktime(0,0,0,$rec["balance"]["day"]["month"],$rec["balance"]["day"]["day"],$rec["balance"]["day"]["year"])));
       $manualid = $manual["id"];
       if ($manual != 0)
@@ -64,6 +52,24 @@
         if ($manualdate <= $enddate && $manualdate >= $startdate) $manual = 1;
         else $manual = 0;
       }
+      
+      if ($this->allowed("edit") && $rec["balance"]["outputtype"] == 0)
+      {        
+        if ($rec["balance"]["id"] != "" && $manual)
+        {
+          $url = dispatch_url("timereg.overtime_balance", "edit", array("atkselector"=>"overtime_balance.id = ".$manualid));
+        }
+        elseif ($rec["balance"]["id"] != "")
+        {
+          $url = dispatch_url("timereg.overtime_balance", "edit", array("atkselector"=>"overtime_balance.id = ".$rec["balance"]["id"]));
+        }
+        else
+        {
+          $url = dispatch_url("timereg.overtime_balance", "add", array("userid[id]"=>$rec["balance"]["userid"]["id"], "day[day]"=>$rec["balance"]["day"]["day"], "day[month]"=>$rec["balance"]["day"]["month"], "day[year]"=>$rec["balance"]["day"]["year"], "balance"=>"0.00"));
+        }
+        $res = href($url, $res, SESSION_NESTED);
+      }
+      
       if ($this->allowed("delete") && $manual)
       {
         $deletelink = href(dispatch_url("timereg.overtime_balance", "delete", array("atkselector"=>"overtime_balance.id = ".$manualid)), text("manualovertime_delete"), SESSION_NESTED);

@@ -437,7 +437,7 @@ class hours extends atkNode
       }
       
       $percentage = $balancenode->getPercentage($rec["workperiod"]["id"]);
-      $hours = $rec["time"]/60;      
+      $hours = ($rec["time"]["hours"]*60+$rec["time"]["minutes"])/60;      
       //atk_var_dump($balance);
       
       if ($mode == "add") $newbalance = ($balance["balance"] + (($percentage/100) * $hours));
@@ -451,7 +451,13 @@ class hours extends atkNode
       
       $balancenode->saveOvertimeBalance($rec["userid"]["id"], $day, $newbalance);
     }  
-    if ($balancenode->getLatestManualCorrection($rec["userid"]["id"], $yesterday) < $day) $balancenode->deleteBalance($rec["userid"]["id"], $day);
+    $manual = $balancenode->getLatestManualCorrection($rec["userid"]["id"], $yesterday);
+    if ($manual != $yesterday)
+    {
+      $manualdate = date("Y-m-d", mktime(0,0,0,$manual["day"]["month"],$manual["day"]["day"],$manual["day"]["year"]));
+    }
+    else $manualdate = $yesterday;
+    if ($manualdate < $day) $balancenode->deleteBalance($rec["userid"]["id"], $day);
   }
 
   // Check if this week may be booked..
