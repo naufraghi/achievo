@@ -13,6 +13,7 @@
     {
       global $g_layout, $g_user;
       $atkorderby = $this->m_postvars["atkorderby"];
+      if ($atkorderby=="") $atkorderby = "activitydate";
       $activity_id = $this->m_postvars["activity_id"];
       $projectid = $this->m_postvars["projectid"];
       $selectedprojectid = $this->m_postvars["selectedprojectid"];
@@ -244,7 +245,7 @@
         $orderatt = new atkListAttribute("atkorderby",$arr_col, $listcol);
 
         $g_layout->td($orderatt->edit($dummyrec));
-
+        
         $g_layout->output('</tr></table><input type="submit" value="'.text("refresh").'"></form><br>');
 
       }
@@ -288,10 +289,12 @@
       if ($outputType=="0")
       {
         $g_layout->ui_bottom();
-        $g_layout->ui_top(text("title_hoursurvey_hours")." ".text("report_intimespan")." ".$startdate." t/m ".$enddate);
-        $g_layout->output('<br><br>');
+        $g_layout->ui_top(text("title_hoursurvey_hours")." ".text("report_intimespan")." ".$startdate." t/m ".$enddate);        
+        
+        $g_layout->output('<br>'.(atkLevel()>0?atkButton('<< '.text("back"), "", SESSION_BACK)."<br>":"").'<br>');
         $g_layout->output($hoursnode->recordList($data, $hoursnode->defaultActions("list"),false,$suppress));
-        $g_layout->output('<br><br>');
+        $g_layout->output('<br>'.(atkLevel()>0?atkButton('<< '.text("back"), "", SESSION_BACK)."<br>":"").'<br>');
+        
         $g_layout->ui_bottom();
        }
       if ($outputType=="1")
