@@ -63,9 +63,9 @@ class todo extends atkNode
    switch ($prio)
    {
     case 1:
-     $result = '<font color="#FF0000"><b>'.$org."</b></font>"; break;
+     $result = '<font color="'.COLOR_ERROR.'"><b>'.$org."</b></font>"; break;
     case 2:
-     $result = '<font color="#ee6c22"><b>'.$org."</b></font>"; break;
+     $result = '<font color="'.COLOR_WARNING.'"><b>'.$org."</b></font>"; break;
     case 4:
      $result = '<font color="#666666">'.$org."</font>"; break;
     default:
