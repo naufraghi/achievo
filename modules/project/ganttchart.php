@@ -360,7 +360,6 @@ $queryphase->addJoin('phase', '', 'project.id=phase.projectid', FALSE);
 $queryphase->addField('id', ' ', 'phase', 'phase_');
 $queryphase->addField('name', ' ', 'project', 'project_');
 $queryphase->addField('name', ' ', 'phase', 'phase_');
-$queryphase->addField('max_phasetime', ' ', 'phase', 'phase_');
 $queryphase->addField('current_planning', ' ', 'phase', 'phase_');
 $queryphase->addField('startdate', ' ', 'project', 'project_');
 $queryphase->addCondition("project.id='".$projectid."'");
@@ -380,7 +379,7 @@ for($i=0;$i<count($dbrecordsphase);$i++)
 {
   $phase_ids[$i] = $dbrecordsphase[$i]['phase_id'];
   $phase_names[$i] = $dbrecordsphase[$i]['phase_name'];
-  $phase_maxtimes[$i] = $dbrecordsphase[$i]['phase_max_phasetime'];
+  $phase_maxtimes[$i] = ($dbrecordsphase[$i]['phase_current_planning']/60)/8; // convert minutes to days
 }
 
 
@@ -522,7 +521,6 @@ $querybooked->addJoin('hours', '', 'hours.phaseid=phase.id', FALSE);
 $querybooked->addField('id', ' ', 'phase', 'phase_');
 $querybooked->addField('name', ' ', 'phase', 'phase_');
 $querybooked->addField('SUM(hours.time) AS hours');
-$querybooked->addField('max_phasetime', ' ', 'phase', 'phase_');
 $querybooked->addField('current_planning', ' ', 'phase', 'phase_');
 $querybooked->addCondition("phase.projectid='".$projectid."'");
 
@@ -542,12 +540,11 @@ $name = "atk".atkconfig("database")."query";
 $queryplanned  = new $name();
 $queryplanned->addTable('project');
 $queryplanned->addJoin('phase', '', 'project.id=phase.projectid', FALSE);
-$queryplanned->addJoin('planning', '', 'planning.phaseid=phase.id', FALSE);
 
 $queryplanned->addField('id', ' ', 'phase', 'phase_');
 $queryplanned->addField('project.name AS project_name');
 $queryplanned->addField('phase.name AS phase_name');
-$queryplanned->addField('SUM(planning.time) AS planning');
+$queryplanned->addField('SUM(phase.current_planning) AS planning');
 $queryplanned->addField('phase.id AS phase_id');
 
 $queryplanned->addCondition("project.id='".$projectid."'");
@@ -570,7 +567,7 @@ for($i=0;$i<count($dbrecordsphase);$i++)
 {
   $gant[($dbrecordsphase[$i]['phase_id'])]['id'] = $dbrecordsphase[$i]['phase_id'];
   $gant[($dbrecordsphase[$i]['phase_id'])]['name'] = $dbrecordsphase[$i]['phase_name'];
-  $gant[($dbrecordsphase[$i]['phase_id'])]['maxphasetime'] = $dbrecordsphase[$i]['phase_max_phasetime'];
+  $gant[($dbrecordsphase[$i]['phase_id'])]['maxphasetime'] = $dbrecordsphase[$i]['phase_current_planning'];
   $gant[($dbrecordsphase[$i]['phase_id'])]['maxhours'] = $dbrecordsphase[$i]['phase_max_hours'];
 }
 
