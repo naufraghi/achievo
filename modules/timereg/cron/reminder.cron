@@ -10,11 +10,6 @@
   *
   */
 
-  // work from achievo dir. .
-  chdir("../");
-  include_once("atk.inc");
-  include_once("achievotools.inc");
-
   $today = date("Y-m-d");
   $year = substr($today,0,4);
   $month = substr($today,5,2);
@@ -135,7 +130,7 @@
       $cc = "Cc: ".$supervisormail."\r\n";
     }
     if ($to!="")
-    {
+    {      
       usermail($to,text("timeguard_mail_subject"),$body, $cc);
       echo "sent mail to $to";
       if ($cc!="") echo " and a cc to $cc";
@@ -148,7 +143,7 @@
         echo "would've sent mail to $user, but he doesn't have an email address\n";
       }
       else
-      {
+      {     
         usermail($cc,text("timeguard_mail_subject"),$body);
         echo "would've sent mail to $user, but he doesn't have an email address. Sending only to supervisor\n";
       }
