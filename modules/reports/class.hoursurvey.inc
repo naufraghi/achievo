@@ -358,7 +358,7 @@
           $field = new atkListAttribute("orderby[$i]",$arr_col);
           $direction =new atkListAttribute("orderdirection[$i]",array('down', 'up'), array('asc', 'desc'));
           $total = new atkBoolAttribute("subtotal[$i]",0);
-          $orderstr.=($i+1).". ".$field->edit($dummyrec)." ".$direction->edit($dummyrec)." ".$total->edit($dummyrec)."<br>";
+          $orderstr.=($i+1).". ".$field->edit($dummyrec)." ".$direction->edit($dummyrec)." ".$total->edit($dummyrec)." ".text('subtotal')."<br>";
         }        
 
         $g_layout->td($orderstr);
