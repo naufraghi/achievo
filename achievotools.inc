@@ -211,7 +211,7 @@
       if ($displayzero) return "00:00";
       return "&nbsp;";
     }
-    return floor($time/60).":".sprintf("%02d",($time%60));
+    return ($time<0?"-":"").floor(abs($time)/60).":".sprintf("%02d",(abs($time)%60));
   }
 
 
