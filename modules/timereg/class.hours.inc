@@ -437,9 +437,8 @@ class hours extends atkNode
       }
       
       $percentage = $balancenode->getPercentage($rec["workperiod"]["id"]);
-      $hours = ($rec["time"]["hours"]*60+$rec["time"]["minutes"])/60;      
-      //atk_var_dump($balance);
-      
+      $hours = ($rec["time"]/60);      
+           
       if ($mode == "add") $newbalance = ($balance["balance"] + (($percentage/100) * $hours));
       elseif ($mode == "edit")
       {
