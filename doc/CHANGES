@@ -9,6 +9,7 @@ Changes in Achievo 1.0.4
 + Sender field of Achievo mails can now be configured with 
   $config_mail_sender. [Ivo]
 + Added missing scheduler navigation links. (bug #247) [Sandy]
++ Added 'all users' option to the employee statistics. (bug #261) [Ivo]
 * Fixed bug in remark search in hoursurvey. [Ivo]
 * Fixed bug in display of locked weeks in employee weekreport. [Lineke]
 * Fixed bug in weeknumbers in the scheduler monthview. (bug #258) [Sandy]

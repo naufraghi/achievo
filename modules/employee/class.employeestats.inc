@@ -44,7 +44,7 @@
       {        
         // A selection was made with the dropdown.
         userelation("atkmanytoonerelation");
-        $empattr = new atkManyToOneRelation("employee_sel", "employee.employee", AF_OBLIGATORY);
+        $empattr = new atkManyToOneRelation("employee_sel", "employee.employee");
         $sel = $empattr->fetchValue($ATK_VARS);
         $this->m_employeeid = $sel["id"];        
       }
@@ -160,7 +160,7 @@
       $startdate = $this->m_viewstart;
       $enddate = $this->m_viewend;
       
-      $empattr = new atkManyToOneRelation("employee_sel", "employee.employee", AF_OBLIGATORY);
+      $empattr = new atkManyToOneRelation("employee_sel", "employee.employee");
       
       $dummyrec = array("viewstart"=>array("year"=>substr($startdate,0,4),
                                            "month"=>substr($startdate,5,2),
@@ -208,6 +208,8 @@
       }
       
       $mayviewdetail = $g_securityManager->allowed("reports.hoursurvey", "view_all");
+      
+      if ($detailparams["userid"]=="") $detailparams["userid"]="all"; // workaround, the hoursurvey will select current user if no user is passed.
       
       $res = $g_layout->data_top();
       $res.= $g_layout->tr_top();
