@@ -75,7 +75,7 @@ class hours extends atkNode
 
     $this->add(new atkProjectPhaseAttribute("phaseid",AF_OBLIGATORY|AF_JS_UPDATEACTIVITY));
     $this->add(new atkListAttribute("activityid",array("dummy","dummy","dummy","dummy","dummy"),array(0,0,0,0,0),AF_OBLIGATORY, 10));
-    $this->add(new atkTextAttribute("remark", 1, 0));
+    $this->add(new atkTextAttribute("remark", atkconfig("timereg_remark_lines", 1), 0));
     $this->add(new atkDurationAttribute("time",atkconfig("timereg_resolution", "15m"), '10h',AF_OBLIGATORY|AF_TOTAL));
     
     $relation = new atkManyToOneRelation("workperiod","timereg.workperiod", AF_OBLIGATORY|AF_HIDE_LIST);

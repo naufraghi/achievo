@@ -35,6 +35,8 @@ Changes in Achievo 1.1RC1
 * Updated the support menu with new links to Achievo.org. [Ivo]
 * Fixed sorting by relations. (bug #269) [Ivo]
 * Improvements to Oracle 8i support. (bug #244) [Joop]
++ Size of the remark field can now be configured with 
+  $config_timereg_remark_lines. (bug #192) [Ivo]
 * Fixed bug in example cron lines for cron documentation (cron/README). [Ivo]
 + Todo duedate is now colored when expired/nearly expired. (bug #262) [Ivo]
 * Fixed bugs #250 and #290. [Ivo]

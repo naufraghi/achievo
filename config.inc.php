@@ -13,14 +13,14 @@
   // The database to use. Default is MySQL. 
   // MySQL is currently the only officially supported database.
   // Experimental: If you want to use PostgreSQL, change this value to 
-  // "pgsql". For Oracle, use "oci8" or "oci9".
+  // "pgsql". For Oracle, use "oci8".
   $config_database = "mysql";
 
   // The database configuration. Specify the hostname of the database server,
   // the database to use and the user/password.
   //
   $config_databasehost = "localhost";
-  $config_databasename = "achievo_1_0";
+  $config_databasename = "achievo_1_1";
   $config_databaseuser = "demo";
   $config_databasepassword = "demo";
 
@@ -113,13 +113,19 @@
   $config_numberofrecentprojects = 10;
 
   // The ammount of time that a user can book on a day before it is
-  // considered overtime.
+  // considered overtime. (visualization only, true overtime is
+  // calculated based on employee contracts.)
   //
   $config_overtimethreshold = 480;
 
   // Default view in time registration. Can be "week" or "day"
   //
-  $config_timereg_defaultview = "day";    
+  $config_timereg_defaultview = "day";
+
+  // Number of lines of the 'remark' field for time entry. Defaults to a
+  // single line. (Regardless of this setting, the actual amount of text 
+  // that can be entered is unlimited.)
+  $config_timereg_remark_lines = 1;
 
   // Resolution for time registration. By default, time can be registered in
   // steps of 15 minutes. You can increase or decrease this.
@@ -156,7 +162,6 @@
   // it can be found as the second parameter.
   //
   // module("somemodule","../achievo_modules/somemodule/");
-
   
   // -------------------------------------------
   //            END OF CONFIGURATION
