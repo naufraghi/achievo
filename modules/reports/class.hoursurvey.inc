@@ -76,7 +76,9 @@
       $nameswitch = $g_sessionManager->pageVar("nameswitch");
       $roleid = $g_sessionManager->pageVar("roleid");
       $remark = $g_sessionManager->pageVar("remark");            
-      $aggregate = $g_sessionManager->pageVar("aggregate");            
+      $aggregate = $g_sessionManager->pageVar("aggregate"); 
+      $department_name = $g_sessionManager->pageVar("departmentid");  
+      $functionlevelswitch = $g_sessionManager->pageVar("functionlevelswitch");         
  
       /** $outputType gives control over the kind of output:
        * 0 standard (onscreen in compliance with theme, default)
@@ -217,8 +219,7 @@
         $g_layout->output('<form action="dispatch.php" method="get" name="entryform">');
         $g_layout->output(session_form());
 
-        $g_layout->output('<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">');
-        $g_layout->output('<input type="hidden" name="atkaction" value="report">');
+        $this->_addHiddenFields($g_layout);
         $g_layout->table_simple();
         $g_layout->output('<tr>');
         $g_layout->td('<b>'.text('sethoursfilter').'</b>', 'colspan="2"');
@@ -226,48 +227,58 @@
         $g_layout->td('<hr>'.text('searchbyprojectorphase').':','colspan="2"');
         $g_layout->output('</tr><tr>');
         $g_layout->td(text('project').':');
-        $projectatt = new atkProjectAttribute('projectid');
-
+        
         // we have to pass a 'dummy' record to the attributes to set their default value.
         $dummyrec = array("projectid"=>$projectid,
-                          "organizationid"=>array("id"=>$organizationid), // manytoonerelation needs subarray
-                          "phaseid"=>Array("phaseid"=>$phaseid), // is implemented as an array in projphaseattrib.
-                          "startdate"=>array("year"=>substr($startdate,0,4),
-                                             "month"=>substr($startdate,5,2),
-                                             "day"=>substr($startdate,8,2)),
-                          "enddate"=>array("year"=>substr($enddate,0,4),
-                                           "month"=>substr($enddate,5,2),
-                                          "day"=>substr($enddate,8,2)),
-                          "aggregate"=>$aggregate,
-                          "remark"=>$remark);
-                          
+        "organizationid"=>array("id"=>$organizationid), // manytoonerelation needs subarray
+        "phaseid"=>Array("phaseid"=>$phaseid), // is implemented as an array in projphaseattrib.
+        "startdate"=>array("year"=>substr($startdate,0,4),
+        "month"=>substr($startdate,5,2),
+        "day"=>substr($startdate,8,2)),
+        "enddate"=>array("year"=>substr($enddate,0,4),
+        "month"=>substr($enddate,5,2),
+        "day"=>substr($enddate,8,2)),
+        "aggregate"=>$aggregate,
+        "remark"=>$remark);
+
+        $projectatt = new atkProjectAttribute('projectid');
+
         $sortfieldcount = max(3, $columnConfig->countSortAttribs());
-                          
+
         for ($i=0; $i<$sortfieldcount; $i++)
         {
           $dummyrec["orderby[$i]"]=$columnConfig->getAttributeByOrder($i+1);
           $dummyrec["orderdirection[$i]"]=$columnConfig->getDirectionByOrder($i+1);
           $dummyrec["subtotal[$i]"]=($columnConfig->hasSubTotalByOrder($i+1)?1:0);
-        }                
+        }
 
         $g_layout->td($projectatt->edit($dummyrec));
-        $g_layout->output('</tr><tr>');
-        $g_layout->td(text('or'),'colspan="2"');
-        $g_layout->output('</tr><tr>');
+        $g_layout->output('</tr>');
+        $this->_addOr($g_layout);
+        $g_layout->output('<tr>');
         $g_layout->td(text('phase').':');
         $phaseatt = $hoursnode->m_attribList["phaseid"];
         $phaseatt->m_flags = $phaseatt->m_flags&~AF_JS_UPDATEACTIVITY;
         $phaseatt->m_nested = false;
+        $g_sessionManager->stackVar("reportnodetype","hoursurvey");
         $g_layout->td($phaseatt->edit($dummyrec));
-        $g_layout->output('</tr><tr>');
-        $g_layout->td(text('or'),'colspan="2"');
-        $g_layout->output('</tr><tr>');
-        
+        $g_layout->output('</tr>');
+        $this->_addOr($g_layout);
+        $g_layout->output('<tr>');
+
         $g_layout->td(text("organization").':');
         $organizationatt = new atkManyToOneRelation("organizationid", "organization.organization");
         $g_layout->td('<SELECT name="roleid">'.$this->get_roles($roleid).'</SELECT> '.
-                      $organizationatt->edit($dummyrec));
+        $organizationatt->edit($dummyrec));
+        $g_layout->output('</tr>');
+        $this->_addOr($g_layout);
+        $g_layout->output('<tr>');
+
+        $g_layout->td(text("department").':');
+        $departmentatt = new atkManyToOneRelation("departmentid","employee.department");
+        $g_layout->td('<SELECT name="departmentid">'.$this->get_departments($department_name).'</SELECT>');
         $g_layout->output('</tr><tr>');
+
         $g_layout->td('<hr>','colspan="2"');
         $g_layout->output('</tr><tr>');
         $g_layout->td(text('employee').':');
@@ -282,8 +293,17 @@
           $userid = $g_user["id"];
           $g_layout->td($g_user["name"].'<input type="hidden" name="userid" value="'.$g_user["id"].'">');
         }
+        $g_layout->output('</tr>');
+        $this->_addOr($g_layout);
+        $g_layout->output('<tr>');
+        
+        // selecting functionlevel:
+        $g_layout->td(text('functionlevel').':');
+        $g_layout->td('<SELECT name="functionlevelswitch">' . $this->get_functionlevels($functionlevelswitch).'</SELECT>');
+        
         $g_layout->output('</tr><tr>');
 
+        
         $g_layout->td('<hr>','colspan="2"');
         $g_layout->output('</tr><tr>');
         $g_layout->td(text('activity').': ');
@@ -437,7 +457,7 @@
             array_unshift($arr_col, "-");
           //  array_unshift($listcol, "");
           }
-         
+
           $field = new atkListAttribute("orderby[$i]",$arr_col);
           $direction =new atkListAttribute("orderdirection[$i]",array('column_asc', 'column_desc'), array('asc', 'desc'));
           $total = new atkBoolAttribute("subtotal[$i]",0);
@@ -464,7 +484,9 @@
       if(!empty($projectid)&&$projectid!="") $filter.=" AND A.projectid=".$projectid;
       if(!empty($remark)&&$remark!="") $filter.=" AND hours.remark LIKE '%$remark%'";
       //if(!empty($customerid)&&$customerid!="") $filter.= " AND B.customer=".$customerid;
-
+      if($department_name && $department_name != "all") $filter.=" AND userid.department='".escapeSQL($department_name)."'";
+      if($functionlevelswitch && $functionlevelswitch != "all") $filter.=" AND userid.functionlevel='$functionlevelswitch'";
+      
       // employee table is not yet added to the query. Force that by adding a manytoonerel,
       // so we display a users name.
       $hoursnode->add(new atkManyToOneRelation("userid", "employee.employee"));
@@ -490,8 +512,14 @@
       {
         if ($userid!="all") $filter.= " AND hours.userid ='$userid' ";
       }
-            
-      $data = $hoursnode->selectDb($filter,$columnConfig->getOrderByStatement(), "");
+      
+      $orderbystatement = array();
+      foreach($orderby as $key => $itsOrderby)
+      {
+        if ($itsOrderby && $itsOrderby != "-")
+          $orderbystatement[] = $itsOrderby . " " . $orderdirection[$key];
+      }
+      $data = $hoursnode->selectDb($filter,implode(",",$orderbystatement), "");
 
       if ($outputType=="0")
       {
@@ -520,7 +548,6 @@
         // specail RecordList can export to file
          $hoursnode->specialRecordList($data, "", '"', '";', "\r\n", "1", "", $suppress);
        }
-
     }
     
     function get_activities($act_id)
@@ -541,6 +568,24 @@
       }
       return $activity_code;
     }
+    
+    function get_departments($depname)
+    {
+      global $g_db;
+      
+      $sql = "SELECT name
+              FROM employee_department
+              ORDER BY name";
+      
+      $records = $g_db->getrows($sql);
+      $depcode = "<OPTION VALUE='all'>".text('alldepartments')."</OPTION>";
+      foreach ($records as $onedep)
+      {
+        $sel = $onedep['name'] == $depname ? " SELECTED" : "";
+        $depcode .= "<OPTION VALUE='".$onedep['name']."'$sel>".$onedep['name']."</OPTION>";
+      } 
+      return $depcode;
+    }
 
     function get_employees($user_id)
     {
@@ -553,11 +598,12 @@
              ";
 
       $records = $g_db->getrows($sql);
-      $employee_code='<OPTION VALUE="all">'.text("allusers");
+      if ($user_id == "new" || !$user_id || $user_id=="") $sel = " SELECTED";
+      $employee_code='<OPTION VALUE="all"'.$sel.'>'.text("allusers");
       for($i=0,$_i=count($records);$i<$_i;$i++)
       {
         if($user_id==$records[$i]["id"]) { $sel="SELECTED"; } else { $sel=""; }
-        $employee_code.='<OPTION VALUE="'.$records[$i]["id"].'" '.$sel.'>'.$records[$i]["lastname"].', '.$records[$i]["firstname"].'</OPTION>';
+        $employee_code.='<OPTION VALUE="'.addslashes($records[$i]["id"]).'" '.$sel.'>'.$records[$i]["lastname"].', '.$records[$i]["firstname"].'</OPTION>';
       }
       return $employee_code;
     }
@@ -578,6 +624,47 @@
         $role_code.='<OPTION VALUE="'.$records[$i]["id"].'" '.$sel.'>'.$records[$i]["name"].':</OPTION>';
       }
       return $role_code;
+    }
+    
+    function get_functionlevels($selected)
+    {
+      global $g_db;
+      $sql = "  SELECT DISTINCT functionlevel.id as id, functionlevel.name as name
+                FROM functionlevel
+                LEFT JOIN person ON (person.functionlevel = functionlevel.id)";
+      $records = $g_db->getrows($sql);
+      
+      $sel = !$selected || $selected == "all" ? " selected" : "";
+      $func_code = '<OPTION VALUE="all"'.$sel.'>'.text("allfunctionlevels").'</OPTION>';
+      foreach($records as $record)
+      {
+        $sel = $selected == $record['id'] ? " selected" : "";
+        $func_code .= '<OPTION VALUE="'.$record['id'].'"'.$sel.'>'.$record['name'].'</OPTION>';
+      }
+      return $func_code;
+    }
+    
+    /**
+     * adds a row with 'or' in it
+     * @param g_layout object the layout object we have to hook ourselves in to
+     * @return void
+     */
+    function _addOr(&$g_layout)
+    {
+      $g_layout->output('<tr>');
+      $g_layout->td(text('or'),'colspan="2"');
+      $g_layout->output('</tr>');
+    }
+    
+    /**
+     * adds all required hidden fields to the form
+     * @param g_layout object the layout object we have to hook ourselves in to
+     * @return void
+     */
+    function _addHiddenFields(&$g_layout)
+    {
+      $g_layout->output('<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">');
+      $g_layout->output('<input type="hidden" name="atkaction" value="report">'); 
     }
   }
 
