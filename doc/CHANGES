@@ -18,7 +18,6 @@ Changes in Achievo 1.1.1
   timeregistration to a project. [Boy]
 + Added banknumber and social security number to employee. [Boy]
 + Made hoursurvey display rates and costs per timeregistration. [Boy]
-* Minor PHP error bugfix to billing module. [Boy]
 
 Changes in Achievo 1.1.0
 ------------------------
