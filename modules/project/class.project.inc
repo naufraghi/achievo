@@ -97,12 +97,7 @@
                                     "month"=>date(m),
                                     "day"=>date(d)),
                    "status"=>"active");
-    }
-
-    function action_stats()
-    {
-      include_once moduleDir('project').'projectstats.inc';   // MILESTONES FUNCTIONS
-    }
+    }   
 
     function action_planning()
     {
@@ -153,11 +148,11 @@
       return $this->m_attribList["fixed_price"]->edit($rec)." ".atkconfig("currency_symbol");
     }
     
-    function graph_phasetime($params)
+    function graph_phasetime($params, $raw=false)
     {          
       global $g_db;
       $data = $g_db->getrows("SELECT 
-                                phase.name, SUM(time) as total
+                                phase.id, phase.name, SUM(time) as total
                               FROM 
                                 hours, phase
                               WHERE 
@@ -169,6 +164,8 @@
                                 phase.name
                               ORDER BY 
                                 phase.name");
+                            
+      if ($raw) return $data;
       
       // convert records to graph-compatible array.
       $dataset = array();
@@ -180,7 +177,7 @@
       return array("registeredtimeperphase"=>$dataset);
     }
     
-    function graph_emptime($params)
+    function graph_emptime($params, $raw=false)
     {      
       global $g_db;
       $data = $g_db->getrows("SELECT 
@@ -197,22 +194,27 @@
                                 person.id
                               ORDER BY 
                                 person.lastname");
+                            
+      if ($raw)
+      {
+        return $data;
+      }
                          
        // convert records to graph-compatible array.
       $dataset = array();                         
       for ($i=0, $_i=count($data); $i<$_i; $i++)
-      {        
-        $dataset[$data[$i]["firstname"]." ".$data[$i]["lastname"]] = $data[$i]["total"];        
+      {                    
+        $dataset[$data[$i]["firstname"]." ".$data[$i]["lastname"]] = $data[$i]["total"];              
       }
       
       return array("registeredtimeperemp"=>$dataset);
     }
     
-    function graph_activitytime($params)
+    function graph_activitytime($params, $raw=false)
     {            
       global $g_db;
       $data = $g_db->getrows("SELECT 
-                                activity.name, SUM(time) as total
+                                activity.id, activity.name, SUM(time) as total
                               FROM 
                                 hours, phase, activity
                               WHERE 
@@ -225,12 +227,15 @@
                                 activity.name
                               ORDER BY 
                                 activity.name");                                      
+      // In raw mode the data is sufficient.
+      if ($raw) return $data;
        
       // convert records to graph-compatible array.
       $dataset = array();       
+      
       for ($i=0, $_i=count($data); $i<$_i; $i++)
-      {        
-        $dataset[$data[$i]["name"]] = $data[$i]["total"];        
+      {                
+        $dataset[$data[$i]["name"]] = $data[$i]["total"];                
       }
       
       return array("registeredtimeperactivity"=>$dataset);
