@@ -4,8 +4,8 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
-Changes in Achievo 1.0.0
-------------------------
+Changes in Achievo 1.0RC3
+-------------------------
 * Fixed bug when setup.php was run with $config_auth_dropdown set to
   true. (bug #180) [Sandy, Kevin]
 * Fixed several themes. (bug #200) [Kevin, Sandy, Ivo]
@@ -15,6 +15,9 @@ Changes in Achievo 1.0.0
 * Fixed bugs #45, #92, #99, #172, #194, #210. [Ivo]
 * Fixed bug #207. [Sandy]
 * Fixed tiny bug in todo mailer. [Ivo]
+* Fixed conversion: Employees could be converted to contacts in some cases. [Ivo]
+* Updated German language file. [Nele]
+* Updated Brazilian-Portuguese language file. [Marcus]
 
 Changes in Achievo 1.0RC2
 -------------------------
