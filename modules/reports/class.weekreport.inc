@@ -49,9 +49,18 @@ class weekreport extends atkNode
     $this->add(new timeDisplayAttribute("fri"));
     $this->add(new timeDisplayAttribute("sat"));
     $this->add(new timeDisplayAttribute("sun"));
+    
+    global $g_db;
+    $periods = $g_db->getRows("SELECT * FROM workperiod ORDER BY percentage");
+    for($i=0;$i<count($periods);$i++)
+    {
+      $this->add(new timeDisplayAttribute($periods[$i]["name"], AF_TOTAL));
+    }
+    
     $this->add(new timeDisplayAttribute("total",AF_TOTAL));
     $this->add(new timeDisplayAttribute("contract",AF_TOTAL));
     $this->add(new timeDisplayAttribute("overtime",AF_TOTAL));
+    $this->add(new atkAttribute("balance"));
     $this->add(new atkAttribute("status"));
   }
 
@@ -90,15 +99,20 @@ class weekreport extends atkNode
     return $employee_code;
   }
 
+  function balance_display($rec)
+  {
+    $node = &getNode("timereg.overtime_balance");
+    return $node->getOvertimeLink($rec);
+  }
 
   function action_report()
 	{
-    global $g_layout, $g_securityManager, $g_user, $g_db;
-    $atkorderby = $_REQUEST["atkorderby"];
-    $userid = $_REQUEST["userid"];
-    $nameswitch = $_REQUEST["nameswitch"];
-    $showdetails = $_REQUEST["showdetails"];
-    $showstatus = $_REQUEST["showstatus"];
+    global $g_layout, $g_securityManager, $g_user, $g_db, $g_sessionManager;
+    $atkorderby = $g_sessionManager->pageVar("atkorderby");
+    $userid = $g_sessionManager->pageVar("userid");
+    $nameswitch = $g_sessionManager->pageVar("nameswitch");
+    $showdetails = $g_sessionManager->pageVar("showdetails");
+    $showstatus = $g_sessionManager->pageVar("showstatus");
 
     /** $outputType gives control over the kind of output:
     *        0 standard(onscreen in compliance with theme, default)
@@ -106,17 +120,15 @@ class weekreport extends atkNode
     *             [was $printable]
     *        2 export ( to a file on local computer ex. achievo.csv)
     */
-    $outputType = $_REQUEST["outputType"];
+    $outputType = $g_sessionManager->pageVar("outputType");
     if (!isset($outputType)||$outputType=="") $outputType=0;
 
     if (!isset($atkorderby)||$atkorderby=="") $atkorderby = "week";
 
     $view_all = $g_securityManager->allowed('reports.weekreport','view_all');
 
-    $startdate = $this->m_postvars["startdate"];
-    $enddate = $this->m_postvars["enddate"];
-
-    $col = $this->m_postvars["col"];
+    $startdate = $g_sessionManager->pageVar("startdate");
+    $enddate = $g_sessionManager->pageVar("enddate");    
 
     if (is_array($startdate))
     {
@@ -331,7 +343,10 @@ class weekreport extends atkNode
           }
         }
       }*/
-      for ($j=$startstamp;$j<=$endstamp;$j+=ONEWEEK)
+      
+      $end = endOfWeek(date("Y-m-d", $endstamp));
+      $newendstamp = mktime(0,0,0,substr($end,5,2),substr($end,8,2)+1,substr($end,0,4));
+      for ($j=$startstamp;$j<=$newendstamp;$j+=ONEWEEK)
       {
         $weekstamp = weekstamp($j);
         $start_week = date("Y-m-d", mktime(12,0,0,substr($weekdata[$weekstamp]["startdate"],3,2),
@@ -348,9 +363,11 @@ class weekreport extends atkNode
         }
       }
 
+      global $g_db;
+      $periods = $g_db->getRows("SELECT * FROM workperiod");
       // collect data..
       $query = "SELECT
-                  sum(time) as time, activitydate, hours.userid, person.lastname, person.firstname
+                  sum(time) as time, activitydate, hours.userid, person.lastname, person.firstname, workperiod
                 FROM
                   hours, person
                 WHERE ";
@@ -367,24 +384,25 @@ class weekreport extends atkNode
                   AND hours.userid = person.id
                 GROUP BY
                   hours.userid, activitydate";
-
+          
       $raw = $g_db->getrows($query);
-
+          
       $strdow = array("sun","mon","tue","wed","thu","fri","sat");
-
+          
       for ($i=0;$i<count($raw);$i++)
       {
         $stamp = mktime(12,0,0,substr($raw[$i]["activitydate"],5,2),
-                              substr($raw[$i]["activitydate"],8,2),
-                              substr($raw[$i]["activitydate"],0,4));
+        substr($raw[$i]["activitydate"],8,2),
+        substr($raw[$i]["activitydate"],0,4));
         $dow = strftime("%w",$stamp);
         $key = weekstamp($stamp);
         $weekdata[$key]["week"] = $key;
         $uid = $raw[$i]["userid"];
         $weekdata[$key]["userdata"][$uid][$strdow[$dow]] = $raw[$i]["time"];
-        $weekdata[$key]["userdata"][$uid]["total"] = $weekdata[$key]["userdata"][$uid]["total"]+$raw[$i]["time"];
+        $weekdata[$key]["userdata"][$uid][$raw[$i]["workperiod"]] += $raw[$i]["time"];
+        $weekdata[$key]["userdata"][$uid]["total"] += $raw[$i]["time"];
         $weekdata[$key]["userdata"][$uid]["name"] = $raw[$i]["lastname"].", ".$raw[$i]["firstname"];
-
+            
         // We need to display the first date and last date of each week.
         // Since we are looping days now, it is easiest if we calculate the
         // beginning of a week here.
@@ -434,6 +452,7 @@ class weekreport extends atkNode
       // by recordlist functions.
       // we also need to calculate some numbers.
       $rldata = array();
+      $balancenode = &getNode("timereg.overtime_balance");
       foreach ($weekdata as $weeknr => $data)
       {
         $record = array();
@@ -441,14 +460,24 @@ class weekreport extends atkNode
         $record["enddate"] = $data["enddate"];
         $record["week"] = $data["week"];
         $record["status"] = $data["status"];
+        $record["balance"] = $balancenode->getBalance(date("Y-m-d", mktime(0,0,0,substr($data["enddate"],3,2),substr($data["enddate"],0,2),substr($data["enddate"],6,4))), $userid);
+        $record["balance"]["outputtype"] = $outputType;
         if (is_array($data["userdata"]))
         {
           foreach($data["userdata"] as $user => $userdata)
           {
             $record["userid"] = $userdata["name"];
+            $newtotal = 0;
+            for($i=0;$i<count($periods);$i++)
+            {
+              $record[$periods[$i]["name"]] = $userdata[$periods[$i]["id"]];
+              $newtotal += ($periods[$i]["percentage"]/100) * $userdata[$periods[$i]["id"]];
+            }
+            $newtotal += $userdata[0];
+            if ($newtotal == 0) $newtotal = $userdata["total"];
             $record["total"] = $userdata["total"];
             $record["contract"] = $userdata["contract"];
-            $record["overtime"] = $userdata["total"]-$userdata["contract"];
+            $record["overtime"] = $newtotal-$userdata["contract"];
 
             if ($userdata["status"]!="")
             {
@@ -527,7 +556,7 @@ class weekreport extends atkNode
       }
       else if ($outputType=="2")
       {
-        // specail RecordList can export to file
+        // special RecordList can export to file
         $this->specialRecordList($rldata, "", '"', '";', "\r\n", "1", "",$suppress);
       }
 

@@ -7,6 +7,7 @@ useattrib("atkdummyattribute");
 useattrib("atkpasswordattribute");
 useattrib("atkdateattribute");
 include_once (moduleDir("person")."class.person.inc");
+include_once (moduleDir("utils")."class.dateutil.inc");
 
 class useridAttribute extends atkAttribute
 {
@@ -42,6 +43,7 @@ class employee extends person
 
     $this->addFilter("person.role='employee'");
     $this->add(new atkDateAttribute("birthdate","F d Y","d F Y", 0, date("Ymd"), AF_HIDE_LIST));
+    $this->add(new atkManyToOneRelation("level", "employee.functionlevel",AF_HIDE_ADD|AF_HIDE_LIST));
 
     $this->add(new atkManyToOneRelation("entity", "employee.profile",AF_RELATION_AUTOLINK|AF_HIDE_ADD));
 
@@ -51,13 +53,10 @@ class employee extends person
 
     $this->add($preFilter);
     // If we are in employee administration mode, we show all users. Otherwise, we only show active users.
-    if ($ATK_VARS["atknodetype"]=="employee.employee"&& in_array($ATK_VARS["atkaction"],array("admin","add","update","edit")))
+    
+    $this->add(new atkListAttribute("status", array("active","nonactive"), array(), AF_HIDE_LIST|AF_HIDE_ADD|AF_FORCE_LOAD));
+    if ($ATK_VARS["atknodetype"]!="employee.employee"|| !in_array($ATK_VARS["atkaction"],array("admin","add","update","edit")))
     {
-      $this->add(new atkListAttribute("status", array("active","nonactive"), array(), AF_HIDE_ADD));
-    }
-    else
-    {
-      $this->add(new atkListAttribute("status", array("active","nonactive"), array(), AF_HIDE_LIST|AF_HIDE_ADD));
       $this->addFilter("person.status","active");
     }
     $this->add(new atkOneToManyRelation("contract","employee.usercontracts","userid",AF_HIDE_LIST|AF_HIDE_ADD));
@@ -69,9 +68,11 @@ class employee extends person
       $this->add(new atkDummyAttribute("passwordexplanation", text("password_leaveblankifunchanged"), AF_HIDE_ADD|AF_HIDE_LIST|AF_HIDE_SEARCH|AF_HIDE_VIEW));
       $this->add(new atkPasswordAttribute("password", false, AF_HIDE_LIST|AF_PASSWORD_NOVALIDATE, 40));
     }
-    $this->add(new atkAttribute("role", AF_OBLIGATORY|AF_READONLY|AF_HIDE, 15)); // discriminator.
+    $this->add(new atkAttribute("role", AF_OBLIGATORY|AF_READONLY|AF_HIDE, 15)); // discriminator.    
 
     $this->m_securityMap["deactivate"] = "edit"; // If you may edit, you may also deactivate.
+    
+    $this->setOrder("lastname");
   }
 
   function initial_values()
@@ -82,7 +83,7 @@ class employee extends person
   }
 
   /**
-   * Are we in 'active' emps or 'all' emps mode?
+   * Are we in 'active' emps or 'archive' mode?
    */
   function getView()
   {
@@ -102,6 +103,10 @@ class employee extends person
     {
       $this->addFilter("person.status","active");
     }
+    else
+    {
+      $this->addFilter("person.status", "nonactive");
+    }
     return parent::action_admin();
   }
 
@@ -111,9 +116,13 @@ class employee extends person
 
     if ($view=="active")
     {
-      return text("inactiveemployeesarehidden", $this->m_type, $this->m_module).' '.
-             href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
-                  '&view=all', text('showallemployees', $this->m_type, $this->m_module));
+      return text("onlyactiverecordsareshown")." ".href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
+                  '&view=nonactive', text('clicktoviewarchive', $this->m_type, $this->m_module))."<br>";
+    }
+    else
+    {
+      return text("youareinthearchive")." ".href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
+                  '&view=active', text('clicktoviewactiverecords', $this->m_type, $this->m_module))."<br>";
     }
   }
 
@@ -246,6 +255,27 @@ class employee extends person
 
       return array("registeredtimeperweekday"=>$dataset);
     }
+    
+    function rowColor($record)
+    {            
+      $contractnode = &getNode("employee.usercontracts");
+      $contract = $contractnode->getMostRecentContract($record["id"]);                
+      
+      if ($record["status"]=="active")
+      {        
+        $enddate = dateutil::arr2str($contract["enddate"]);                      
+        
+        if (!count($contract)||($enddate!=""&&$enddate<date("Ymd")))
+        {
+          return COLOR_ERROR;
+        }
+        else if ($enddate!=""&&dateutil::date_diff(date("Ymd"), $enddate)<14)
+        {
+          return COLOR_WARNING;
+        }
+      }
+    }
+        
 
 }
 

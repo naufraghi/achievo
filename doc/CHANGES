@@ -4,20 +4,43 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
-Changes in Achievo 1.0.5
+Changes in Achievo 1.1.0
 ------------------------
-+ Added generic subtotalling and aggregation features to hoursurvey. [Ivo]
-+ Added multisort capability to ATK backend, and to hoursurvey and
++ Added configurable overtime categories ('workperiods'). [Lineke]
++ Added overtime balance tracking to timereg and weekreport. [Lineke]
++ Added privilege to register time for other users. [Lineke]
++ Added the ability to limit time registration to project members only. [Ivo]
++ Added quick addition (by keyword search) of team members to project. [Ivo]
++ Added generic subtotalling and aggregation features to time survey. [Ivo]
++ Added easier date navigation to the time survey. [Lineke]
++ Added configurable function levels to employee admin. [Lineke]
++ The employee admin screen now visually indicates employees whose contract
+  is expired (red) or about to expire (orange). [Ivo]
++ Added multisort capability to ATK backend, and to time survey and
   project admin screens. [Ivo]
++ Added archive feature to project and employee screens. [Ivo]
++ Added archive feature to organization contract screen. [ChristianL]
 + Added weekday stats to project- and employee stats. [Ivo]
++ Multiple projects can now be covered by an organization contract. [Lineke]
++ Added 'number' identifier to organization contracts. [ChristianL]
++ Added 'title' field to contact persons. [ChristianL]
 * Updated the support menu with new links to Achievo.org. [Ivo]
+* Fixed sorting by relations. (bug #269) [Ivo]
 * Fixed bug in example cron lines for cron documentation (cron/README). [Ivo]
++ Todo duedate is now colored when expired/nearly expired. (bug #262). [Ivo]
+* Fixed bug #250. [Ivo]
+* Added missing string identifiers to all language files. (bug #277) [Ivo]
 + Added Portuguese language file. [Pedro]
 * Updated German language file. (bug #279) [Christian]
 * Updated Brazilian Portuguese language file. [Wanderlei]
 * Updated Spanish language file. [Pavel]
 * Updated Swedish language file. [Thomas]
 * Updated Russian language file. [Maryia]
+* Updated Norwegian language file. [Bjørn]
+* Updated Danish language file. [Morten]
+* Updated Italian language file. [Andrea]
+* Fixed bug #285. [Sandy]
++ Added spendhours attribute for phases [Sandy]
 
 Changes in Achievo 1.0.4
 ------------------------
@@ -53,7 +76,7 @@ Changes in Achievo 1.0.3
 + Roles that are not in use can now be deleted. (bug #236) [Ivo]
 + The employee weekreport now displays negative overtime (shortages). [Lineke]
 * Modified employee add screen so contracts will not be overlooked. [Ivo]
-* Employee contracts' enddate is now optional. [Ivo]
+* Employee contracts' enddate is now optional. (bug #231) [Ivo]
 + Added support for cumulative usercontracts. [Lineke]
 + Added birthdate field for employees. [Lineke]
 * Setup.php now accepts include_paths with only ".". (bug #237) [Mike]
@@ -79,7 +102,7 @@ Changes in Achievo 1.0.2
 
 Changes in Achievo 1.0.1
 ------------------------
-+ Separated mail and visit address for organizations. (bug #230) [Martin, Ivo]
++ Separated mail and visit address for organizations. (bug #230) [MartinAc,Ivo]
 * Employee supervisor information is now properly converted. (bug #234) [Ivo]
 * Fixed bug when adding individual week locks. [Lineke]
 * Updated Spanish language file. [Daniel]
@@ -88,7 +111,7 @@ Changes in Achievo 1.0.1
 Changes in Achievo 1.0.0
 -------------------------
 * Fixed bug #213. [Ivo]
-* Fixed a few untranslated strings. (bug #224) [Martin, Ivo]
+* Fixed a few untranslated strings. (bug #224) [MartinAc, Ivo]
 * Updated Danish language file. [Junaid]
 
 Changes in Achievo 1.0RC3

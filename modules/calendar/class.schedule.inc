@@ -431,15 +431,26 @@
     {
       // insert the owner as first attendee.
       global $g_db;
-      $g_db->query("INSERT INTO schedule_attendee (schedule_id, person_id) VALUES (".$rec["id"].", ".$rec["owner"]["id"].")");
+      $this->_addAttendeeRecord($rec["id"], $rec["owner"]["id"]);      
     }
 
     function storeAttendees($rec, $attendees)
+    {      
+      for ($i=0, $_i=count($attendees); $i<$_i; $i++)
+      {        
+        $this->_addAttendeeRecord($rec["id"], $attendees[$i]["id"]);
+      }
+    }
+    
+    function _addAttendeeRecord($schedule_id, $person_id)
     {
       global $g_db;
-      for ($i=0, $_i=count($attendees); $i<$_i; $i++)
+      
+      // attendee may already exist.
+      $recs = $g_db->getrows("SELECT count(*) AS cnt FROM schedule_attendee WHERE schedule_id = $schedule_id AND person_id = $person_id");
+      if (!count($recs)||$recs[0]["cnt"]==0)
       {
-        $g_db->query("INSERT INTO schedule_attendee (schedule_id, person_id) VALUES ('".$rec["id"]."', '".$attendees[$i]["id"]."')");
+        $g_db->query("INSERT INTO schedule_attendee (schedule_id, person_id) VALUES ($schedule_id, $person_id)");
       }
     }
   }

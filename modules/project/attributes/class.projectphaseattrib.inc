@@ -2,8 +2,12 @@
 
 define("AF_JS_UPDATEACTIVITY", AF_SPECIFIC_1);
 
+include_once(moduleDir("project")."class.project.inc"); // used for some defines
+
 class atkProjectPhaseAttribute extends atkAttribute
 {
+  var $m_nested = true; // nested in a form?
+    
   /**
    * Constructor
    * @param $name Name of the attribute
@@ -28,6 +32,8 @@ class atkProjectPhaseAttribute extends atkAttribute
    */
   function edit($record="")
   {        
+    global $ATK_VARS;
+    
     $selectedphaseid = $_REQUEST["selectedphaseid"];
     $atkaction = $_REQUEST["atkaction"];
     
@@ -108,8 +114,8 @@ class atkProjectPhaseAttribute extends atkAttribute
     }
     
     $result .= '</select>&nbsp';
-    
-    $saveform = true; // keep form in session..
+        
+    /*
     if ($atkaction=="edit")
     {
       $targeturl_houradmin = dispatch_url("timereg.hours", "edit", array("atkselector" => 'hours.id='.$record['id'], "selectedphaseid" => "[id]", "atklevel"=>atkLevel()));      
@@ -123,9 +129,11 @@ class atkProjectPhaseAttribute extends atkAttribute
     {
       $targeturl_houradmin = dispatch_url("timereg.hours", "admin", array("selectedphaseid" => "[id]", "atklevel"=>atkLevel()));
     }
+    */
+    $return_url = dispatch_url($ATK_VARS["atknodetype"], $ATK_VARS["atkaction"], array("selectedphaseid"=>"[id]", "atklevel"=>atkLevel()));
     
-    $targeturl_phase = dispatch_url("project.phase", "select", array("atkfilter" => "projectid=[id]", "atktarget" => atkurlencode($targeturl_houradmin)));
-    $result .= href(dispatch_url("project.project", "select", array("atktarget" => atkurlencode($targeturl_phase))), text("searchallprojectsphases"), SESSION_NESTED,$saveform);
+    $targeturl_phase = dispatch_url("project.phase", "select", array("atkfilter" => "projectid=[id]", "atktarget" => atkurlencode($return_url)));
+    $result .= href(dispatch_url("project.projectselector", "select", array("atktarget" => atkurlencode($targeturl_phase))), text("searchallprojectsphases"), SESSION_NESTED,$this->m_nested);
 
     // dirty trick: the dummy attribute which starts the javascript for the 
     // correct activities must be notified of the currentphase.
@@ -182,13 +190,27 @@ class atkProjectPhaseAttribute extends atkAttribute
 
     
   } 
+  
+  function getOrderByStatement()
+  {
+    return "B.name, A.name";
+  }
         
   function getRecentPhases()   
   {
-    global $g_db, $g_user;
+    global $g_db, $g_securityManager;
+    
+    $user = getUser();
      
-    $query = "SELECT phase.id, phase.name, project.name as projectname FROM project,phase,hours ";
-    $query.= "WHERE phase.id=hours.phaseid AND userid='".$g_user["id"]."' AND phase.status='active' AND project.status='active' AND phase.projectid=project.id ";
+    $query = "SELECT DISTINCT phase.id, phase.name, project.name as projectname FROM project,phase,hours,project_person ";
+    $query.= "WHERE phase.id=hours.phaseid AND userid='".$user["id"]."' AND phase.status='active' AND project.status='active' AND phase.projectid=project.id ";
+    $query.= "AND project_person.projectid = project.id ";
+    
+    if (!$g_securityManager->allowed("timereg.hours", "any_project"))
+    {
+      $query.= "AND (project_person.personid = ".$user["id"]." OR project.timereg_limit = ".PRJ_TIMEREG_ALL_USERS.")";
+    }
+    
     // 100 should be enough to get 5 unique recent projects.
     $query.= "ORDER BY hours.entrydate DESC";
     
@@ -263,7 +285,7 @@ class atkProjectPhaseAttribute extends atkAttribute
           $descrip.=" (".$phaseinfoarray[$j]['description'].")";
         }
         $result.= 'activityarray['.$i.']['.$j.'] = new entry('.$phaseinfoarray[$j]['id'];
-        $result.= ',"'.$descrip."\");\n";
+        $result.= ',"'.addslashes($descrip)."\");\n";
       }
       $result.= 'activityarray['.$i.'].count = ' .count($phaseinfoarray).";\n";
       $i++;

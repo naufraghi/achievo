@@ -1,5 +1,5 @@
 <?php
-  $achievo_version = "1.0.5";
+  $achievo_version = "1.1.0";
   $achievo_state   = "stable";
 
 ?>

@@ -23,5 +23,9 @@
   // Uniform textbox sizes
   define("TEXT_SMALL", 3);
   define("TEXT_LARGE", 10);  
+  
+  // some uniform colors
+  define("COLOR_WARNING", "#FFAD63");
+  define("COLOR_ERROR", "#FF0000");
    
 ?>

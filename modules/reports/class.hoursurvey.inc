@@ -3,6 +3,7 @@
   userelation("atkmanytoonerelation");  
   useattrib("atkdurationattribute");
   useattrib("atkboolattribute");
+  useattrib("atklistattribute");
   
   // special case of the duration attrib, that uses a sum(), to facilitate aggregations
   class sumAttribute extends atkDurationAttribute 
@@ -33,6 +34,21 @@
     {
       $rec["time"] = $rec['SUM(hours.time)'];
       return parent::db2value($rec);
+    }
+  }
+  
+  // hack: the activity attribute is a hack, and not a relation. It is populated by the project phase attrib.
+  // Because of this, it is not very well sortable.
+  class sortableActivity extends atkListAttribute
+  {
+    function sortableActivity()
+    {
+      $this->atkListAttribute("activityid",array("dummy","dummy","dummy","dummy","dummy"),array(0,0,0,0,0),AF_OBLIGATORY, 10);
+    }
+    
+    function getOrderByStatement()
+    {
+      return "C.name";
     }
   }
   
@@ -84,6 +100,10 @@
 
       $hoursnode = &getNode("timereg.hours");
       $hoursnode->m_postvars = $this->m_postvars; // Share postvars.
+      
+      // Hack: make sure the activities, which are populated by the project/phase column, are properly loaded.      
+      $hoursnode->add(new sortableActivity());
+      
       
       $columnConfig = &$hoursnode->getColumnConfig();
       
@@ -165,7 +185,7 @@
         // determine group by fields.
         $groupfields = $columnConfig->getOrderFields();
         
-        $hoursnode->add(new sumAttribute("time", $groupfields));
+        $hoursnode->add(new sumAttribute("time", $groupfields));        
         
         $suppress = array();
         
@@ -187,9 +207,9 @@
       //
       // TODO FIXME: AF_HIDE_LIST, AF_HIDE_EDIT etc are not implemented cleanly.
       // workarounds like these should not be necessary.
-      $hoursnode->m_attribList["activitydate"]->m_flags = ($hoursnode->m_attribList["activitydate"]->m_flags&(~AF_HIDE_LIST));
+      $hoursnode->m_attribList["activitydate"]->m_flags = ($hoursnode->m_attribList["activitydate"]->m_flags&(~AF_HIDE_LIST));            
 
-     if ($outputType==0)
+      if ($outputType==0)
       {
         $g_layout->initGUI();
         $g_layout->ui_top(text('parameters', $this->m_type, $this->m_module));
@@ -228,9 +248,7 @@
           $dummyrec["orderby[$i]"]=$columnConfig->getAttributeByOrder($i+1);
           $dummyrec["orderdirection[$i]"]=$columnConfig->getDirectionByOrder($i+1);
           $dummyrec["subtotal[$i]"]=($columnConfig->hasSubTotalByOrder($i+1)?1:0);
-        }
-        
-        //atk_var_dump($dummyrec, 'dummyrec');
+        }                
 
         $g_layout->td($projectatt->edit($dummyrec));
         $g_layout->output('</tr><tr>');
@@ -239,11 +257,12 @@
         $g_layout->td(text('phase').':');
         $phaseatt = $hoursnode->m_attribList["phaseid"];
         $phaseatt->m_flags = $phaseatt->m_flags&~AF_JS_UPDATEACTIVITY;
+        $phaseatt->m_nested = false;
         $g_layout->td($phaseatt->edit($dummyrec));
         $g_layout->output('</tr><tr>');
         $g_layout->td(text('or'),'colspan="2"');
         $g_layout->output('</tr><tr>');
-        //$g_layout->td(text('customer').':');
+        
         $g_layout->td(text("organization").':');
         $organizationatt = new atkManyToOneRelation("organizationid", "organization.organization");
         $g_layout->td('<SELECT name="roleid">'.$this->get_roles($roleid).'</SELECT> '.
@@ -278,10 +297,74 @@
         $startdateatt = new atkDateAttribute("startdate","F d Y","d F Y", 0, date("Ymd"),AF_OBLIGATORY);
         $enddateatt = new atkDateAttribute("enddate","F d Y","d F Y", 0, date("Ymd"),AF_OBLIGATORY);
 
-        $g_layout->td($startdateatt->edit($dummyrec).' &nbsp;'.
+        $g_layout->td('<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td>'.$startdateatt->edit($dummyrec).'</td><td class="table"> &nbsp;'.
                         text("until").
-                        '&nbsp; '.$enddateatt->edit($dummyrec));
+                        '&nbsp; </td><td align="right">'.$enddateatt->edit($dummyrec).'</td></tr></table>');
 
+        $g_layout->output('</tr><tr>');
+        $g_layout->register_script(atkconfig("atkroot")."javascript/timereg.js");
+        $g_layout->td(text("lookbackperiod").': ');
+        $output = '<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="33%">';
+        $output .= '<select name="startperiod" onchange="setStartEndDates(\'enddate\', \'startperiod\', '.date("Ymd").');">
+                        <option value="0" selected>---</option> 
+                        <option value="1">1 '.strtolower(text("week")).'</option> 
+                        <option value="2">2 '.strtolower(text("weeks")).'</option>
+                        <option value="3">3 '.strtolower(text("weeks")).'</option>
+                        <option value="4">4 '.strtolower(text("weeks")).'</option>
+                        <option value="5">1 '.strtolower(text("month")).'</option>
+                        <option value="6">2 '.strtolower(text("months")).'</option>
+                        <option value="7">3 '.strtolower(text("months")).'</option>
+                        <option value="8">6 '.strtolower(text("months")).'</option>
+                       </select></td>';
+        /*$output .= '<td width="34%" align="center"><select name="defaultperiod" onchange="setPeriod();">
+                    <option value="0" selected>---</option>';
+        // calculate trimesters of this year
+        // substract 1 of the current month number because e.g. if current month is march the trimester is not yet complete
+        $trimesters = floor((date("n")-1)/3);
+        if ($trimesters > 0)
+        {
+          for ($i=1;$i<=$trimesters;$i++)
+          {
+            $output .= '<option value="tri'.$i.date("Y").'">'.text($i).' '.text("trimester").' '.date("Y").'</option>';
+          }
+        }  
+        // trimesters of last year
+        for ($i=4;$i>=1;$i--)
+        {
+          $output .= '<option value="tri'.$i.(date("Y")-1).'">'.text($i).' '.text("trimester").' '.(date("Y")-1).'</option>';
+        }
+        // half years
+        $half = floor((date("n")-1)/6);
+        if ($half > 0)
+        {
+          for ($i=1;$i<=$half;$i++)
+          {
+            $output .= '<option value="half'.$i.date("Y").'">'.text("rank_".$i).' '.text("semester").' '.date("Y").'</option>';
+          }
+        }
+        // half years of last year
+        for ($i=2;$i>=1;$i--)
+        {
+          $output .= '<option value="half'.$i.(date("Y")-1).'">'.text($i).' '.text("semester").' '.(date("Y")-1).'</option>';
+        }
+        // years  
+        $output .= '<option value="year'.date("Y").'">'.text("full").' '.date("Y").'</option>';
+        $output .= '<option value="year'.(date("Y")-1).'">'.text("full").' '.(date("Y")-1).'</option>';
+        $output .= '</select></td>';*/
+        $output .= '<td width="34%" align="center">&nbsp;</td>';
+        $output .= '<td width="33%" align="right"><select name="endperiod" onchange="setStartEndDates(\'startdate\', \'endperiod\', '.date("Ymd").');">
+                        <option value="0" selected>---</option> 
+                        <option value="1">1 '.strtolower(text("week")).'</option> 
+                        <option value="2">2 '.strtolower(text("weeks")).'</option>
+                        <option value="3">3 '.strtolower(text("weeks")).'</option>
+                        <option value="4">4 '.strtolower(text("weeks")).'</option>
+                        <option value="5">1 '.strtolower(text("month")).'</option>
+                        <option value="6">2 '.strtolower(text("months")).'</option>
+                        <option value="7">3 '.strtolower(text("months")).'</option>
+                        <option value="8">6 '.strtolower(text("months")).'</option>
+                       </select></td></tr></table>';
+        
+        $g_layout->td($output);
         $g_layout->output('</tr><tr>');
         $g_layout->td('<hr>','colspan="2"');
         $g_layout->output('</tr><tr>');                
@@ -317,7 +400,7 @@
 
         $g_layout->output('</tr><tr>');        
 
-        $g_layout->td(text("report_output_type"));
+        $g_layout->td(text("report_output_type").": ");
         $g_layout->td('<select name="outputType">
                          <option VALUE="0" selected>'.text("report_output_standard").'
                          <option value="1">'.text("report_output_printable").'
@@ -356,7 +439,7 @@
           }
          
           $field = new atkListAttribute("orderby[$i]",$arr_col);
-          $direction =new atkListAttribute("orderdirection[$i]",array('down', 'up'), array('asc', 'desc'));
+          $direction =new atkListAttribute("orderdirection[$i]",array('column_asc', 'column_desc'), array('asc', 'desc'));
           $total = new atkBoolAttribute("subtotal[$i]",0);
           $orderstr.=($i+1).". ".$field->edit($dummyrec)." ".$direction->edit($dummyrec)." ".$total->edit($dummyrec)." ".text('subtotal')."<br>";
         }        
@@ -365,7 +448,7 @@
         
         $g_layout->output('</tr><tr>');
         
-        $g_layout->td(text("aggregate"));
+        $g_layout->td(text("aggregate").": ");
         
         $boolattrib = new atkListAttribute("aggregate", array("do_not_aggregate", "aggregate_by_order"), array(0,1), AF_OBLIGATORY);
         $g_layout->td($boolattrib->edit($dummyrec));
@@ -407,7 +490,7 @@
       {
         if ($userid!="all") $filter.= " AND hours.userid ='$userid' ";
       }
-
+            
       $data = $hoursnode->selectDb($filter,$columnConfig->getOrderByStatement(), "");
 
       if ($outputType=="0")

@@ -361,7 +361,7 @@ $queryphase->addField('id', ' ', 'phase', 'phase_');
 $queryphase->addField('name', ' ', 'project', 'project_');
 $queryphase->addField('name', ' ', 'phase', 'phase_');
 $queryphase->addField('max_phasetime', ' ', 'phase', 'phase_');
-$queryphase->addField('max_hours', ' ', 'phase', 'phase_');
+$queryphase->addField('current_planning', ' ', 'phase', 'phase_');
 $queryphase->addField('startdate', ' ', 'project', 'project_');
 $queryphase->addCondition("project.id='".$projectid."'");
 $querystringphase = $queryphase->buildSelect(TRUE);
@@ -523,7 +523,7 @@ $querybooked->addField('id', ' ', 'phase', 'phase_');
 $querybooked->addField('name', ' ', 'phase', 'phase_');
 $querybooked->addField('SUM(hours.time) AS hours');
 $querybooked->addField('max_phasetime', ' ', 'phase', 'phase_');
-$querybooked->addField('max_hours', ' ', 'phase', 'phase_');
+$querybooked->addField('current_planning', ' ', 'phase', 'phase_');
 $querybooked->addCondition("phase.projectid='".$projectid."'");
 
 $querybooked->addGroupBy("phase.id");

@@ -87,6 +87,16 @@ class usercontracts extends atkNode
     // call the regular edit method now.
     return $this->m_attribList["uc_hours"]->edit($record, $prefix, $mode);
   }
+  
+  function getMostRecentContract($userid)
+  {
+    if ($userid!="")
+    {
+      $recs = $this->selectDb("userid=".$userid, "enddate desc", 1, "", array("startdate", "enddate", "uc_hours"));
+      if (count($recs)) return $recs[0];
+    }
+    return array();
+  }
 
 }
 

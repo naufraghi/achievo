@@ -24,22 +24,25 @@ class hours extends atkNode
   var $m_lock = "";
   var $m_viewdate = "";
   var $m_weekview = "";  
+  var $m_user = "";
   var $m_insertmode = ""; // can be set to 'day' or 'multi'  
 
   function hours()
   {
-    global $g_sessionManager,$ATK_VARS;
+    global $g_sessionManager,$ATK_VARS,$g_user;
 
     // weekview and viewdate are variables that we need to remember..
     $this->m_weekview = $g_sessionManager->pageVar("weekview");
     $this->m_viewdate = $g_sessionManager->pageVar("viewdate");
+    $this->m_user = $g_sessionManager->pageVar("viewuser");
     if (is_array($this->m_viewdate)) // if set by the date jumper, viewdate is an array.
     {            
       $this->m_viewdate = sprintf("%04d-%02d-%02d", $this->m_viewdate["year"], $this->m_viewdate["month"],$this->m_viewdate["day"]);
     }
     if ($this->m_viewdate=="") $this->m_viewdate = strftime("%Y-%m-%d");
+    if ($this->m_user == "") $this->m_user = $g_user["id"];
    
-    $flags=NF_NO_VIEW;
+    $flags=NF_NO_VIEW|NF_TRACK_CHANGES;
 
     $this->atkNode("hours",$flags|NF_MRA); // node() constructor is *not* called automatically!
 
@@ -55,12 +58,17 @@ class hours extends atkNode
 
     // force_load flag is set for userid, since several features rely on the 
     // userid, even if it's not displayed on screen.
-    $this->add(new atkManyToOneRelation("userid","employee.employee", AF_HIDE|AF_FORCE_LOAD|AF_OBLIGATORY));
+    $this->add(new atkManyToOneRelation("userid","employee.employee", AF_HIDE|AF_FORCE_LOAD|AF_OBLIGATORY));    
 
     $this->add(new atkProjectPhaseAttribute("phaseid",AF_OBLIGATORY|AF_JS_UPDATEACTIVITY));
     $this->add(new atkListAttribute("activityid",array("dummy","dummy","dummy","dummy","dummy"),array(0,0,0,0,0),AF_OBLIGATORY, 10));
     $this->add(new atkTextAttribute("remark", 1, 0));
     $this->add(new atkDurationAttribute("time",atkconfig("timereg_resolution", "15m"), '10h',AF_OBLIGATORY|AF_TOTAL));
+    
+    $relation = new atkManyToOneRelation("workperiod","timereg.workperiod", AF_OBLIGATORY|AF_HIDE_LIST);
+    $relation->setHideWhenEmpty(true);
+    $this->add($relation);
+    
     $this->add(new atkDateAttribute("entrydate",AF_HIDE|AF_OBLIGATORY));
     $this->add(new atkDummyAttribute("javascript", "seebelow", AF_NO_LABEL|AF_HIDE_LIST));
 
@@ -72,8 +80,7 @@ class hours extends atkNode
     
   function setLock()
   {
-    global $g_user;
-    $this->m_lock = $this->getLockType(strtolower($g_user["id"]),$this->m_viewdate);
+    $this->m_lock = $this->getLockType(strtolower($this->m_user),$this->m_viewdate);
 
     if ($this->m_lock != "")
     {
@@ -102,9 +109,7 @@ class hours extends atkNode
 
   function initial_values()
   {
-     global $g_user;             
-     
-     return array("userid"=>array("id"=>$g_user["id"]),
+     return array("userid"=>array("id"=>$this->m_user),
                   "entrydate"=>Array("year"=>date("Y"),
                              "month"=>date("m"),
                              "day"=>date("d")),
@@ -128,7 +133,7 @@ class hours extends atkNode
                                                 $recs[0]["activitydate"]["day"]));
     if ($this->m_lock=="")
     {
-      $this->addFilter("hours.userid",strtolower($g_user["id"]));
+      $this->addFilter("hours.userid",strtolower($this->m_user));
       return parent::action_edit();
     }
     else
@@ -152,11 +157,9 @@ class hours extends atkNode
   // override the admin action, because we have the weekview/dayview switch..
   function action_admin()
   {
-    global $g_user;
-
     $this->setLock();
 
-    $this->addFilter("hours.userid",$g_user["id"]);
+    $this->addFilter("hours.userid",$this->m_user);
 
     if ($this->m_weekview!=1)
     {
@@ -188,16 +191,17 @@ class hours extends atkNode
       
       $today = date('Y-m-d');
 
-      $res.= href('dispatch.php?viewdate='.$yesterday, text("previousday"));
+      $res.= href('dispatch.php?viewuser='.$this->m_user.'&viewdate='.$yesterday, text("previousday"));
       if ($this->m_viewdate<date('Y-m-d')) 
       { 
         // If current is not today we can also move forward
-        $res.='&nbsp;&nbsp;'.href('dispatch.php?viewdate='.$tomorrow, text("nextday"));
-        $res.='&nbsp;&nbsp;'.href('dispatch.php?viewdate='.$today, text("today", "houradmin"));
+        $res.='&nbsp;&nbsp;'.href('dispatch.php?viewuser='.$this->m_user.'&viewdate='.$tomorrow, text("nextday"));
+        $res.='&nbsp;&nbsp;'.href('dispatch.php?viewuser='.$this->m_user.'&viewdate='.$today, text("today", "houradmin"));
       }
-      $res.= '&nbsp;&nbsp;'.href('dispatch.php?viewdate='.$this->m_viewdate.'&weekview=1', text("gotoweekview"));
+      $res.= '&nbsp;&nbsp;'.href('dispatch.php?viewuser='.$this->m_user.'&viewdate='.$this->m_viewdate.'&weekview=1', text("gotoweekview"));
       $res.='</td><td align="right" valign="top">';
       $res.=session_form();
+      $res.=$this->getUserSelect().'&nbsp;';
       $res.=$this->getDateJumper();
       $res.='&nbsp;<input type="submit" value="'.text("goto").'">';
       $res.='</td></tr></table></form>';
@@ -210,10 +214,12 @@ class hours extends atkNode
   {
     if ($this->m_weekview!=1)
     {
+      $balancenode = &getNode("timereg.overtime_balance");
+      $balance = $balancenode->getBalance(date("Y-m-d", mktime(0,0,0,substr($this->m_viewdate,5,2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4))), $this->m_user);
       $res.='<table border=0 cellpadding=0 cellspacing=0 width="100%" class="table">';
       $res.='<tr><td align="left" valign="top">';
       $res.= href('dispatch.php?atknodetype=calendar.schedule&atkaction=admin&viewdate='.$this->m_viewdate, text("viewschedule"), SESSION_NESTED);
-      $res.='</td></tr></table>';
+      $res.='</td><td align="right">'.text("current_balance").': '.time_format((60*$balance["balance"]),true).'&nbsp;</td></tr></table>';
       return $res;
     }
   }
@@ -224,10 +230,26 @@ class hours extends atkNode
     $datebox = new atkDateAttribute("viewdate","F d Y","d F Y",0, date("Ymd"),AF_OBLIGATORY);
     return $datebox->edit($dummy_rec);
   }
+  
+  function getUserSelect()
+  {
+    global $g_db;
+    if ($this->allowed("any_user"))
+    {
+      $users = $g_db->getRows("SELECT id, lastname, firstname FROM person WHERE role = 'employee' AND status = 'active'");
+      $res = '<select name="viewuser">';
+      for ($i=0;$i<count($users);$i++)
+      {
+        $res .= '<option value="'.$users[$i]["id"].'" '.($this->m_user == $users[$i]["id"] ? 'selected' : '').'>'.$users[$i]["lastname"].', '.$users[$i]["firstname"];
+      }
+      $res .= '</select>'; 
+    }  
+    return $res;
+  }
 
   function weekview()
   {
-    global $g_layout, $g_user;
+    global $g_layout;
     if ($this->m_viewdate!="")
     {
       $viewtime = mktime(12,12,0,substr($this->m_viewdate,5,2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4));
@@ -268,19 +290,19 @@ class hours extends atkNode
       $total += $time;
     }
 
-    $userid = $g_user["id"];
+    $userid = $this->m_user;
 
     // First a line with previous and next week links..
     $prevnextlinks='<form name="weekview" method="post" action="dispatch.php">';
     $prevnextlinks.=session_form();
     $prevnextlinks.='<table border=0 cellpadding=0 cellspacing=0 width="100%" class="table">';
     $prevnextlinks.='<tr><td valign="top" align="left">';
-    $prevnextlinks.= ''.href('dispatch.php?weekview=1&viewdate='.$weekdates[0]['date'], text('previousweek'));
+    $prevnextlinks.= ''.href('dispatch.php?viewuser='.$userid.'&weekview=1&viewdate='.$weekdates[0]['date'], text('previousweek'));
     if ($weekdates[8]['date'] <= date("Y-m-d"))
     {
-      $prevnextlinks.='&nbsp;&nbsp;'.href('dispatch.php?weekview=1&viewdate='.$weekdates[8]['date'],text('nextweek'));
+      $prevnextlinks.='&nbsp;&nbsp;'.href('dispatch.php?viewuser='.$userid.'&weekview=1&viewdate='.$weekdates[8]['date'],text('nextweek'));
     }
-    $prevnextlinks.= '&nbsp;&nbsp;'.href('dispatch.php?weekview=1&viewdate='.date("Y-m-d"), text('thisweek'));
+    $prevnextlinks.= '&nbsp;&nbsp;'.href('dispatch.php?viewuser='.$userid.'&weekview=1&viewdate='.date("Y-m-d"), text('thisweek'));
     
     if ($this->m_lock=="individual" && $this->allowed("unlock"))
     {
@@ -293,6 +315,7 @@ class hours extends atkNode
       $prevnextlinks.='&nbsp;&nbsp;'.href('dispatch.php?atkaction=lock&userid='.$userid.'&viewdate='.$this->m_viewdate,'<b>'.text("lock").'</b>');
     }
     $prevnextlinks.='</td><td valign="top" align="right">';
+    $prevnextlinks.=$this->getUserSelect().'&nbsp;';
     $prevnextlinks.=$this->getDateJumper();
     $prevnextlinks.='&nbsp;<input type="submit" value="'.text("goto").'">';
     $prevnextlinks.='</td></tr></table></form>';
@@ -308,7 +331,7 @@ class hours extends atkNode
     {
       if ($weekdates[$i]['date'] <= date("Y-m-d"))
       {
-        $url = 'dispatch.php?viewdate='.$weekdates[$i]['date']."&weekview=0";
+        $url = 'dispatch.php?viewuser='.$userid.'&viewdate='.$weekdates[$i]['date']."&weekview=0";
         $g_layout->td_datatitle(href($url,text($weekdates[$i]['day'])).'<br>('.substr($weekdates[$i]['date'],5,2).'-'.substr($weekdates[$i]['date'],8,2).')','align="center"');
       }
       else
@@ -364,6 +387,9 @@ class hours extends atkNode
     // TODO this doesn't work anymore due to the fact that we move down in the session stack
     // where viewdate still has it's old value (do we need a way to alter the previous session?)
     $this->m_viewdate=$rec["activitydate"]["year"]."-".sprintf("%02d",$rec["activitydate"]["month"])."-".sprintf("%02d",$rec["activitydate"]["day"]);
+    
+    // update overtime balance
+    $this->calculateNewBalance($rec, "add");
   }
 
   function postUpdate($rec)
@@ -373,6 +399,61 @@ class hours extends atkNode
     // TODO this doesn't work anymore due to the fact that we move down in the session stack
     // where viewdate still has it's old value (do we need a way to alter the previous session?)
     $this->m_viewdate=$rec["activitydate"]["year"]."-".sprintf("%02d",$rec["activitydate"]["month"])."-".sprintf("%02d",$rec["activitydate"]["day"]);
+    
+    // update overtime balance
+    $this->calculateNewBalance($rec, "edit");
+  }
+  
+  function postDel($rec)
+  {
+    // update overtime balance
+    $this->calculateNewBalance($rec, "delete");
+  }
+  
+  function calculateNewBalance($rec, $mode)
+  {
+    $balancenode = &getNode("timereg.overtime_balance");
+    $userid = $rec["userid"]["id"];
+    $year  = $rec["activitydate"]["year"];
+    $month = $rec["activitydate"]["month"];
+    $activityday = $rec["activitydate"]["day"];
+    $day = date("Y-m-d", mktime(0,0,0,$month,$activityday,$year));
+    $yesterday = date("Y-m-d", mktime(0,0,0,$month,$activityday-1,$year));
+    $balance = $balancenode->getBalance($day, $userid);
+    
+    // only update balance if balance was not set manually
+    if ($balance["manual"] == 0)
+    {
+      if ($mode == "add")
+      {
+        // check if a record already exists for this day
+        if ($balance["balance"] == text("not_inserted"))
+        {
+          // insert a new record with the balance of yesterday or 0
+          $newbalance = $balancenode->getBalance($yesterday, $userid);
+          if ($newbalance["balance"] == text("not_inserted")) $newbalance["balance"] = 0;
+          $balancenode->addOvertimeBalance($userid, $day, $newbalance["balance"]);
+        }
+      }
+      
+      $percentage = $balancenode->getPercentage($rec["workperiod"]["id"]);
+      if ($rec["time"]["minutes"] > 0) $hours = $rec["time"]["hours"] + ($rec["time"]["minutes"]/60);
+      else $hours = $rec["time"]["hours"];
+      //atk_var_dump($balance);
+      
+      if ($mode == "add") $newbalance = ($balance["balance"] + (($percentage/100) * $hours));
+      elseif ($mode == "edit")
+      {
+        $oldpercentage = $balancenode->getPercentage($rec["atkorgrec"]["workperiod"]["id"]);
+        if ($rec["atkorgrec"]["time"]["minutes"] > 0) $oldhours = $rec["atkorgrec"]["time"]["hours"] + ($rec["atkorgrec"]["time"]["minutes"]/60);
+        else $oldhours = $rec["atkorgrec"]["time"]["hours"];
+        $newbalance = (($balance["balance"] - (($oldpercentage/100) * $oldhours)) + (($percentage/100) * $hours));
+      }
+      elseif($mode == "delete") $newbalance = ($balance["balance"] - (($percentage/100) * $hours));
+      
+      $balancenode->saveOvertimeBalance($rec["userid"]["id"], $day, $newbalance);
+    }  
+    if ($balancenode->getLatestManualCorrection($rec["userid"]["id"], $yesterday) < $day) $balancenode->deleteBalance($rec["userid"]["id"], $day);
   }
 
   // Check if this week may be booked..
@@ -492,15 +573,34 @@ class hours extends atkNode
 
   function activitydate_validate(&$rec)
   {
-    global $g_user;
-    
     // when inserting multiple days at once, we don't break on invalid days 
     // (we will just skip them later on).
     if ($rec["activitydate"]["multi"]!=1)
     {    
-      if ($this->getLockType($g_user["id"],sprintf("%04d-%02d-%02d",$rec["activitydate"]["year"],$rec["activitydate"]["month"],$rec["activitydate"]["day"]))!="")
+      if ($this->getLockType($this->m_user,sprintf("%04d-%02d-%02d",$rec["activitydate"]["year"],$rec["activitydate"]["month"],$rec["activitydate"]["day"]))!="")
       {
         triggerError($rec, "activitydate", "weeklocked");
+      }
+    }
+  }
+  
+  function phaseid_validate(&$rec, $mode)
+  {    
+    // Check if the user has rights to register time on this project.
+    if ($mode=="add" && !$this->allowed("any_project"))
+    {
+      global $g_db;
+      
+      $user = getUser();     
+      
+      $cnt = $g_db->getrows("SELECT count(1) as cnt
+                             FROM phase, project_person
+                             WHERE phase.id = ".$rec["phaseid"]["phaseid"]." 
+                               AND phase.projectid = project_person.projectid
+                               AND project_person.personid = ".$user["id"]);
+      if (!count($cnt)||$cnt[0]["cnt"]==0)
+      {
+        triggerError($rec, "phaseid", "error_timereg_members_only");
       }
     }
   }
@@ -677,8 +777,6 @@ class hours extends atkNode
   
   function addDb(&$record, $exectrigger=true)
   {
-    global $g_user;
-    
     if ($record["activitydate"]["multi"]==1)
     {      
       // We're registering multiple days at once. 
@@ -702,7 +800,7 @@ class hours extends atkNode
       for ($i=1; $walker <= $end ; $i++)
       {                       
         $dow = date("w", $walkerStamp);
-        if (!in_array($dow, $doDays) || $this->getLockType($g_user["id"],$walker)!="")
+        if (!in_array($dow, $doDays) || $this->getLockType($this->m_user,$walker)!="")
         {
           atkdebug("Skipping $walker, for this day is locked or not checked");
         }
@@ -747,13 +845,23 @@ class hours extends atkNode
                                                         $rec["activitydate"]["month"],
                                                         $rec["activitydate"]["day"]))!="")
     {
-      unset($actions["edit"]);
-      unset($actions["delete"]);
-      $idx = array_search("delete", $mraactions);
-      if ($idx!==false)
+      if (!$this->allowed("any_user"))
       {
-        unset($mraactions[$idx]);
+        unset($actions["edit"]);
+        unset($actions["delete"]);
+        $idx = array_search("delete", $mraactions);
+        if ($idx!==false)
+        {
+          unset($mraactions[$idx]);
+        }
       }
+      else 
+      {
+        $actionbase = $_SERVER["PHP_SELF"].'?atknodetype='.$this->atknodetype().'&atkselector=[pk]&viewuser='.$this->m_user;
+        $actions = array();
+        $actions["edit"] = $actionbase."&atkaction=edit";
+        $actions["delete"] = $actionbase."&atkaction=delete";
+      }  
     }
   }
   
@@ -765,6 +873,7 @@ class hours extends atkNode
       return ' <img src="'.atkconfig("atkroot").'atk/images/lock.gif" border="0">';
     }
   }
+
 }
 
 ?>

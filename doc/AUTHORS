@@ -44,7 +44,9 @@ development of new features.
   the billing feature.
 
 * Plan42 GMBH, Germany (http://www.plan42.de) sponsored the development
-  of the Deposit add-on module, and some parts of the billing module.
+  of the Deposit add-on module, some parts of the billing module, the
+  privilege to register time for any user and the limitation of time
+  registration to team-members only.
 
 * Prosa.dk, Denmark (http://www.prosa.dk) sponsored the development of the
   weektimereg add-on module, the weekday stats and the multi-sort and 
@@ -53,6 +55,13 @@ development of new features.
 * Kern8, The Netherlands (http://www.kern8.nl) sponsored the development
   of cumulative usercontracts, the displaying of shortages in the employee 
   weekreport and the holidayreport add-on module.
+
+* Petrosys Pty, Australia (http://www.petrosys.com.au) sponsored the 
+  fix for bug #269.
+
+* Langzaam Verkeer, Belgium (http://www.langzaamverkeer.be) sponsored the
+  overtime balance features, configurable overtime periods, time survey
+  date navigation and employee function levels.
 
 To become a sponsor, please read http://www.achievo.org/support/sponsor.
 
@@ -98,6 +107,7 @@ Norwegian       : Stein Bjorndal       <stein@proact.no>
                   Tommy Stiansen       <Tommy@tradeit.as>
                   Stian Hartviksen     <stian.hartviksen@itsopen.no>
                   Kjetil Byklum        <kbyklum@itsopen.net>
+                  Bjørn Langfors       <bjorn@kulturkonsult.no>
 Portuguese      : Pedro Vieira         <pedro.vieira@filbox.com>
 Russian         : Vitaliy Perekupka    <vit@uptsoft.com>
                   Maryia I. Davidouskaia <maryia@iatp.by> 
@@ -171,6 +181,10 @@ Ajit Deshpande                        <ajit@pobox.com>
 Jean-Charles Rogez                    <jean-charles.rogez@edfgdf.fr>
 Jonas Lincoln                         <lincoln@unit.liu.se>
 Jaap Bouma                            <jaap@buyways.nl>
-Martin ?                              <acmail@sebastian.nl>
+Martin ?                 [MartinAc]   <acmail@sebastian.nl>
 Mike Izydorski                        <achievobug@mizydors.rubikon.pl>
 Stefan Leblanc                        <sleblanc@radicalhorizon.com>
+Christian Lotz           [ChristianL] <cl@plan42.de>
+
+Names between [] are the names they are refered by in the CHANGES file. (If
+different from their first name).

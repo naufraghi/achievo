@@ -10,14 +10,19 @@
   useattrib("project.projecttemplateattribute");
   useattrib("atknumberattribute");
   useattrib("graph.datagraphattribute");
+  useattrib("utils.fuzzysearchattribute");
+  useattrib("atkdummyattribute");
+  
+  define("PRJ_TIMEREG_ALL_USERS", 0);
+  define("PRJ_TIMEREG_MEMBERS_ONLY", 1);
 
   class project extends atkNode
   {
-    function project()
+    function project($name="project", $flags=0)
     {
       global $ATK_VARS, $g_sessionManager;
 
-      $this->atkNode("project",NF_EDITAFTERADD|NF_EXT_SORT);
+      $this->atkNode($name,$flags|NF_EDITAFTERADD|NF_EXT_SORT);
 
       $this->add(new atkAttribute("id",AF_AUTOKEY));
       
@@ -25,6 +30,7 @@
       $this->add(new atkAttribute("abbreviation", AF_SEARCHABLE|AF_HIDE_LIST, 10));
 
       $this->add(new atkManyToOneRelation("coordinator","employee.employee",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));
+      $this->add(new atkManyToOneRelation("contract_id","organization.contracts",AF_HIDE_ADD|AF_HIDE_LIST));
       $this->add(new atkTextAttribute("description",TEXT_LARGE, AF_HIDE_LIST|AF_HIDE_ADD));
       $this->add(new atkNumberAttribute("fixed_price",AF_HIDE_LIST|AF_HIDE_ADD, 13, 5));      
 
@@ -32,7 +38,7 @@
       // show active projects.
       if ($ATK_VARS["atknodetype"]=="project.project"&& in_array($ATK_VARS["atkaction"],array("admin","add","update","edit","search", "view")))
       {
-        $this->add(new atkListAttribute("status",array("active","nonactive","archived"),array(),AF_HIDE_ADD|AF_SEARCHABLE, 15));
+        $this->add(new atkListAttribute("status",array("active","nonactive","archived"),array(),AF_HIDE_ADD|AF_HIDE_LIST, 15));
       }
       else
       {
@@ -41,8 +47,14 @@
       }
 
       $this->add(new atkOneToManyRelation("contacts","project.project_personcontact", "projectid", AF_HIDE_LIST));
-      $this->add(new atkOneToManyRelation("employees","project.project_personemployee", "projectid", AF_HIDE_LIST), "planning");
+      $this->add(new atkOneToManyRelation("members","project.project_personemployee", "projectid", AF_HIDE_LIST), "planning");
+      $this->add(new atkDummyAttribute("hint", text("project_member_fuzzyhint"), AF_HIDE_LIST|AF_HIDE_VIEW|AF_HIDE_ADD), "planning");
+      $this->add(new fuzzySearchAttribute("member_add", "employee.employee", "storeMembers", FSA_MULTISELECT, AF_HIDE_ADD|AF_BLANK_LABEL), "planning");
       
+      // This is a listattrib and not a boolattrib, because more options may be added in the future.
+      $this->add(new atkListAttribute("timereg_limit", array("all users", "members_only"), array(PRJ_TIMEREG_ALL_USERS, PRJ_TIMEREG_MEMBERS_ONLY), AF_HIDE_ADD|AF_HIDE_LIST), "planning");
+      
+      $this->add(new atkDummyAttribute("separator", "<br><hr><br>", AF_HIDE_LIST|AF_HIDE_ADD), "planning");
       $this->add(new atkDateAttribute("startdate","F d Y","d F Y",0,0,AF_HIDE_ADD), "planning");      
       $this->add(new atkDateAttribute("enddate","F d Y","d F Y",0,0,AF_HIDE_ADD|AF_HIDE_LIST), "planning");      
 
@@ -96,6 +108,7 @@
                    "enddate"=>array("year"=>(date(Y)+1),
                                     "month"=>date(m),
                                     "day"=>date(d)),
+                   "timereg_limit"=>PRJ_TIMEREG_MEMBERS_ONLY,
                    "status"=>"active");
     }   
 
@@ -374,7 +387,93 @@
       {
         return $label;
       }
+    }    
+      
+    function member_add_edit($record, $mode)
+    {
+      $org = $this->m_attribList["member_add"]->edit($record, $mode);
+      
+      $rolesel = new atkManyToOneRelation("member_add_role", "project.role", AF_OBLIGATORY);
+      
+      $dummy = array();
+      $org.= " ".$rolesel->edit($dummy);
+      return $org;
     }
+    
+    function storeMembers($rec, $members)
+    {     
+      $role_id = $this->fetchRoleId();
+      
+      for ($i=0, $_i=count($members); $i<$_i; $i++)
+      {        
+        $this->_addMemberRecord($rec["id"], $members[$i]["id"], $role_id);
+      }
+    }
+    
+    function fetchRoleId()
+    {
+      //$raw = $this->m_postvars["member_add_role"];
+      $rolesel = new atkManyToOneRelation("member_add_role", "project.role", AF_OBLIGATORY);
+      $role_id = $rolesel->fetchValue($this->m_postvars);
+      return $role_id["id"];
+    }
+    
+    function _addMemberRecord($project_id, $person_id, $role_id)
+    {
+      global $g_db;
+      
+      // attendee may already exist.
+      $recs = $g_db->getrows("SELECT count(*) AS cnt FROM project_person WHERE projectid = $project_id AND personid = $person_id");
+      if (!count($recs)||$recs[0]["cnt"]==0)
+      {
+        $g_db->query("INSERT INTO project_person (projectid, personid, role) VALUES ($project_id, $person_id, $role_id)");
+      }
+    }
+    
+     /**
+     * Are we in 'active' emps or 'archive' mode?
+     */
+    function getView()
+    {
+      global $g_sessionManager;
+      $view = $g_sessionManager->stackVar("view");
+      if ($view=="")
+      {
+        $view = "active";
+      }
+      return $view;
+    }
+  
+    function action_admin()
+    {
+      $view = $this->getView();
+      if ($view=="active")
+      {
+        $this->addFilter("project.status","active");
+      }
+      else
+      {
+        $this->addFilter("project.status<>'active'");
+      }
+      return parent::action_admin();
+    }
+  
+    function adminFooter()
+    {
+      $view = $this->getView();
+  
+      if ($view=="active")
+      {
+        return text("onlyactiverecordsareshown")." ".href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
+                    '&view=nonactive', text('clicktoviewarchive', $this->m_type, $this->m_module))."<br>";
+      }
+      else
+      {
+        return text("youareinthearchive")." ".href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
+                    '&view=active', text('clicktoviewactiverecords', $this->m_type, $this->m_module))."<br>";
+      }
+    }
+
   }
 
 ?>
