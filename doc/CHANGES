@@ -38,6 +38,7 @@ Changes in Achievo 1.1.0
 * Fixed bug #250. [Ivo]
 * Added missing string identifiers to all language files. (bug #277) [Ivo]
 + Added Portuguese language file. [Pedro]
++ Added Polish language file. [Lech]
 * Updated German language file. (bug #279) [Christian]
 * Updated Brazilian Portuguese language file. [Wanderlei]
 * Updated Spanish language file. [Pavel]
