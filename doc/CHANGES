@@ -4,6 +4,12 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changes in Achievo 1.0.0
+------------------------
+* Fixed bug when setup.php was run with $config_auth_dropdown set to
+  true. (bug #180) [Sandy, Kevin]
+* Fixed bug in schedule comparison. (bug #197) [Lineke]
+
 Changes in Achievo 1.0RC2
 -------------------------
 * Fixed logout problem. (bug #177) [Sandy]
