@@ -15,6 +15,8 @@ Changes in Achievo 1.0.4
 * Fixed bug in the display of weeknumbers in the montview (bug #258) [Sandy]
 + Added calendar navigation for every calendar view and the
   this week link to the weekview (bug #247) [Sandy]
+* Fixed bug in adding Phases [Sandy]
+
 
 Changes in Achievo 1.0.3
 ------------------------
