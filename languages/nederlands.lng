@@ -114,6 +114,9 @@
   $txt_error_startbiggerthanend = "De start-datum moet voor de eind-datum liggen";
   $txt_error_time = "Eindtijd moet na starttijd liggen";
   $txt_error_timereg_members_only = "Alleen teamleden mogen tijd registreren op dit project";
+  $txt_error_begintime_before_endtime = "Begintijd ligt voor eindtijd";
+  $txt_error_begintime_equals_endtime = "Begintijd is hetzelfde als eindtijd";
+  $txt_error_time_already_registered = "De geselecteerde tijd is al geregistreerd";
   $txt_evening = "Avond";
   $txt_fax = "Fax";
   $txt_fgcolor = "Tekstkleur";
@@ -135,6 +138,7 @@
   $txt_hourlock_userid_explanation = "Selecteer de medewerker die je wilt blokkeren, of selecteer 'Geen' om alle medewerkers te blokkeren";
   $txt_hourlock_week_explanation = "Vul 4 cijferig jaar gevolgd door 2 cijferig weeknummer in (bijv. 200234)";
   $txt_hours = "Uren";
+  $txt_hourspda = "Uren";
   $txt_hours_approve = "Weken goedkeuren";
   $txt_hours_approve_color_explain = "(rood staat voor afgekeurd of nog niet goedgekeurd, groen staat voor goedgekeurd)";
   $txt_hoursleft = "Uren nog beschikbaar";
@@ -198,6 +202,7 @@
   $txt_menu_organizationmanagement = "Organisaties";
   $txt_menu_organizationreport = "Organisatie archief";
   $txt_menu_organization_admin = "Organisaties";
+  $txt_menu_pim = "Home";
   $txt_menu_profile_admin = "Beveiligings Profielen";
   $txt_menu_projectactivityreport = "Projectactiviteit";
   $txt_menu_projectmanagement = "Projecten";
@@ -216,6 +221,8 @@
   $txt_menu_sponsorship = "Sponsor Programma";
   $txt_menu_support = "Ondersteuning";
   $txt_menu_time_registration = "Tijdregistratie";
+  $txt_menu_time_registration_add   = "Tijdregistratie toevoegen";
+  $txt_menu_time_registration_admin = "Tijdregistraties beheren";
   $txt_menu_tpl_phase_admin = "Fase templates";
   $txt_menu_tpl_project_admin = "Project templates";
   $txt_menu_weekreport = "Werknemer weekrapport";
@@ -359,6 +366,7 @@
   $txt_seluserdate = "Selecteer medewerkers en een datum om agenda's te vergelijken";
   $txt_setcostsfilter = "Selecteer welke kosten U wilt zien:";
   $txt_sethoursfilter = "Selecteer welke uren u wilt zien:";
+  $txt_socialsecuritynumber = "Sofinummer";
   $txt_specrequired = "Specificatie vereist";
   $txt_spend_hours = "Reeds geboekt";
   $txt_startdate = "Startdatum";
