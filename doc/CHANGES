@@ -16,6 +16,7 @@ Changes in Achievo 1.1RC1
 + Added configurable function levels to employee admin. [Lineke]
 + The employee admin screen now visually indicates employees whose contract
   is expired (red) or about to expire (orange). [Ivo]
++ Phases now show the number of already booked hours. [Sandy]
 + Phases now visually indicate if the number of hours registered exceeds
   the planning. [Sandy]
 + Added startdate/enddate to phases. [Ivo]
@@ -36,7 +37,8 @@ Changes in Achievo 1.1RC1
 * Improvements to Oracle 8i support. (bug #244) [Joop]
 * Fixed bug in example cron lines for cron documentation (cron/README). [Ivo]
 + Todo duedate is now colored when expired/nearly expired. (bug #262) [Ivo]
-* Fixed bug #250. [Ivo]
+* Fixed bugs #250 and #290. [Ivo]
+* Fixed bug #285. [Sandy]
 * Added missing string identifiers to all language files. (bug #277) [Ivo]
 + Added Portuguese language file. [Pedro]
 + Added Polish language file. [Lech]
@@ -48,8 +50,6 @@ Changes in Achievo 1.1RC1
 * Updated Norwegian language file. [Bjørn]
 * Updated Danish language file. [Morten]
 * Updated Italian language file. [Andrea]
-* Fixed bug #285. [Sandy]
-+ Added spendhours attribute for phases [Sandy]
 
 Changes in Achievo 1.0.4
 ------------------------
