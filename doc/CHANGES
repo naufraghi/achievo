@@ -4,6 +4,10 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changes in Achievo 1.0RC2
+-------------------------
+* Bugfixes for bugs #181, #183, #185, #187. [Ivo]
+
 Changes in Achievo 1.0RC1
 -------------------------
 + In employee management, inactive employees are now hidden by default. [Ivo]
