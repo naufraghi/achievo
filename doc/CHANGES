@@ -13,7 +13,8 @@ Changes in Achievo 1.0.5
 * Updated the support menu with new links to Achievo.org. [Ivo]
 * Fixed bug in example cron lines for cron documentation (cron/README). [Ivo]
 + Added Portuguese language file. [Pedro]
-* Updated German language file. [Christian]
+* Updated German language file. (bug #279) [Christian]
+* Updated Brazilian Portuguese language file. [Wanderlei]
 
 Changes in Achievo 1.0.4
 ------------------------
