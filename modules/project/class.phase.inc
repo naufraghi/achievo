@@ -29,6 +29,8 @@
   {
     function phase()
     {
+      global $g_securityManager;
+      
       $this->atkNode("phase",NF_AUTOSELECT|NF_EDITAFTERADD); // node() constructor is *not* called automatically!
   
       $this->add(new atkAttribute("id",AF_AUTOKEY));
@@ -51,7 +53,7 @@
       $this->add(new atkDateAttribute("enddate", "F d Y", "d F Y"));
   
       //$this->add(new atkNumberAttribute("max_phasetime"));
-      $this->add(new atkDurationAttribute("initial_planning",'','', AF_READONLY_EDIT|AF_TOTAL|AF_DURATION_STRING));
+      $this->add(new atkDurationAttribute("initial_planning",'','', ($g_securityManager->allowed("project.project","initialplanning")?0:AF_READONLY_EDIT)|AF_TOTAL|AF_DURATION_STRING));
       $this->add(new atkDurationAttribute("current_planning",'','', AF_HIDE_ADD|AF_TOTAL|AF_DURATION_STRING));
       $this->add(new spendHoursAttribute("spend_hours","id",AF_TOTAL));
       
@@ -118,9 +120,12 @@
     {     
       $initial_planning = $this->m_postvars["phaseplanning_initial"];
       
-      for ($i=0, $_i=count($people); $i<$_i; $i++)
-      {        
-        $this->_addPlanningRecord($rec["id"], $people[$i]["id"], $initial_planning);
+      if ($initial_planning>0)
+      {
+        for ($i=0, $_i=count($people); $i<$_i; $i++)
+        {        
+          $this->_addPlanningRecord($rec["id"], $people[$i]["id"], $initial_planning);
+        }
       }
     }
     
