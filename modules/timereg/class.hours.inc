@@ -23,7 +23,7 @@ class to_date extends atkDateAttribute
 {
   function to_date()
   {
-    $this->atkDateAttribute("todate", "F d Y","d F Y", 0, date("Ymd"), AF_NO_LABEL);
+    $this->atkDateAttribute("todate", "F d Y","d F Y", 0, date("Ymd"), AF_NO_LABEL|AF_HIDE);
   }  
   
   function load() {}
@@ -600,7 +600,7 @@ class hours extends atkNode
       }
     }
   }
-  
+ /* 
   function phaseid_validate(&$rec, $mode)
   {    
     // Check if the user has rights to register time on this project.
@@ -621,7 +621,7 @@ class hours extends atkNode
       }
     }
   }
-
+*/
   /**
    * We override the validate method, so we can check if a remark is required
    * for the chosen activity. If it is, we add the AF_OBLIGATORY flag to the
