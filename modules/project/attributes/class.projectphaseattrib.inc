@@ -202,9 +202,8 @@ class atkProjectPhaseAttribute extends atkAttribute
     
     $user = getUser();
      
-    $query = "SELECT DISTINCT phase.id, phase.name, project.name as projectname FROM project,phase,hours,project_person ";
+    $query = "SELECT DISTINCT phase.id, phase.name, project.name as projectname FROM project,phase,hours LEFT JOIN project_person ON (project_person.projectid = project.id)";
     $query.= "WHERE phase.id=hours.phaseid AND userid='".$user["id"]."' AND phase.status='active' AND project.status='active' AND phase.projectid=project.id ";
-    $query.= "AND project_person.projectid = project.id ";
     
     if (!$g_securityManager->allowed("timereg.hours", "any_project"))
     {
