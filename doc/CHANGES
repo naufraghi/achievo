@@ -11,6 +11,7 @@ Changes in Achievo 1.0.2
   generated. [Ivo]
 * Upgrade patches can now report important information to the user. [Ivo]
 * Fixed bug in formatting of negative time entries. [Ivo]
+* Updated German language file. [Stephan]
 
 Changes in Achievo 1.0.1
 ------------------------
