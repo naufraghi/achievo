@@ -13,7 +13,7 @@ Changed in Achievo 1.1RC2
   displayed instead of an error message. (bug #325) [Ivo]
 * Gantt chart is now displayed again. (bug #332) [Ivo]
 * Updated the FAQ. (bug #329) [Ruhshad]
-* Updated German language file. [Udo]
+* Updated German language file. [Udo,Christian]
 * Updated Spanish language file. [Jose]
 * Updated Russian language file and fixed charset problems. [Konstantin]
 
