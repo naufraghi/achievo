@@ -17,7 +17,7 @@
     {
       global $ATK_VARS, $g_sessionManager;
 
-      $this->atkNode("project",NF_EDITAFTERADD);
+      $this->atkNode("project",NF_EDITAFTERADD|NF_EXT_SORT);
 
       $this->add(new atkAttribute("id",AF_AUTOKEY));
       
