@@ -4,6 +4,10 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changes in Achievo 1.0.3
+------------------------
+* Setup.php now accepts include_paths with only ".". (bug #237) [Mike]
+
 Changes in Achievo 1.0.2
 ------------------------
 + Added second address field to organization mail and visit address. [Ivo]
