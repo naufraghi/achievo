@@ -29,7 +29,7 @@
   {
     function phase()
     {
-      $this->atkNode("phase",NF_AUTOSELECT); // node() constructor is *not* called automatically!
+      $this->atkNode("phase",NF_AUTOSELECT|NF_EDITAFTERADD); // node() constructor is *not* called automatically!
   
       $this->add(new atkAttribute("id",AF_AUTOKEY));
       $this->add(new atkAttribute("name",AF_OBLIGATORY|AF_SEARCHABLE, 50));
