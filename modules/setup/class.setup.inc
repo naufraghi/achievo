@@ -915,6 +915,7 @@
     
     function renderResult($result)
     {
+    	    	
       global $g_layout;
       $output="";
       if (count($result)>0)
@@ -949,7 +950,7 @@
         // things have been installed. Show result.
         $output = $this->renderResult($result);     
 
-        if ($ok)
+        if ($this->m_cancontinue)
         {
           return $this->setupScreen("Upgrade result", $output, "achievostart");
         }
@@ -970,8 +971,6 @@
 
       $installedmodules = $this->getInstalledModules();
       
-      $ok = true;      
-      
       $stufftodo = false;
       
       foreach ($g_modules as $modname=>$moduledir)
@@ -984,7 +983,7 @@
           if (!$this->installModule($modname, $result, true))
           {
             atkdebug("Installation failed.");
-            $ok = false;
+            $this->m_cancontinue = false;
             break;
           }     
         }
