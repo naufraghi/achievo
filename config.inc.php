@@ -10,7 +10,6 @@
   //           DATABASE CONFIGURATION
   // -------------------------------------------
 
-
   // The database to use. Default is MySQL. 
   // MySQL is currently the only officially supported database.
   // Experimental: If you want to use PostgreSQL, change this value to 
@@ -45,6 +44,7 @@
   // a language file is present in the languages directory.
   //
   $config_languagefile="english.lng";
+
 
   // -------------------------------------------
   //           SECURITY CONFIGURATION
@@ -85,6 +85,22 @@
   // the number of users is small.
   //
   $config_auth_dropdown = false;
+
+  
+  // -------------------------------------------
+  //            MAIL CONFIGURATION
+  // -------------------------------------------
+
+  // Achievo can send out notifications and reminders to users. The
+  // default sender for these mails is 'achievo@domain_of_your_server'. 
+  // Sometimes users will reply to these mails, so it's better to change
+  // this to the mail address of the administrator or human resource manager.
+  // Example: $config_mail_sender = "ivo@achievo.org".
+  // If you leave out the @domain part, the domainname of the server is
+  // appended automatically.
+  //
+  $config_mail_sender = "achievo"; 
+
 
   // -------------------------------------------
   //            TIME REGISTRATION
@@ -129,6 +145,7 @@
   // script searches for incomplete time registrations.
   //
   $config_timereg_checkweeks = 5; 
+
   
   // -------------------------------------------
   //            EXTERNAL MODULES
