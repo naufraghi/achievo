@@ -44,10 +44,10 @@
       $organizationid = $organizationarr["organization.id"];
 
       $hoursnode = &getNode("timereg.hours");
-
+      $hoursnode->m_postvars = $this->m_postvars; // Share postvars.
       
       // Determine collumn suppresslist:  
-      $arr_col = $this->getHourSurveyColumns();
+      $arr_col = $hoursnode->getHourSurveyColumns();
 
       $suppress = array();
       if (!is_array($col)||count($col)==0)
@@ -204,10 +204,29 @@
         $g_layout->td(text('remark').': ');
         $g_layout->td($remarkattr->edit($dummyrec));
         
-        $g_layout->td('<hr>','colspan="2"');
         $g_layout->output('</tr><tr>');
         $g_layout->td('<hr>','colspan="2"');
-        $g_layout->output('</tr><tr>');
+        $g_layout->output('</tr>');
+
+        // Get default selection items.
+        $selitems = $hoursnode->getSelectionItems();
+
+        if (is_array($selitems))
+        {
+          foreach ($selitems as $label=>$html)
+          {
+            $g_layout->output('<tr>');
+            $g_layout->td(text($label, $hoursnode->m_type).":");
+            $g_layout->td($html);
+            $g_layout->output('</tr><tr>');
+            $g_layout->td('<hr>','colspan="2"');
+            $g_layout->output('</tr>');
+          }
+        }
+
+
+        $g_layout->output('<tr>');
+
         $g_layout->td('<b>'.text("report_output_options").'</b>','colspan="2"');
 
         $g_layout->output('</tr><tr>');        
@@ -220,10 +239,6 @@
                          </select>');
 
         $g_layout->output('</tr><tr>');
-
-        //$g_layout->td(text("PDF"));
-        //$g_layout->td('<input type="checkbox" name="pdf" value="1">');
-        //$g_layout->output('</tr><tr>');
 
         $g_layout->td(text("report_output_showcollumns"));
 
@@ -309,11 +324,6 @@
 
     }
     
-    function getHourSurveyColumns()
-    {
-      return array("activitydate","userid","phaseid","activityid","remark","time");
-    }
-
     function get_activities($act_id)
     {
       global $g_db;
