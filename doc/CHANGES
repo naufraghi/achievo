@@ -4,6 +4,11 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changes in Achievo 1.0.1
+------------------------
+* Employee supervisor information is now properly converted. (bug #234) [Ivo]
+* Fixed bug when adding individual week locks. [Lineke]
+
 Changes in Achievo 1.0.0
 -------------------------
 * Fixed bug #213. [Ivo]
