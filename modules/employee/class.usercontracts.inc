@@ -63,7 +63,7 @@ class usercontracts extends atkNode
                                          "day"=>$day);
                                          
             // We also set enddate now, to startdate+1 year.
-            $endstamp = mktime(12, 0, 0, $month, $day, $year+1);
+            $endstamp = adodb_mktime(12, 0, 0, $month, $day, $year+1);
             $record["enddate"] = array("year"=>date("Y", $endstamp),
                                        "month"=>date("m", $endstamp),
                                        "day"=>date("d", $endstamp)); 

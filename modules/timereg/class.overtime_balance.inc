@@ -23,17 +23,17 @@
     
     function postUpdate($rec)
     {
-      $this->deleteBalance($rec["userid"]["id"], date("Y-m-d", mktime(0,0,0,$rec["day"]["month"],$rec["day"]["day"],$rec["day"]["year"])));
+      $this->deleteBalance($rec["userid"]["id"], date("Y-m-d", adodb_mktime(0,0,0,$rec["day"]["month"],$rec["day"]["day"],$rec["day"]["year"])));
     }
 
     function postAdd($rec)
     {
-      $this->deleteBalance($rec["userid"]["id"], date("Y-m-d", mktime(0,0,0,$rec["day"]["month"],$rec["day"]["day"],$rec["day"]["year"])));
+      $this->deleteBalance($rec["userid"]["id"], date("Y-m-d", adodb_mktime(0,0,0,$rec["day"]["month"],$rec["day"]["day"],$rec["day"]["year"])));
     }
     
     function postDel($rec)
     {
-      $this->deleteBalance($rec["userid"]["id"], date("Y-m-d", mktime(0,0,0,$rec["day"]["month"],$rec["day"]["day"],$rec["day"]["year"])));
+      $this->deleteBalance($rec["userid"]["id"], date("Y-m-d", adodb_mktime(0,0,0,$rec["day"]["month"],$rec["day"]["day"],$rec["day"]["year"])));
     }
 
     function getOvertimeLink($rec)
@@ -41,14 +41,14 @@
       if ($rec["balance"]["balance"] != text("not_inserted")) $res = time_format(60*$rec["balance"]["balance"], true);
       else $res = $rec["balance"]["balance"];
 
-      $manual = $this->getLatestManualCorrection($rec["balance"]["userid"]["id"], 0, date("Y-m-d", mktime(0,0,0,$rec["balance"]["day"]["month"],$rec["balance"]["day"]["day"],$rec["balance"]["day"]["year"])));
+      $manual = $this->getLatestManualCorrection($rec["balance"]["userid"]["id"], 0, date("Y-m-d", adodb_mktime(0,0,0,$rec["balance"]["day"]["month"],$rec["balance"]["day"]["day"],$rec["balance"]["day"]["year"])));
       $manualid = $manual["id"];
       if ($manual != 0)
       {
         // check if this manualcorrection was made in the current week
-        $enddate = date("Y-m-d", mktime(0,0,0,$rec["balance"]["day"]["month"],$rec["balance"]["day"]["day"],$rec["balance"]["day"]["year"]));
+        $enddate = date("Y-m-d", adodb_mktime(0,0,0,$rec["balance"]["day"]["month"],$rec["balance"]["day"]["day"],$rec["balance"]["day"]["year"]));
         $startdate = startOfWeek($enddate);
-        $manualdate = date("Y-m-d", mktime(0,0,0,$manual["day"]["month"],$manual["day"]["day"],$manual["day"]["year"]));
+        $manualdate = date("Y-m-d", adodb_mktime(0,0,0,$manual["day"]["month"],$manual["day"]["day"],$manual["day"]["year"]));
         if ($manualdate <= $enddate && $manualdate >= $startdate) $manual = 1;
         else $manual = 0;
       }
@@ -85,12 +85,12 @@
       if (!count($result)) return $this->getDummyBalance($day, $userid);
       else
       {
-        $endtime = mktime(0,0,0,$result[0]["day"]["month"],$result[0]["day"]["day"],$result[0]["day"]["year"]);
-        $starttime = mktime(0,0,0,substr($day,5,2),substr($day,8,2),substr($day,0,4));
+        $endtime = adodb_mktime(0,0,0,$result[0]["day"]["month"],$result[0]["day"]["day"],$result[0]["day"]["year"]);
+        $starttime = adodb_mktime(0,0,0,substr($day,5,2),substr($day,8,2),substr($day,0,4));
         if ($endtime < $starttime)
         {
           //recalculate
-          return $this->recalculateBalance(date("Y-m-d", mktime(0,0,0,$result[0]["day"]["month"],$result[0]["day"]["day"]+1,$result[0]["day"]["year"])), $day, $userid, $result[0]["balance"]);
+          return $this->recalculateBalance(date("Y-m-d", adodb_mktime(0,0,0,$result[0]["day"]["month"],$result[0]["day"]["day"]+1,$result[0]["day"]["year"])), $day, $userid, $result[0]["balance"]);
         }
         else if (count($result)) return $result[0];
       }
@@ -215,8 +215,8 @@
     {
       global $g_db;
       
-      $begindate = date("Ymd", mktime(0,0,0,substr($begin,5,2),substr($begin,8,2),substr($begin,0,4)));
-      $enddate = date("Ymd", mktime(0,0,0,substr($end,5,2),substr($end,8,2),substr($end,0,4)));
+      $begindate = date("Ymd", adodb_mktime(0,0,0,substr($begin,5,2),substr($begin,8,2),substr($begin,0,4)));
+      $enddate = date("Ymd", adodb_mktime(0,0,0,substr($end,5,2),substr($end,8,2),substr($end,0,4)));
       
       //$sql = "SELECT uc_hours, startdate, enddate, WorkingDays FROM usercontract WHERE userid = '$userid' AND ((startdate <= '$begin' AND enddate >= '$begin') OR (startdate <= '$end' AND enddate >= '$end'))";
       $sql = "SELECT uc_hours, startdate, enddate, WorkingDays FROM usercontract WHERE userid = '$userid' AND startdate <= '$end' AND (enddate >= '$begin' OR enddate IS NULL)";
@@ -228,8 +228,8 @@
         for ($i=0;$i<count($contracts);$i++)
         {
           $workdays = explode("|",$contracts[$i]["WorkingDays"]);
-          $startdate = date("Ymd", mktime(0,0,0,substr($contracts[$i]["startdate"],5,2),substr($contracts[$i]["startdate"],8,2),substr($contracts[$i]["startdate"],0,4)));
-          $newenddate = date("Ymd", mktime(0,0,0,substr($contracts[$i]["enddate"],5,2),substr($contracts[$i]["enddate"],8,2),substr($contracts[$i]["enddate"],0,4)));
+          $startdate = date("Ymd", adodb_mktime(0,0,0,substr($contracts[$i]["startdate"],5,2),substr($contracts[$i]["startdate"],8,2),substr($contracts[$i]["startdate"],0,4)));
+          $newenddate = date("Ymd", adodb_mktime(0,0,0,substr($contracts[$i]["enddate"],5,2),substr($contracts[$i]["enddate"],8,2),substr($contracts[$i]["enddate"],0,4)));
           if ($startdate <= $begindate && $newenddate >= $enddate)
           {
             $numdays = $this->getNumDays($begindate, $enddate, $workdays);
@@ -261,12 +261,12 @@
     function getNumDays($begin, $end, $workdays)
     {
       $total = 0;
-      $starttime = mktime(0,0,0,substr($begin,4,2),substr($begin,6,2),substr($begin,0,4));
-      $endtime = mktime(0,0,0,substr($end,4,2),substr($end,6,2),substr($end,0,4));
+      $starttime = adodb_mktime(0,0,0,substr($begin,4,2),substr($begin,6,2),substr($begin,0,4));
+      $endtime = adodb_mktime(0,0,0,substr($end,4,2),substr($end,6,2),substr($end,0,4));
       
       for($i=0;$i<=(($endtime-$starttime)/(60*60*24));$i++)
       {
-        $dayofweek = date("w", mktime(0,0,0,substr($begin,4,2),substr($begin,6,2)+$i,substr($begin,0,4)));
+        $dayofweek = date("w", adodb_mktime(0,0,0,substr($begin,4,2),substr($begin,6,2)+$i,substr($begin,0,4)));
         if (in_array($dayofweek, $workdays)) $total++;
       }
       return $total;

@@ -17,7 +17,7 @@
       
       if ($this->m_viewstart=="") 
       {
-        $this->m_viewstart = date("Y-m-d",mktime(0,0,0,date("m")-1,date("d"),date("Y")));
+        $this->m_viewstart = date("Y-m-d",adodb_mktime(0,0,0,date("m")-1,date("d"),date("Y")));
       }
       else if (is_array($this->m_viewstart))
       {

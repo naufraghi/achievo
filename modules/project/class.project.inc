@@ -328,7 +328,7 @@
       // Do we need to autodetect a resolution?
       if ($resolution=="auto"||$resolution=="")
       {
-        $daysbetween = (mktime(12,0,0,$maxmonth,$maxday,$maxyear)-mktime(12,0,0,$minmonth,$minday,$minyear))/$secondsinaday;      
+        $daysbetween = (adodb_mktime(12,0,0,$maxmonth,$maxday,$maxyear)-adodb_mktime(12,0,0,$minmonth,$minday,$minyear))/$secondsinaday;      
         if ($daysbetween <= 31)
         {
           // one month range. Daybased stat makes the most sense.          

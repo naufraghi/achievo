@@ -618,7 +618,7 @@ $month = $dbrecordsphase[0]['project_startdate'][5].
 $day = $dbrecordsphase[0]['project_startdate'][8].
        $dbrecordsphase[0]['project_startdate'][9];
 
-$datestamp = mktime(0,0,0,$month, $day, $year);
+$datestamp = adodb_mktime(0,0,0,$month, $day, $year);
 
 //the startpoint of each phase must be added with the startdate of the project
 for($i=0;$i<count($gant);$i++)

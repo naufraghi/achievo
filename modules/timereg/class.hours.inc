@@ -195,7 +195,7 @@ class hours extends atkNode
       $res='<form name="dayview" method="post" action="dispatch.php">';
       $res.='<table border=0 cellpadding=0 cellspacing=0 width="100%" class="table">';
       $res.='<tr><td align="left" valign="top">';
-      $viewdatestamp = mktime(0,0,0,substr($this->m_viewdate,5,2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4));
+      $viewdatestamp = adodb_mktime(0,0,0,substr($this->m_viewdate,5,2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4));
 
       // we substract 3601 seconds to account for Daylight Savings Time
       $yesterday = date('Y-m-d',$viewdatestamp-(86400-3601));
@@ -229,7 +229,7 @@ class hours extends atkNode
     if ($this->m_weekview!=1)
     {
       $balancenode = &getNode("timereg.overtime_balance");
-      $balance = $balancenode->getBalance(date("Y-m-d", mktime(0,0,0,substr($this->m_viewdate,5,2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4))), $this->m_user);
+      $balance = $balancenode->getBalance(date("Y-m-d", adodb_mktime(0,0,0,substr($this->m_viewdate,5,2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4))), $this->m_user);
       $res.='<table border=0 cellpadding=0 cellspacing=0 width="100%" class="table">';
       $res.='<tr><td align="left" valign="top">';
       $res.= href('dispatch.php?atknodetype=calendar.schedule&atkaction=admin&viewdate='.$this->m_viewdate, text("viewschedule"), SESSION_NESTED);
@@ -266,7 +266,7 @@ class hours extends atkNode
     global $g_layout;
     if ($this->m_viewdate!="")
     {
-      $viewtime = mktime(12,12,0,substr($this->m_viewdate,5,2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4));
+      $viewtime = adodb_mktime(12,12,0,substr($this->m_viewdate,5,2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4));
     }
     else
     {
@@ -431,8 +431,8 @@ class hours extends atkNode
     $year  = $rec["activitydate"]["year"];
     $month = $rec["activitydate"]["month"];
     $activityday = $rec["activitydate"]["day"];
-    $day = date("Y-m-d", mktime(0,0,0,$month,$activityday,$year));
-    $yesterday = date("Y-m-d", mktime(0,0,0,$month,$activityday-1,$year));
+    $day = date("Y-m-d", adodb_mktime(0,0,0,$month,$activityday,$year));
+    $yesterday = date("Y-m-d", adodb_mktime(0,0,0,$month,$activityday-1,$year));
     $balance = $balancenode->getBalance($day, $userid);
     
     // only update balance if balance was not set manually
@@ -467,7 +467,7 @@ class hours extends atkNode
     $manual = $balancenode->getLatestManualCorrection($rec["userid"]["id"], $yesterday);
     if ($manual != $yesterday)
     {
-      $manualdate = date("Y-m-d", mktime(0,0,0,$manual["day"]["month"],$manual["day"]["day"],$manual["day"]["year"]));
+      $manualdate = date("Y-m-d", adodb_mktime(0,0,0,$manual["day"]["month"],$manual["day"]["day"],$manual["day"]["year"]));
     }
     else $manualdate = $yesterday;
     if ($manualdate < $day) $balancenode->deleteBalance($rec["userid"]["id"], $day);
@@ -482,7 +482,7 @@ class hours extends atkNode
     static $s_locks = array();
     global $g_db;
     
-    $week = weekstamp(mktime(0,0,0,substr($date,5,2),
+    $week = weekstamp(adodb_mktime(0,0,0,substr($date,5,2),
                                      substr($date,8,2),
                                      substr($date,0,4)));
     
@@ -529,7 +529,7 @@ class hours extends atkNode
   {
     $viewdate = $this->m_postvars["viewdate"];
     $record["userid"]["id"] = $this->m_postvars["userid"];
-    $record["week"] = weekstamp(mktime(0,0,0,substr($viewdate,5,2),
+    $record["week"] = weekstamp(adodb_mktime(0,0,0,substr($viewdate,5,2),
                                    substr($viewdate,8,2),
                                    substr($viewdate,0,4)));
     $locknode = &getNode("timereg.hours_lock");
@@ -543,7 +543,7 @@ class hours extends atkNode
 
     $viewdate = $this->m_postvars["viewdate"];
     $userid = $this->m_postvars["userid"];
-    $week = weekstamp(mktime(0,0,0,substr($viewdate,5,2),
+    $week = weekstamp(adodb_mktime(0,0,0,substr($viewdate,5,2),
                                    substr($viewdate,8,2),
                                    substr($viewdate,0,4)));
     $query = "DELETE FROM hours_lock WHERE week = '$week' AND userid = '$userid'";
@@ -665,9 +665,9 @@ class hours extends atkNode
     }
     else // when inserting multiple days at once, we must verify if end is not smaller than start.
     {
-      $start = date("Y-m-d", mktime(12,0,0,$record["activitydate"]["month"],$record["activitydate"]["day"],$record["activitydate"]["year"]));
+      $start = date("Y-m-d", adodb_mktime(12,0,0,$record["activitydate"]["month"],$record["activitydate"]["day"],$record["activitydate"]["year"]));
       $todate = $this->m_postvars["todate"]; // todate is not part of $record, because the todate attrib isn't really a part of the node.      
-      $end = date("Y-m-d", mktime(12,0,0,$todate["month"],$todate["day"],$todate["year"]));
+      $end = date("Y-m-d", adodb_mktime(12,0,0,$todate["month"],$todate["day"],$todate["year"]));
       atkdebug("validating $start vs $end");
       if ($start>$end)
       {
@@ -797,12 +797,12 @@ class hours extends atkNode
     if ($record["activitydate"]["multi"]==1)
     {      
       // We're registering multiple days at once. 
-      $walkerStamp = mktime(12,0,0,$record["activitydate"]["month"],$record["activitydate"]["day"],$record["activitydate"]["year"]);
+      $walkerStamp = adodb_mktime(12,0,0,$record["activitydate"]["month"],$record["activitydate"]["day"],$record["activitydate"]["year"]);
       $walker = date("Y-m-d", $walkerStamp);      
       
       $todate = $this->m_postvars["todate"]; // todate is not part of $record, because the todate attrib isn't really a part of the node.
       
-      $end = date("Y-m-d", mktime(12,0,0,$todate["month"],$todate["day"],$todate["year"]));
+      $end = date("Y-m-d", adodb_mktime(12,0,0,$todate["month"],$todate["day"],$todate["year"]));
       
       // Make a quick lookup array in which we can easily see if a day was checked.
       $doDays=array();
@@ -832,7 +832,7 @@ class hours extends atkNode
         }
         
         // End of day, add 1 day and reloop.
-        $walkerStamp = mktime(12,0,0,$record["activitydate"]["month"],
+        $walkerStamp = adodb_mktime(12,0,0,$record["activitydate"]["month"],
                                      $record["activitydate"]["day"]+$i,
                                      $record["activitydate"]["year"]);
         $walker = date("Y-m-d", $walkerStamp);

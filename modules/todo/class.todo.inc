@@ -276,8 +276,8 @@ class todo extends atkNode
    {                      
      if ($start==""||$end=="") return 0;    
       
-     $d1 = mktime(12,0,0,substr($start,5,2), substr($start,8,2), substr($start,0,4));    
-     $d2 = mktime(12,0,0,substr($end,5,2), substr($end,8,2), substr($end,0,4));    
+     $d1 = adodb_mktime(12,0,0,substr($start,5,2), substr($start,8,2), substr($start,0,4));    
+     $d2 = adodb_mktime(12,0,0,substr($end,5,2), substr($end,8,2), substr($end,0,4));    
      return floor(($d2-$d1)/(60*60*24));  
    }   
 

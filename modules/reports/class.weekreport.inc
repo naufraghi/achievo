@@ -270,16 +270,16 @@ class weekreport extends atkNode
       $weekdata = array();
 
       // first fill the weeks and start/end dates..
-      $startstamp = mktime(12,0,0,substr($startdate,5,2),
+      $startstamp = adodb_mktime(12,0,0,substr($startdate,5,2),
                                  substr($startdate,8,2),
                                  substr($startdate,0,4));
-      $endstamp = mktime(12,0,0,substr($enddate,5,2),
+      $endstamp = adodb_mktime(12,0,0,substr($enddate,5,2),
                                substr($enddate,8,2),
                                substr($enddate,0,4));
 
       // overzicht moet beginnen op de eerste dag van de week van de gekozen datum.
       $realweekstart = startOfWeek($startdate);
-      $realstartstamp = mktime(12,0,0,substr($realweekstart,5,2),
+      $realstartstamp = adodb_mktime(12,0,0,substr($realweekstart,5,2),
                                      substr($realweekstart,8,2),
                                      substr($realweekstart,0,4));
 
@@ -322,37 +322,15 @@ class weekreport extends atkNode
                   startdate";
       $contracts = $g_db->getrows($query);
 
-      /*for ($i=0;$i<count($contracts);$i++)
-      {
-        $start_week = mktime(12,0,0,substr($contracts[$i]["startdate"],5,2),
-                                   substr($contracts[$i]["startdate"],8,2),
-                                   substr($contracts[$i]["startdate"],0,4));
-        $end_week = mktime(12,0,0,substr($contracts[$i]["enddate"],5,2),
-                                 substr($contracts[$i]["enddate"],8,2),
-                                 substr($contracts[$i]["enddate"],0,4));
-
-        for ($j=$start_week;$j<=$end_week;$j+=ONEWEEK)
-        {
-          $weekstamp = weekstamp($j);
-          atk_var_dump($weekstamp);
-          if ($weekstamp>=$report_start_week && $weekstamp <= $report_end_week) // check if week is within report boundary.
-          {
-            $weekdata[$weekstamp]["week"] = $weekstamp;
-            $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["contract"] = $contracts[$i]["uc_hours"]*60;
-            $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["name"] = $contracts[$i]["lastname"].", ".$contracts[$i]["firstname"];
-          }
-        }
-      }*/
-      
       $end = endOfWeek(date("Y-m-d", $endstamp));
-      $newendstamp = mktime(0,0,0,substr($end,5,2),substr($end,8,2)+1,substr($end,0,4));
+      $newendstamp = adodb_mktime(0,0,0,substr($end,5,2),substr($end,8,2)+1,substr($end,0,4));
       for ($j=$startstamp;$j<=$newendstamp;$j+=ONEWEEK)
       {
         $weekstamp = weekstamp($j);
-        $start_week = date("Y-m-d", mktime(12,0,0,substr($weekdata[$weekstamp]["startdate"],3,2),
+        $start_week = date("Y-m-d", adodb_mktime(12,0,0,substr($weekdata[$weekstamp]["startdate"],3,2),
                                  substr($weekdata[$weekstamp]["startdate"],0,2),
                                  substr($weekdata[$weekstamp]["startdate"],6,4)));
-        $end_week = date("Y-m-d", mktime(12,0,0,substr($weekdata[$weekstamp]["enddate"],3,2),
+        $end_week = date("Y-m-d", adodb_mktime(12,0,0,substr($weekdata[$weekstamp]["enddate"],3,2),
                                substr($weekdata[$weekstamp]["enddate"],0,2),
                                substr($weekdata[$weekstamp]["enddate"],6,4)));
         $weekdata[$weekstamp]["week"] = $weekstamp;
@@ -397,7 +375,7 @@ class weekreport extends atkNode
           
       for ($i=0;$i<count($raw);$i++)
       {
-        $stamp = mktime(12,0,0,substr($raw[$i]["activitydate"],5,2),
+        $stamp = adodb_mktime(12,0,0,substr($raw[$i]["activitydate"],5,2),
         substr($raw[$i]["activitydate"],8,2),
         substr($raw[$i]["activitydate"],0,4));
         $dow = strftime("%w",$stamp);
@@ -466,7 +444,7 @@ class weekreport extends atkNode
         $record["enddate"] = $data["enddate"];
         $record["week"] = $data["week"];
         $record["status"] = $data["status"];
-        $record["balance"] = $balancenode->getBalance(date("Y-m-d", mktime(0,0,0,substr($data["enddate"],3,2),substr($data["enddate"],0,2),substr($data["enddate"],6,4))), $userid);
+        $record["balance"] = $balancenode->getBalance(date("Y-m-d", adodb_mktime(0,0,0,substr($data["enddate"],3,2),substr($data["enddate"],0,2),substr($data["enddate"],6,4))), $userid);
         $record["balance"]["outputtype"] = $outputType;
         if (is_array($data["userdata"]))
         {

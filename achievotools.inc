@@ -169,7 +169,7 @@
    */
   function startOfWeek($date)
   {
-    $viewtime = mktime(0,0,0,substr($date,5,2),substr($date,8,2),substr($date,0,4));
+    $viewtime = adodb_mktime(0,0,0,substr($date,5,2),substr($date,8,2),substr($date,0,4));
     $weekday = strftime("%w",$viewtime);
     if ($weekday==0) $weekday=7;
     return date("Y-m-d" ,$viewtime-(86400*($weekday-1)));
@@ -181,7 +181,7 @@
    */
   function endOfWeek($date)
   {
-    $viewtime = mktime(0,0,0,substr($date,5,2),substr($date,8,2),substr($date,0,4));
+    $viewtime = adodb_mktime(0,0,0,substr($date,5,2),substr($date,8,2),substr($date,0,4));
     $weekday = strftime("%w",$viewtime);
     if ($weekday==0) $weekday=7;
     return date("Y-m-d" ,$viewtime-(86400*($weekday-7)));

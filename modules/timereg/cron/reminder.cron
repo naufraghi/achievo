@@ -38,7 +38,7 @@
   {
     // generate a date in the correct week (doesn't matter which, so day-7 should
     // always work.
-    $prevweekstamp = mktime(12,12,12,$month,$day-($weekloop*7),$year);
+    $prevweekstamp = adodb_mktime(12,12,12,$month,$day-($weekloop*7),$year);
 
     $startdate = startOfWeek(date("Y-m-d",$prevweekstamp));
     $enddate =  endOfWeek(date("Y-m-d",$prevweekstamp));
