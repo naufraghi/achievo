@@ -27,5 +27,6 @@
   // some uniform colors
   define("COLOR_WARNING", "#FCAA60");
   define("COLOR_ERROR", "#FF0000");
+  define("COLOR_OK","#00FF00");
    
 ?>
