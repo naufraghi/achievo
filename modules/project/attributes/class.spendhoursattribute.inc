@@ -68,6 +68,20 @@
       }
       return $org;
     }
+    
+    /**
+    * No function, but is neccesary
+    */
+    function store($a, $b)
+    {
+    }
+
+    /**
+    * No function, but is neccesary
+    */
+    function addToQuery(&$query, $tablename="", $fieldaliasprefix="",$level)
+    {
+    }
   }
 
 ?>
