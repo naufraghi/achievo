@@ -6,6 +6,8 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changes in Achievo 1.0.3
 ------------------------
++ Readded textual stats to the project stats. (bug #248) [Ivo]
++ The project stats now contain detail links to the hoursurvey. [Ivo]
 + Added 'grant all' privilege, which allows users to grant rights they do not
   explicitly have themselves. [Ivo]
 + The 'time survey' report can now be filtered by remark. [Ivo]
@@ -13,6 +15,7 @@ Changes in Achievo 1.0.3
 * Modified employee add screen so contracts will not be overlooked. [Ivo]
 * Setup.php now accepts include_paths with only ".". (bug #237) [Mike]
 + Roles that are not in use can now be deleted. (bug #236) [Ivo]
+* The project stats page now has the project name in the title box. [Ivo]
 * Updated Swedish language file. [Thomas]
 
 Changes in Achievo 1.0.2
