@@ -123,6 +123,7 @@
             
         useattrib("graph.dataGraphAttribute");            
                 
+        // PROJECT STATS
         $prjstats = &new dataGraphAttribute("prjtimedistribution", "prjtime", $params, "auto");
         $prjstats->setSource("employee.employee");                
         
@@ -131,6 +132,7 @@
         // Textual version:
         $output.= "<br><br>".$this->_tableStats(text("project"), $prjdata, array("name"), $detailparams, "projectid");        
         
+        // ACTIVITY STATS
         $activitystats = &new dataGraphAttribute("activitytimedistribution", "activitytime", $params, "auto");      
         $activitystats->setSource("employee.employee");
         
@@ -138,6 +140,15 @@
         
         // Textual version:
         $output.= "<br><br>".$this->_tableStats(text("activity"), $empnode->graph_activitytime($params, true), array("name"), $detailparams, "activity_id");              
+        
+        // WEEKDAY STATS
+        $dowstats = &new dataGraphAttribute("dowdistribution", "dowtime", $params, "auto");      
+        $dowstats->setSource("employee.employee");
+        
+        $output.= "<br><br>".$dowstats->showGraph();
+        
+        // Textual version:
+        $output.= "<br><br>".$this->_tableStats(text("day"), $empnode->graph_dowtime($params, true), array("dow"), $detailparams);
       }
       
       $output.="<br>".$backbtn."<br>";
@@ -196,7 +207,7 @@
     }
                 
     
-    function _tableStats($itemheader, $dataset, $datasetdescriptors, $detailparams, $idparam)
+    function _tableStats($itemheader, $dataset, $datasetdescriptors, $detailparams, $idparam="")
     {
       global $g_layout, $g_securityManager;            
       
@@ -207,7 +218,7 @@
         $total+=$dataset[$i]["total"];
       }
       
-      $mayviewdetail = $g_securityManager->allowed("reports.hoursurvey", "view_all");
+      $mayviewdetail = ($idparam!="" && $g_securityManager->allowed("reports.hoursurvey", "view_all"));
       
       if ($detailparams["userid"]=="") $detailparams["userid"]="all"; // workaround, the hoursurvey will select current user if no user is passed.
       

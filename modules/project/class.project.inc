@@ -241,6 +241,47 @@
       return array("registeredtimeperactivity"=>$dataset);
     }
     
+    function graph_dowtime($params, $raw=false)
+    {            
+      global $g_db;
+      
+      $days = array("sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday");
+      
+      $data = $g_db->getrows("SELECT 
+                                date_format(hours.activitydate, '%w') as dow, SUM(time) as total
+                              FROM 
+                                hours, phase, activity
+                              WHERE 
+                                hours.phaseid = phase.id
+                                AND phase.projectid = ".$params["projectid"].
+                                ($params["viewstart"]!=""?" AND hours.activitydate>='".$params["viewstart"]."'":"").
+                                ($params["viewend"]!=""?" AND hours.activitydate<='".$params["viewend"]."'":"").
+                            "   AND hours.activityid = activity.id
+                              GROUP BY 
+                                date_format(hours.activitydate, '%w')
+                              ORDER BY 
+                                dow");                                      
+                            
+      // Add weekday names.
+      for ($i=0, $_i=count($data); $i<$_i; $i++)                            
+      {
+        $data[$i]["dow"] = text($days[$data[$i]["dow"]]);
+      }
+                            
+      // In raw mode the data is sufficient.
+      if ($raw) return $data;
+       
+      // convert records to graph-compatible array.
+      $dataset = array();       
+      
+      for ($i=0, $_i=count($data); $i<$_i; $i++)
+      {                
+        $dataset[$data[$i]["dow"]] = $data[$i]["total"];                
+      }
+      
+      return array("registeredtimeperweekday"=>$dataset);
+    }
+    
     function graph_timeline($params)
     {
       global $g_db;

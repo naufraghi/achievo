@@ -105,12 +105,15 @@
         
         useattrib("graph.dataGraphAttribute");
         
+        
+        // TIMELINE
         $timeline = &new dataGraphAttribute("timeline", "timeline", $params, "line");
         $timeline->setSource("project.project");
         $timeline->addDynamicParam("resolution", array("day", "week", "month", "auto"));
         
         $output.= "<br>".$timeline->showGraph();                                              
             
+        // PHASE STATS
         $phasestats = &new dataGraphAttribute("phasetimedistribution", "phasetime", $params, "auto");
         $phasestats->setSource("project.project");
         
@@ -119,6 +122,7 @@
         // Textual version:
         $output.= "<br><br>".$this->_tableStats(text("phase"), $prjnode->graph_phasetime($params, true), array("name"), $detailparams, "phaseid");        
       
+        // EMPLOYEE STATS
         $empstats = &new dataGraphAttribute("emptimedistribution", "emptime", $params, "auto");
         $empstats->setSource("project.project");                
         
@@ -127,6 +131,7 @@
         // Textual version:
         $output.= "<br><br>".$this->_tableStats(text("employee"), $prjnode->graph_emptime($params, true), array("firstname", "lastname"), $detailparams, "userid");        
         
+        // ACTIVITY STATS
         $activitystats = &new dataGraphAttribute("activitytimedistribution", "activitytime", $params, "auto");      
         $activitystats->setSource("project.project");
         
@@ -134,6 +139,15 @@
         
         // Textual version:
         $output.= "<br><br>".$this->_tableStats(text("activity"), $prjnode->graph_activitytime($params, true), array("name"), $detailparams, "activity_id");        
+        
+        // DOW STATS
+        $dowstats = &new dataGraphAttribute("dowtimedistribution", "dowtime", $params, "auto");      
+        $dowstats->setSource("project.project");
+        
+        $output.= "<br><br>".$dowstats->showGraph();
+        
+        // Textual version:
+        $output.= "<br><br>".$this->_tableStats(text("day"), $prjnode->graph_dowtime($params, true), array("dow"), $detailparams);        
       }      
       
       $output.="<br>".$backbtn."<br>";
@@ -236,7 +250,7 @@
       return $output;
     }
     
-    function _tableStats($itemheader, $dataset, $datasetdescriptors, $detailparams, $idparam)
+    function _tableStats($itemheader, $dataset, $datasetdescriptors, $detailparams, $idparam="")
     {
       global $g_layout, $g_securityManager;            
       
@@ -247,7 +261,7 @@
         $total+=$dataset[$i]["total"];
       }
       
-      $mayviewdetail = $g_securityManager->allowed("reports.hoursurvey", "view_all");
+      $mayviewdetail = ($idparam!="" && $g_securityManager->allowed("reports.hoursurvey", "view_all"));
       
       $res = $g_layout->data_top();
       $res.= $g_layout->tr_top();
