@@ -16,7 +16,11 @@ Changes in Achievo 1.0.3
 * Setup.php now accepts include_paths with only ".". (bug #237) [Mike]
 + Roles that are not in use can now be deleted. (bug #236) [Ivo]
 * The project stats page now has the project name in the title box. [Ivo]
+* Added several untranslated strings to the language files. [Nele]
 * Updated Swedish language file. [Thomas]
+* Updated German language file. [Nele]
+* Updated French language file. [Hicham]
+* Updated Dutch language file. [Ivo]
 
 Changes in Achievo 1.0.2
 ------------------------
