@@ -12,6 +12,9 @@ Changes in Achievo 1.0.4
 * Fixed bug in display of locked weeks in employee weekreport. [Lineke]
 + Added Catalan language file. [Lluis]
 * Updated Italian language file. [Andrea]
+* Fixed bug in the display of weeknumbers in the montview (bug #258) [Sandy]
++ Added calendar navigation for every calendar view and the
+  this week link to the weekview (bug #247) [Sandy]
 
 Changes in Achievo 1.0.3
 ------------------------
