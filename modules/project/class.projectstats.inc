@@ -65,7 +65,17 @@
       
       $g_layout->ui_bottom();
       
-      $g_layout->ui_top(text("stats"));
+      $prjnode = &getNode("project.project");
+      
+      $descriptor="";
+      if ($projectid!="")
+      {
+        // Get descriptor. 
+        $recs = $prjnode->selectDb("project.id=".$projectid, "", "", "", $prjnode->descriptorFields());
+        $descriptor = " - ".$prjnode->descriptor($recs[0]);
+      }
+      
+      $g_layout->ui_top(text("stats").$descriptor);
          
       $backbtn = "";
       if (atkLevel()>0)
@@ -88,28 +98,42 @@
         $params["viewend"] = $enddate;
         $params["resolution"] = $this->m_resolution;
         
+        $detailparams["projectid"] = $projectid;
+        $detailparams["startdate"] = $startdate;
+        $detailparams["enddate"] = $enddate;        
+        $detailparams["userid"] = "all";
+        
         useattrib("graph.dataGraphAttribute");
         
         $timeline = &new dataGraphAttribute("timeline", "timeline", $params, "line");
         $timeline->setSource("project.project");
         $timeline->addDynamicParam("resolution", array("day", "week", "month", "auto"));
         
-        $output.= "<br>".$timeline->showGraph();                      
+        $output.= "<br>".$timeline->showGraph();                                              
             
         $phasestats = &new dataGraphAttribute("phasetimedistribution", "phasetime", $params, "auto");
         $phasestats->setSource("project.project");
         
         $output.= "<br>".$phasestats->showGraph();
+        
+        // Textual version:
+        $output.= "<br><br>".$this->_tableStats(text("phase"), $prjnode->graph_phasetime($params, true), array("name"), $detailparams, "phaseid");        
       
         $empstats = &new dataGraphAttribute("emptimedistribution", "emptime", $params, "auto");
-        $empstats->setSource("project.project");
+        $empstats->setSource("project.project");                
         
         $output.= "<br><br>".$empstats->showGraph();
+        
+        // Textual version:
+        $output.= "<br><br>".$this->_tableStats(text("employee"), $prjnode->graph_emptime($params, true), array("firstname", "lastname"), $detailparams, "userid");        
         
         $activitystats = &new dataGraphAttribute("activitytimedistribution", "activitytime", $params, "auto");      
         $activitystats->setSource("project.project");
         
         $output.= "<br><br>".$activitystats->showGraph();
+        
+        // Textual version:
+        $output.= "<br><br>".$this->_tableStats(text("activity"), $prjnode->graph_activitytime($params, true), array("name"), $detailparams, "activity_id");        
       }      
       
       $output.="<br>".$backbtn."<br>";
@@ -210,6 +234,65 @@
       
       $output.= $g_layout->data_bottom();
       return $output;
+    }
+    
+    function _tableStats($itemheader, $dataset, $datasetdescriptors, $detailparams, $idparam)
+    {
+      global $g_layout, $g_securityManager;            
+      
+      // Totals count
+      $total = 0;
+      for($i=0, $_i=count($dataset); $i<$_i; $i++)
+      {
+        $total+=$dataset[$i]["total"];
+      }
+      
+      $mayviewdetail = $g_securityManager->allowed("reports.hoursurvey", "view_all");
+      
+      $res = $g_layout->data_top();
+      $res.= $g_layout->tr_top();
+      $res.= $g_layout->ret_td_datatitle($itemheader);
+      $res.= $g_layout->ret_td_datatitle(text("time"));
+      $res.= $g_layout->ret_td_datatitle(text("percentage"));
+      if ($mayviewdetail) $res.= $g_layout->ret_td_datatitle(text("details"));
+      $res.= $g_layout->tr_bottom();
+      
+      for($i=0, $_i=count($dataset); $i<$_i; $i++)
+      {
+        $res.= $g_layout->tr_top($i%2!=0);
+        
+        $descriptor = array();
+        // datasetdescriptors is an array contain information on which fields in $dataset are
+        // the descriptors.
+        foreach($datasetdescriptors as $field)
+        {
+          $descriptor[] = $dataset[$i][$field];
+        }
+        $value = $dataset[$i]["total"];
+                
+        $res.= $g_layout->ret_td(implode(" ", $descriptor));
+        $res.= $g_layout->ret_td(time_format($value, true), 'align="right"');
+        $percentage = ($total<=0?0:(($value/$total)*100));
+        $res.= $g_layout->ret_td(sprintf("%02.02f", $percentage)."%", 'align="right"');
+        if ($mayviewdetail)
+        {          
+          $detailparams[$idparam] = $dataset[$i]["id"];
+          $detailurl = href(dispatch_url("reports.hoursurvey", "report", $detailparams), text("view"), SESSION_NESTED);
+          $res.= $g_layout->ret_td($detailurl);
+        }
+        $res.= $g_layout->tr_bottom();
+      }
+      
+      $res.= $g_layout->tr_top();
+      $res.= $g_layout->ret_td_datatitle(text("total"));
+      $res.= $g_layout->ret_td_datatitle(time_format($total, true), 'align="right"');
+      $res.= $g_layout->ret_td_datatitle('100.00%', 'align="right"');
+      if ($mayviewdetail) $res.= $g_layout->ret_td_datatitle("");
+      $res.= $g_layout->tr_bottom();
+      
+      $res.= $g_layout->data_bottom();
+      
+      return $res;
     }
     
     
