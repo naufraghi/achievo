@@ -50,8 +50,8 @@
       $this->add(new atkDateAttribute("enddate", "F d Y", "d F Y"));
   
       //$this->add(new atkNumberAttribute("max_phasetime"));
-      $this->add(new atkNumberAttribute("initial_planning", AF_READONLY_EDIT));
-      $this->add(new atkNumberAttribute("current_planning", AF_HIDE_ADD));
+      $this->add(new atkNumberAttribute("initial_planning", AF_READONLY_EDIT|AF_TOTAL));
+      $this->add(new atkNumberAttribute("current_planning", AF_HIDE_ADD|AF_TOTAL));
       $this->add(new spendHoursAttribute("spend_hours","id",AF_TOTAL));
       
       $this->add(new atkOneToManyRelation("phaseplanning", "project.phaseplanning", "phaseid", AF_HIDE_LIST));
