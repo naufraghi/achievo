@@ -101,7 +101,7 @@ class atkProjectPhaseAttribute extends atkAttribute
       $result .= $this->javascript($phasearray);
       $result.= '<select name="phaseid" onChange="set_activities(this.options[this.selectedIndex].value,0)">';   
     }
-    $result.= '<option value="">---';  
+    $result.= '<option value="">' . text('select');  
     
     for ($i=0;$i<count($phases);$i++)
     {
@@ -198,10 +198,17 @@ class atkProjectPhaseAttribute extends atkAttribute
         
   function getRecentPhases()   
   {
-    global $g_db, $g_securityManager;
+    global $g_db, $g_securityManager, $ATK_VARS, $g_sessionManager;
     
     $user = getUser();
-     
+
+    $reportnodetype = $g_sessionManager->stackVar("reportnodetype");
+    
+    if (strstr($ATK_VARS["atknodetype"],"reports") || $reportnodetype=="hoursurvey")
+      $projectPhaseFilter = "phase.status<>'archived' AND project.status<>'archived'";
+    else
+      $projectPhaseFilter = "phase.status='active' AND project.status='active'";
+
     $query = "SELECT DISTINCT phase.id, phase.name, project.name as projectname FROM project,phase,hours LEFT JOIN project_person ON (project_person.projectid = project.id)";
     $query.= "WHERE phase.id=hours.phaseid AND userid='".$user["id"]."' AND phase.status='active' AND project.status='active' AND phase.projectid=project.id ";
     
@@ -234,7 +241,7 @@ class atkProjectPhaseAttribute extends atkAttribute
   function getPhase($phaseid)
   {
     global $g_db;
-     
+    
     $query = "SELECT phase.id, phase.name, project.name as projectname FROM project,phase ";
     $query.= "WHERE phase.projectid=project.id AND phase.id = $phaseid";            
     

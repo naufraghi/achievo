@@ -36,14 +36,16 @@
 
       // If we are in project administration mode, we show all projects. Otherwise, we only
       // show active projects.
-      if ($ATK_VARS["atknodetype"]=="project.project"&& in_array($ATK_VARS["atkaction"],array("admin","add","update","edit","search", "view")))
+      $reportnodetype = $g_sessionManager->stackVar("reportnodetype");
+      if ($ATK_VARS["atknodetype"]=="project.project"&& in_array($ATK_VARS["atkaction"],array("admin","add","update","edit","search", "view")) || $reportnodetype=="hoursurvey")
       {
         $this->add(new atkListAttribute("status",array("active","nonactive","archived"),array(),AF_HIDE_ADD|AF_HIDE_LIST, 15));
+        $this->addFilter("project.status<>'archived'");
       }
       else
       {
         $this->add(new atkListAttribute("status",array("active","nonactive","archived"),array(),AF_HIDE, 15));
-        $this->addFilter("project.status","active");
+        $this->addFilter("project.status='active'");
       }
 
       if (($ATK_VARS['atkaction'] == "edit" || $ATK_VARS['atkaction'] == "update") && atkconfig("project_contact_obligatory"))
@@ -88,6 +90,41 @@
       $this->setIndex("name");
     
       atkdebug("project::project()");
+    }
+    
+    function graph_topprojects($params)
+    {
+      global $g_db;
+
+      $start = $params["startdate"];
+      $end   = $params["enddate"];
+      $max   = $params["max"];      
+      $from  = $params["from"];
+
+      $query = &atkQuery::create();
+
+      $query->addTable("hours");
+      $query->addJoin("phase", "", "phase.id = hours.phaseid", false);
+      $query->addJoin("project", "", "phase.projectid = project.id", false);
+      $query->addField("project.name");
+      $query->addField("project.id");
+      $query->addField("sum(time) as totaltime");
+      $query->addCondition("hours.activitydate BETWEEN '".$start."' AND '".$end."'");
+      if ($max)
+      {
+        $query->setLimit($from,$max);
+      }
+      $query->addOrderBy("totaltime DESC");
+      $query->addGroupBy("project.name");
+      $data = $g_db->getrows($query->buildSelect());
+
+      // convert records to graph-compatible array.
+      $dataset = array();
+      for ($i=0, $_i=count($data); $i<$_i; $i++)
+      {
+        $dataset[$data[$i]["name"]] = $data[$i]["totaltime"];
+      }
+      return array(text("registeredtimeperproj")=>$dataset);
     }
     
     // We override the dispatch function, to intercept projectid's. We use this
