@@ -10,6 +10,7 @@ Changes in Achievo 1.0.1
 * Employee supervisor information is now properly converted. (bug #234) [Ivo]
 * Fixed bug when adding individual week locks. [Lineke]
 * Updated Spanish language file. [Daniel]
+* Added questions about extension modules to the FAQ. [Ivo]
 
 Changes in Achievo 1.0.0
 -------------------------
