@@ -29,7 +29,7 @@ class employee extends person
     global $ATK_VARS,$g_user;
 
     $this->person("employee", NF_EDITAFTERADD);
-    
+
     // In employee edit screen, we hide most fields in the add screen.
     foreach (array_keys($this->m_attribList) as $attribname)
     {
@@ -39,9 +39,9 @@ class employee extends person
         $p_attrib->m_flags|=AF_HIDE_ADD;
       }
     }
-    
+
     $this->addFilter("person.role='employee'");
-    $this->add(new atkDateAttribute("birthday","F d Y","d F Y", 0, date("Ymd"), AF_OBLIGATORY|AF_HIDE_LIST));
+    $this->add(new atkDateAttribute("birthday","F d Y","d F Y", 0, date("Ymd"), AF_HIDE_LIST));
 
     $this->add(new atkManyToOneRelation("entity", "employee.profile",AF_RELATION_AUTOLINK|AF_HIDE_ADD));
 
@@ -68,8 +68,8 @@ class employee extends person
       $this->add(new atkDummyAttribute("passwordexplanation", text("password_leaveblankifunchanged"), AF_HIDE_ADD|AF_HIDE_LIST|AF_HIDE_SEARCH|AF_HIDE_VIEW));
       $this->add(new atkPasswordAttribute("password", false, AF_HIDE_LIST|AF_PASSWORD_NOVALIDATE, 40));
     }
-    $this->add(new atkAttribute("role", AF_OBLIGATORY|AF_READONLY|AF_HIDE, 15)); // discriminator.    
-    
+    $this->add(new atkAttribute("role", AF_OBLIGATORY|AF_READONLY|AF_HIDE, 15)); // discriminator.
+
     $this->m_securityMap["deactivate"] = "edit"; // If you may edit, you may also deactivate.
   }
 
@@ -79,7 +79,7 @@ class employee extends person
     $initial["status"] = "active";
     return $initial;
   }
-  
+
   /**
    * Are we in 'active' emps or 'all' emps mode?
    */
@@ -93,7 +93,7 @@ class employee extends person
     }
     return $view;
   }
-  
+
   function action_admin()
   {
     $view = $this->getView();
@@ -103,24 +103,24 @@ class employee extends person
     }
     return parent::action_admin();
   }
-  
+
   function adminFooter()
-  {  
+  {
     $view = $this->getView();
-    
+
     if ($view=="active")
     {
       return text("inactiveemployeesarehidden", $this->m_type, $this->m_module).' '.
              href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
                   '&view=all', text('showallemployees', $this->m_type, $this->m_module));
-    }    
-  }  
+    }
+  }
 
   function descriptor_def()
   {
     return "[lastname], [firstname]";
   }
-  
+
   function recordActions($rec, &$actions, &$mraactions)
   {
     $user = getUser();
@@ -129,11 +129,11 @@ class employee extends person
       // Actve users may be deactivated, but not the logged in user.
       $actions["deactivate"] = session_url("dispatch.php?atknodetype=".$this->atkNodeType()."&atkaction=deactivate&atkselector=[pk]", SESSION_NESTED);
     }
-  
+
     // Prevent users from deleting themselves when they are logged in.
     if($rec["id"]==$user["id"]) unset($actions["delete"]);
   }
-  
+
   function action_deactivate()
   {
     global $g_db;
@@ -143,67 +143,67 @@ class employee extends person
     }
     $this->redirect();
   }
-  
+
   function graph_prjtime($params, $raw=false)
-    {      
+    {
       global $g_db;
-      $data = $g_db->getrows("SELECT 
+      $data = $g_db->getrows("SELECT
                                 project.id, project.name, SUM(time) as total
-                              FROM 
+                              FROM
                                 hours, phase, project
-                              WHERE 
-                                hours.phaseid = phase.id      
+                              WHERE
+                                hours.phaseid = phase.id
                                 AND hours.userid = ".$params["employeeid"]."
                                 AND phase.projectid = project.id".
                                 ($params["viewstart"]!=""?" AND hours.activitydate>='".$params["viewstart"]."'":"").
                                 ($params["viewend"]!=""?" AND hours.activitydate<='".$params["viewend"]."'":"").
-                            " GROUP BY 
+                            " GROUP BY
                                 project.id
-                              ORDER BY 
+                              ORDER BY
                                 project.name");
-                            
+
       if ($raw)
       {
         return $data;
       }
-                         
+
        // convert records to graph-compatible array.
-      $dataset = array();                         
+      $dataset = array();
       for ($i=0, $_i=count($data); $i<$_i; $i++)
-      {                    
-        $dataset[$data[$i]["name"]] = $data[$i]["total"];              
+      {
+        $dataset[$data[$i]["name"]] = $data[$i]["total"];
       }
-      
+
       return array("registeredtimeperproj"=>$dataset);
     }
-    
+
     function graph_activitytime($params, $raw=false)
-    {            
+    {
       global $g_db;
-      $data = $g_db->getrows("SELECT 
+      $data = $g_db->getrows("SELECT
                                 activity.id, activity.name, SUM(time) as total
-                              FROM 
+                              FROM
                                 hours, activity
-                              WHERE 
-                                hours.activityid = activity.id ".                                
+                              WHERE
+                                hours.activityid = activity.id ".
                                 ($params["viewstart"]!=""?" AND hours.activitydate>='".$params["viewstart"]."'":"").
                                 ($params["viewend"]!=""?" AND hours.activitydate<='".$params["viewend"]."'":"").
                             "   AND hours.userid = ".$params["employeeid"]."
-                              GROUP BY 
+                              GROUP BY
                                 activity.name
-                              ORDER BY 
-                                activity.name");                                      
+                              ORDER BY
+                                activity.name");
       // In raw mode the data is sufficient.
       if ($raw) return $data;
-       
+
       // convert records to graph-compatible array.
-      $dataset = array();       
-      
+      $dataset = array();
+
       for ($i=0, $_i=count($data); $i<$_i; $i++)
-      {                
-        $dataset[$data[$i]["name"]] = $data[$i]["total"];                
+      {
+        $dataset[$data[$i]["name"]] = $data[$i]["total"];
       }
-      
+
       return array("registeredtimeperactivity"=>$dataset);
     }
 
