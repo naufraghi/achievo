@@ -6,6 +6,6 @@
   $setup->installNode("timereg.overtime_balance");
   $setup->installNode("timereg.workperiod");  
   
-  $setup->setVersion(3);
+  $setup->setVersion(4);
 
 ?>

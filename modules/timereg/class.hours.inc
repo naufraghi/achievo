@@ -8,10 +8,11 @@ useattrib("atklistattribute");
 useattrib("atktextattribute");
 useattrib("atkdurationattribute");
 useattrib("atkdummyattribute");
+useattrib("atktimeattribute");
 userelation("atkmanytoonerelation");
 
 function date_format($datestamp,$dateformat)
-{ 
+{
   if($dateformat!="")
   {
     return date($dateformat,$datestamp);
@@ -19,7 +20,101 @@ function date_format($datestamp,$dateformat)
   return date("m-d",$datestamp)." (".text(strtolower(date("D",$datestamp))).")";
 }
 
-class to_date extends atkDateAttribute 
+/**
+* Converts the starttime - endtime notation to a duration notation
+*/
+function convertHoursToDuration(&$record)
+{
+  $starttime  += $record["starttime"]["hours"]   *  60;
+  $starttime  += $record["starttime"]["minutes"] *   1;
+  $starttime  += $record["starttime"]["seconds"] /  60;
+
+  $endtime    += $record["endtime"]["hours"]     *  60;
+  $endtime    += $record["endtime"]["minutes"]   *   1;
+  $endtime    += $record["endtime"]["seconds"]   /  60;
+
+  $record["time"] = $endtime - $starttime;
+}
+
+function is_leapyear($date)
+{
+  if ($date["year"]%4 == 0)
+    if ($date["year"]%100 == 0)
+      if ($date["year"]%400 == 0)
+        if ($date["year"]%4000 == 0)
+          return false;
+        else
+          return true;
+      else
+        return false;
+    else
+      return true;
+  else
+    return false;
+}
+
+function convertDurationToHours(&$record, $int = false)
+{
+  if ($record['starttime'] && $record["time"]!==null)
+  {
+    // Seperate minutes from hours
+    $minutes = $record['time']%60;
+    $record['time']               = $record['time']-$minutes;
+    
+    // Add the hours to the begintime so we'll get the hours of the endtime
+    if ($int)
+      $record['endtime']['hours'] = $record['starttime']['hours'] + $record['time']/60;
+    else 
+      $record['endtime']['hours'] = "".$record['starttime']['hours'] + $record['time']/60 ."";
+      
+    // Next we'll do the minutes
+    $record['time']               = $minutes;
+
+    // Seperate seconds from minutes
+    $seconds = $record['time']%1;
+    $record['time']               = $record['time']-$seconds;
+    
+    // Check wether we don't have more than 60 minutes, otherwise we add another hour
+    $record['endtime']['hours'] += intval(($record['starttime']['minutes']+$record['time'])/60);
+    $record['time'] = ($record['starttime']['minutes']+$record['time'])%60;
+    
+    // Add the minutes to the begintime so we'll get the minutes of the endtime
+    if ($int)
+      $record['endtime']['minutes'] = $record['time']/1;
+    else 
+      $record['endtime']['minutes'] = "".$record['time']/1 ."";    
+        
+    // Next we'll do the seconds
+    $record['time']               = $seconds;
+
+    // All we have left is the seconds, so we round that
+    $record['time']=round($record['time']*60);
+    
+    // Check wether we don't have more than 60 seconds, otherwise we add another minute
+    $record['endtime']['minutes'] += intval(($record['starttime']['seconds']+$record['time'])/60);
+    $record['time'] = ($record['starttime']['seconds']+$record['time'])%60;
+    
+    // Add the seconds to the starttime to get the endtime seconds
+    if ($int)
+      $record['endtime']['seconds']   = $record['time'];
+    else 
+      $record['endtime']['seconds']   = "".$record['time'] ."";
+      
+    if ($int)
+    {
+      $record['starttime']['hours'] = $record['starttime']['hours']*1;
+      $record['starttime']['minutes'] = $record['starttime']['minutes']*1;
+      $record['starttime']['seconds'] = $record['starttime']['seconds']*1;
+    }
+  }
+  else 
+  {
+    halt("No starttime or duration!");
+    atk_var_dump($record, "<h1>record</h1>");
+  }
+}
+
+class to_date extends atkDateAttribute
 {
   function to_date()
   {
@@ -29,6 +124,24 @@ class to_date extends atkDateAttribute
   function load() {}
   function store() {}  
   function addtoeditarray() {}
+}
+
+class to_time extends atkTimeAttribute
+{
+  function to_time()
+  {
+    $this->atkTimeAttribute("endtime","0","23",array(0,15,30,45),"12", AF_OBLIGATORY);
+  }
+  
+  function display($record) 
+  {
+    convertDurationToHours($record); 
+    return parent::display($record);
+  }
+  
+  function load() {}
+  function store() {}
+  function getOrderByStatement(){}
 }
 
 class hours extends atkNode
@@ -56,7 +169,7 @@ class hours extends atkNode
    
     $flags=NF_NO_VIEW|NF_TRACK_CHANGES;
 
-    $this->atkNode("hours",$flags|NF_MRA); // node() constructor is *not* called automatically!
+    $this->atkNode("hours",$flags|NF_MRA|NF_NO_ADD); // node() constructor is *not* called automatically!
 
     // default view if none is set
     if (!isset($this->m_weekview)||$this->m_weekview=="")
@@ -73,14 +186,18 @@ class hours extends atkNode
     // userid, even if it's not displayed on screen.
     $this->add(new atkManyToOneRelation("userid","employee.employee", AF_HIDE|AF_FORCE_LOAD|AF_OBLIGATORY));    
 
-    $this->add(new atkProjectPhaseAttribute("phaseid",AF_OBLIGATORY|AF_JS_UPDATEACTIVITY));
-    $this->add(new atkListAttribute("activityid",array("dummy","dummy","dummy","dummy","dummy"),array(0,0,0,0,0),AF_OBLIGATORY, 10));
+	  $this->addPhaseAndActivity();
     $this->add(new atkTextAttribute("remark", atkconfig("timereg_remark_lines", 1), 0));
-    $this->add(new atkDurationAttribute("time",atkconfig("timereg_resolution", "15m"), atkconfig("max_bookable",10).'h',AF_OBLIGATORY|AF_TOTAL));
+    $this->addTime();
     
-    $relation = new atkManyToOneRelation("workperiod","timereg.workperiod", AF_OBLIGATORY|AF_HIDE_LIST);
-    $relation->setHideWhenEmpty(true);
-    $this->add($relation);
+    // If we don't use duration, then we won't need this
+    // Because we can set the rates with the billing module
+    if (atkconfig("use_duration", true))
+    {
+      $relation = new atkManyToOneRelation("workperiod","timereg.workperiod", AF_OBLIGATORY|AF_HIDE_LIST);
+      $relation->setHideWhenEmpty(true);
+      $this->add($relation);
+    }
     
     $this->add(new atkDateAttribute("entrydate",AF_HIDE|AF_OBLIGATORY));
     $this->add(new atkDummyAttribute("javascript", "seebelow", AF_NO_LABEL|AF_HIDE_LIST));
@@ -88,7 +205,33 @@ class hours extends atkNode
     $this->setOrder("hours.id"); // Sort by order of input..
 
     $this->setTable("hours","hours");
+  }
+  
+  function addTime()
+  {
+    $durationflags = AF_TOTAL;
 
+    if (!atkconfig("use_duration", true))
+    {
+      $this->add(new atkTimeAttribute("starttime","0","23",array(0,15,30,45),"12", AF_OBLIGATORY));
+      $this->add(new to_time());
+      $durationflags|=AF_HIDE_ADD|AF_HIDE_EDIT;
+    }
+    else
+    {
+      $durationflags|=AF_OBLIGATORY;
+    }
+
+    $this->add(new atkDurationAttribute("time",atkconfig("timereg_resolution", "15m"), atkconfig("max_bookable",10).'h',$durationflags));
+  }
+  
+  /**
+   * Adds the projectphase attribute and the activity attribute
+   */
+  function addPhaseAndActivity()
+  {
+    $this->add(new atkProjectPhaseAttribute("phaseid",AF_OBLIGATORY|AF_JS_UPDATEACTIVITY));
+    $this->add(new atkListAttribute("activityid",array("dummy","dummy","dummy","dummy","dummy"),array(0,0,0,0,0),AF_OBLIGATORY, 10));
   }
     
   function setLock()
@@ -155,6 +298,40 @@ class hours extends atkNode
       // Week is locked. We may not edit, only view.
       return $this->action_view();
     }
+  }
+
+  // If there is a $config_hours_confirm_save then Achievo will display it
+  // in a confirm box on the first timeregistration for the project
+  function action_save()
+  {
+    if (atkconfig("hours_confirm_save") && ($this->_isThisTheFirstTimeRegForThisProject() || !empty($this->m_postvars['confirm'])))
+    {
+      global $g_sessionManager;
+      if (!empty($this->m_postvars['confirm'])) // was 'yes' clicked?
+      {
+        $this->m_postvars = $g_sessionManager->getValue("postvars");
+        $this->m_postvars = $this->m_postvars["postvars"];
+        return parent::action_save();
+      }
+      elseif (empty($this->m_postvars['cancel'])) // nothing clicked yet?
+      {
+        $g_sessionManager->globalVar("postvars", $this->m_postvars);
+
+        // the 1=0 is a trick. without it, the confirmation page would try
+        // to retrieve a record.
+        $this->confirmAction("1=0", "save", false, TRUE, $_REQUEST);
+      }
+      else // was 'no' clicked?
+      {
+        $this->redirect(); // go back to where we came from
+      }
+    }
+    else return parent::action_save(); // normal behaviour
+  }
+
+  function confirmSaveText()
+  {
+    return atkconfig("hours_confirm_save");
   }
 
   function javascript_edit($rec)
@@ -622,34 +799,22 @@ class hours extends atkNode
     // (we will just skip them later on).
     if ($rec["activitydate"]["multi"]!=1)
     {    
-      if ($this->getLockType($this->m_user,sprintf("%04d-%02d-%02d",$rec["activitydate"]["year"],$rec["activitydate"]["month"],$rec["activitydate"]["day"]))!="")
+      if ($this->getLockType($this->m_user,sprintf("%04d-%02d-%02d",
+                                                   $rec["activitydate"]["year"],
+                                                   $rec["activitydate"]["month"],
+                                                   $rec["activitydate"]["day"]))!="")
       {
         triggerError($rec, "activitydate", "weeklocked");
       }
+      
+      // Here we check for non-valid days, this should be no problem for the normal hours node
+      // As it is (near) impossible to insert false dates without some serious hacking
+      // However the PDA version doensn't have the protection of DHTML, so it IS relevant there
+      if (!checkdate($rec['activitydate']['month'],$rec['activitydate']['day'],$rec['activitydate']['year']))
+        triggerError($rec, "activitydate", "date_invalid");
     }
   }
- /* 
-  function phaseid_validate(&$rec, $mode)
-  {    
-    // Check if the user has rights to register time on this project.
-    if ($mode=="add" && !$this->allowed("any_project"))
-    {
-      global $g_db;
-      
-      $user = getUser();     
-      
-      $cnt = $g_db->getrows("SELECT count(1) as cnt
-                             FROM phase, project_person
-                             WHERE phase.id = ".$rec["phaseid"]["phaseid"]." 
-                               AND phase.projectid = project_person.projectid
-                               AND project_person.personid = ".$user["id"]);
-      if (!count($cnt)||$cnt[0]["cnt"]==0)
-      {
-        triggerError($rec, "phaseid", "error_timereg_members_only");
-      }
-    }
-  }
-*/
+
   /**
    * We override the validate method, so we can check if a remark is required
    * for the chosen activity. If it is, we add the AF_OBLIGATORY flag to the
@@ -917,7 +1082,152 @@ class hours extends atkNode
       // Week is locked
       return ' <img src="'.atkconfig("atkroot").'atk/images/lock.gif" border="0">';
     }
-  }  
+  }
+
+  /**
+   * Checks wether or not there are any timeregistrations on a particulair project
+   * Depends on being called from action_save
+   * @return bool Wether or not it's the first timereg for the project
+   */
+  function _isThisTheFirstTimeRegForThisProject()
+  {
+    $phasenode =   &getNode("project.phase");
+    $projectnode = &getNode("project.project");
+    $hoursnode =   &getNode("timereg.hours");
+    $record = $this->updateRecord();
+    $user = getUser();
+    
+    $excludelist = $this->_getExcludeListForNode($phasenode, array("projectid"));
+    $phaserecs = $phasenode->selectDb($phasenode->m_table.".id='{$record['phaseid']['phaseid']}'",null,null, $excludelist);
+    
+    $excludelist = $this->_getExcludeListForNode($phasenode, array("id", "projectid"));
+    
+    $phases = $phasenode->selectDb($phasenode->m_table.".projectid='{$phaserecs[0]['projectid']['id']}'",null,null,$excludelist);
+    
+    $inphase = array();
+    foreach ($phases as $phase)
+    {
+      $inphase[] = $phase["id"];
+    }
+    
+    $in = implode(",",$inphase);
+    if ($in) $instr = "IN (".$in.")";
+    $timeregcount = $hoursnode->countDb("{$hoursnode->m_table}.phaseid $instr AND {$hoursnode->m_table}.userid = '{$user['id']}'");
+    atkdebug("$timeregcount timeregistrations on this project by this user");
+    if ($timeregcount>0) 
+      return false;
+    else                 
+        return true;
+  }
+  
+  function _getExcludeListForNode($node, $include)
+  {
+    $excludelist = array_keys($node->m_attribList);
+    foreach ($excludelist as $key=>$value)
+    {
+      if (in_array($value, $include)) unset($excludelist[$key]);
+    }
+    sort($excludelist);
+    return $excludelist;
+  }
+  
+  function preAdd(&$record)
+  {    
+    $this->modifyfortime($record);
+  }
+
+  function preUpdate(&$record)
+  {
+    $this->modifyfortime($record);
+  }
+
+  function modifyfortime(&$record)
+  {
+    // if we don't have duration, then we have a begin and an end time
+    // however, we still store it as a duration, only with a start time
+    // so we need to remove the end time and add a 'time'
+    if ($record['starttime'])
+    {
+      $this->performTimeChecks($record);
+      convertHoursToDuration($record);
+    }
+  }
+
+  function edit_values($defaults)
+  {
+    // Here we make sure that if we have a starttime (don't worry,
+    // the convertDurationToHours() function checks for it) that
+    // we convert the duration to a starttime and entime notation
+    // for editting
+    convertDurationToHours($defaults);
+    return array('endtime'=>$defaults['endtime']);
+  }
+
+  /**
+  * Does checks on a record with a starttime and endtime in it
+  * before it is converted and goes into the database
+  */
+  function performTimeChecks(&$record)
+  {
+    $RECstartH = $record["starttime"]["hours"]*1;
+    $RECstartM = $record["starttime"]["minutes"]*1;
+    $RECstartS = $record["starttime"]["seconds"]*1;
+    
+    $RECendH = $record["endtime"]["hours"]*1;
+    $RECendM = $record["endtime"]["minutes"]*1;
+    $RECendS = $record["endtime"]["seconds"]*1;
+    
+    // Check if the endtime isn't before the starttime
+    if ($RECstartH>$RECendH || 
+         ($RECstartH==$RECendH && $RECstartM>$RECendM) || ($RECstartH==$RECendH && $RECstartM==$RECendM && $RECstartS>$RECendS))
+    {
+      triggerError($record, "starttime", "error_begintime_before_endtime");
+      return;
+    }
+    
+    if (($RECstartH==$RECendH)&&($RECstartM==$RECendM)&&($RECstartS==$RECendS))
+    {
+      triggerError($record, "starttime", "error_begintime_equals_endtime");
+      return;
+    }
+
+    // Check if that period is still available
+
+    // WARNING!
+    // Here we do a selectDb on ourselves for the current activitydate,
+    // normally this would fail, however, because this function is only called in
+    // a special mode and never directly from the constructor, it should always work.
+    $select = $this->selectDb("activitydate = '".$record['activitydate']['year']."-".$record['activitydate']["month"]."-".$record['activitydate']["day"]."'");
+    
+    foreach ($select as $dbrecord)
+    {
+      convertDurationToHours($dbrecord,true);
+      
+      $DBstartH = $dbrecord["starttime"]["hours"];
+      $DBstartM = $dbrecord["starttime"]["minutes"];
+      $DBstartS = $dbrecord["starttime"]["seconds"];
+    
+      $DBendH = $dbrecord["endtime"]["hours"];
+      $DBendM = $dbrecord["endtime"]["minutes"];
+      $DBendS = $dbrecord["endtime"]["seconds"];
+      
+      if (
+      // Check if endtime of this record is earlier or the same as the starttime of this entry
+      !($DBstartH>$RECendH || ($DBstartH==$RECendH && $DBstartM>$RECendM) || 
+          ($DBstartH==$RECendH && $DBstartM>$RECendM ||
+            ($DBstartM==$RECendM && $DBstartS>=$RECendS))
+      ||
+      // Check if starttime of the record is later or the same as the endtime of this entry
+      ($RECstartH>$DBendH || ($RECstartH==$DBendH && $RECstartM>$DBendM) || 
+          ($RECstartH==$DBendH && $RECstartM<$DBendM ||
+            ($DBstartM== $RECendM && $RECstartS>=$DBendS)))))
+      {
+        triggerError($record, "starttime", "error_time_already_registered");
+        return false;
+      }
+    }
+  }
+    // END WARNING
 
 }
 

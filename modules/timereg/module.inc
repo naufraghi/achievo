@@ -29,10 +29,15 @@
       include_once(moduleDir("timereg")."pim.inc");
       return array("timeregistration"=>pimTimeReg());
     }  
-    
+
     function getDependencies($mode)
     {
       return array("project", "employee");
+    }
+
+    function pdaNodes()
+    {
+      return array("time_registration_add"=>dispatch_url("timereg.hourspda", "add"),"time_registration_admin"=>dispatch_url("timereg.hourspda", "admin"));
     }
   }
   
