@@ -4,8 +4,8 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
-Changes in Achievo 1.1.0
-------------------------
+Changes in Achievo 1.1RC1
+-------------------------
 + Added configurable overtime categories ('workperiods'). [Lineke]
 + Added overtime balance tracking to timereg and weekreport. [Lineke]
 + Added privilege to register time for other users. [Lineke]
