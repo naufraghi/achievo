@@ -2,6 +2,7 @@
 
   userelation("atkmanytoonerelation");
   useattrib("atknumberattribute");
+  useattrib("atkdurationattribute");
   useattrib("project.spendhoursattribute");  
 
   class phaseplanning extends atkNode
@@ -13,8 +14,8 @@
       
       $this->add(new atkManyToOneRelation("phaseid", "project.phase", AF_HIDE|AF_PRIMARY));
       $this->add(new atkManyToOneRelation("personid", "employee.employee", AF_READONLY_EDIT|AF_PRIMARY));
-      $this->add(new atkNumberAttribute("initial_planning", AF_READONLY_EDIT|AF_TOTAL));
-      $this->add(new atkNumberAttribute("current_planning", AF_HIDE_ADD|AF_TOTAL));      
+      $this->add(new atkDurationAttribute("initial_planning",'','', AF_READONLY_EDIT|AF_TOTAL|AF_DURATION_STRING));
+      $this->add(new atkDurationAttribute("current_planning",'','', AF_HIDE_ADD|AF_TOTAL|AF_DURATION_STRING));      
       $this->add(new spendHoursAttribute("spend_hours","phaseid",AF_TOTAL));
       
       $this->setTable("project_phaseplanning");
