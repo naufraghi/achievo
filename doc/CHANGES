@@ -21,6 +21,8 @@ Changes in Achievo 1.1.0
 + Added startdate/enddate to phases. [Ivo]
 + Estimated time per phase can now be detailed per employee. [Ivo]
 + Initially planned time for phases is now remembered. [Ivo]
++ Project screen now displays already booked hours per phase with clickthrough
+  to hoursurvey for details. [Sandy, Ivo]
 + Added multisort capability to ATK backend, and to time survey and
   project admin screens. [Ivo]
 + Added archive feature to project and employee screens. [Ivo]
