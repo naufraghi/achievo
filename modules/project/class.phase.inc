@@ -61,7 +61,7 @@
       
       $this->add(new fuzzySearchAttribute("phaseplanning_add", "employee.employee", "storePhaseplanning", FSA_MULTISELECT, AF_HIDE_ADD|AF_BLANK_LABEL, 20));
   
-      $this->setOrder("startdate, name");
+      $this->setOrder("phase.startdate, phase.name");
       $this->setTable("phase","phase");
     }
   
