@@ -227,7 +227,7 @@ foreach ($gant as $id=>$gantphase)
       if(!empty($gantphase['planned']))
       {
         $tempp = $gantphase['planned'] / (($gantphase['maxhours'])*60);
-        $activity[$i]->planned->Set((0.0000000001), $tempp);
+        $activity[$i]->progress->Set((0.0000000001), $tempp);
 
         $caption .= '[0/'.round($gantphase['planned']/60).']';
       }      
