@@ -23,7 +23,7 @@ class phase extends atkNode
     $this->add(new atkNumberAttribute("max_phasetime"));
     $this->add(new atkNumberAttribute("max_hours"));
 
-    $tmp = new atkManyBoolRelation("phase_activity", "project.phase_activity", "project.activity", AF_HIDE_LIST);
+    $tmp = new atkManyBoolRelation("phase_activity", "project.phase_activity", "project.activity", AF_HIDE_LIST|AF_OBLIGATORY);
     $tmp->m_localKey = "phaseid";
     $tmp->m_remoteKey = "activityid";
     $this->add($tmp);
