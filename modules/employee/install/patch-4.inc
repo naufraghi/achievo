@@ -1,5 +1,5 @@
 <?php
 
-  $setup->addColumn("person", "birthday", "date", true);
+  $setup->addColumn("person", "birthdate", "date", true);
 
 ?>
