@@ -189,13 +189,15 @@
 
   function usermail($to, $subject, $body, $add_header="")
   {
+    $sender = atkconfig("mail_sender", "achievo");
+
     if (is_array($to) && count($to)>0)
     {
       $to = implode(",",$to);
     }
     if ($to!="" && $subject!="")
     {
-      mail($to,"[achievo notice] ".$subject,$body,"From: achievo\n".$add_header);
+      mail($to,"[achievo notice] ".$subject,$body,"From: ".$sender."\r\n".$add_header);
       atkdebug("Sent mail to $to");
     }
     else
@@ -211,7 +213,7 @@
       if ($displayzero) return "00:00";
       return "&nbsp;";
     }
-    return floor($time/60).":".sprintf("%02d",($time%60));
+    return ($time<0?"-":"").floor(abs($time)/60).":".sprintf("%02d",(abs($time)%60));
   }
 
 

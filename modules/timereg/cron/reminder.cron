@@ -4,16 +4,11 @@
   * @Author Ivo Jansch <ivo@achievo.org>
   *
   * Sends an email reminder if someone did not enter all of his hours in
-  * the previous week.
+  * the previous week(s).
   * 
   * $Id$
   *
   */
-
-  // work from achievo dir. .
-  chdir("../");
-  include_once("atk.inc");
-  include_once("achievotools.inc");
 
   $today = date("Y-m-d");
   $year = substr($today,0,4);
@@ -64,7 +59,7 @@
                 usercontract, person
               WHERE
                 startdate <= '$startdate'
-                AND enddate > '$startdate'
+                AND (enddate > '$startdate' OR enddate IS NULL)
                 AND usercontract.userid = person.id
                 AND person.status='active' AND person.role = 'employee'";
 
@@ -72,7 +67,7 @@
 
     for ($i=0;$i<count($contracts);$i++)
     {
-      $time[$contracts[$i]["id"]]["contract"] = $contracts[$i]["uc_hours"]*60;
+      $time[$contracts[$i]["id"]]["contract"] += $contracts[$i]["uc_hours"]*60;
       $time[$contracts[$i]["id"]]["email"] = $contracts[$i]["email"];
       $time[$contracts[$i]["id"]]["supervisor"] = $contracts[$i]["supervisor"];
     }
@@ -134,8 +129,9 @@
     {
       $cc = "Cc: ".$supervisormail."\r\n";
     }
+
     if ($to!="")
-    {
+    {      
       usermail($to,text("timeguard_mail_subject"),$body, $cc);
       echo "sent mail to $to";
       if ($cc!="") echo " and a cc to $cc";
@@ -148,7 +144,7 @@
         echo "would've sent mail to $user, but he doesn't have an email address\n";
       }
       else
-      {
+      {     
         usermail($cc,text("timeguard_mail_subject"),$body);
         echo "would've sent mail to $user, but he doesn't have an email address. Sending only to supervisor\n";
       }

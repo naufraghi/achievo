@@ -77,7 +77,7 @@
         // This can't be trusted. Mysql returns DB_SUCCESS even
         // if the user doesn't have access to the database. We only get an
         // error for this after we performed the first query.
-        $tmp = $g_db->getrows("show tables");  // TODO FIXME: 'show tables' is NOT database independent
+        $g_db->getrows("show tables");  // TODO FIXME: 'show tables' is NOT database independent
         $res = $g_db->_translateError($g_db->m_errno);
       }
           
@@ -244,7 +244,8 @@
                                      contain an Achievo database. This database probably belongs to a different application.
                                      <br>It is strongly recommended to install Achievo to a new, empty database.
                                      <br><br>If you are intentionally installing Achievo into a non-empty database, you can 
-                                     continue, but keep this in mind: The installation process may fail if there are conflicting tables                                      already present in the database, and it might even try to modify or drop existing tables. 
+                                     continue, but keep this in mind: The installation process may fail if there are conflicting tables
+                                     already present in the database, and it might even try to modify or drop existing tables. 
                                      <br><br><b>Continue at your own risk</b>.",
                                      "installdb");
         }
@@ -261,7 +262,7 @@
           // Perform some checks to determine what version this database might be.
           // We do this by looking at some tables that exist, that were created in
           // several Achievo versions.
-          $orgversion = "";
+          $orgversion = "";      
           
           if (in_array("projectactivity", $tablenames) && in_array("templateactivity", $tablenames))
           {
@@ -324,7 +325,14 @@
     
     function action_installdb()
     {
-      global $g_modules, $g_layout;
+      global $g_modules, $g_layout, $g_modifiers;
+      
+      // We must clear the modifiers. Modifiers will cause extra fields to be
+      // installed, but this should be done by the extension modules
+      // themselves. Not clearing the modifiers will lead to 'column already
+      // exists' errors.
+      $old_modifiers = $g_modifiers;
+      $g_modifiers = array();
       
       $g_layout->initGui();                                     
       
@@ -336,7 +344,7 @@
       
       if ($this->installModule("setup", $result))
       {      
-        foreach ($g_modules as $modname=>$moduledir)
+        foreach (array_keys($g_modules) as $modname)
         {
           if ($modname!="setup") // we already installed setup when we started.
           {
@@ -362,6 +370,9 @@
       {
         $ok = false;
       }
+      
+      // Restore modifiers.
+      $g_modifiers = $old_modifiers;
       
       if ($ok)
       {
@@ -719,6 +730,20 @@
       return true;
     }
     
+    function columnExists($table, $column)
+    {
+      global $g_db;
+      $meta = $g_db->metadata($table, true);                
+      for ($i=0, $_i=count($meta); $i<$_i; $i++)
+      {
+        if (strtolower($meta[$i]["name"]) == strtolower($column))
+        {
+          return true;
+        }
+      }
+      return false;
+    }
+    
     function setVersion($version, $module="")
     {
       // if something went wrong, we should ignore the setVersion call.
@@ -903,6 +928,7 @@
         if ($this->upgradedb($result))
         {
           $output.=$this->renderResult($result);
+          $this->renderReport($output);
         }
       } 
       $this->setupscreen("Upgrading from version $orgversion",
@@ -915,6 +941,7 @@
     
     function renderResult($result)
     {
+    	    	
       global $g_layout;
       $output="";
       if (count($result)>0)
@@ -948,8 +975,9 @@
       {
         // things have been installed. Show result.
         $output = $this->renderResult($result);     
+        $this->renderReport($output);
 
-        if ($ok)
+        if ($this->m_cancontinue)
         {
           return $this->setupScreen("Upgrade result", $output, "achievostart");
         }
@@ -970,8 +998,6 @@
 
       $installedmodules = $this->getInstalledModules();
       
-      $ok = true;      
-      
       $stufftodo = false;
       
       foreach ($g_modules as $modname=>$moduledir)
@@ -984,7 +1010,7 @@
           if (!$this->installModule($modname, $result, true))
           {
             atkdebug("Installation failed.");
-            $ok = false;
+            $this->m_cancontinue = false;
             break;
           }     
         }

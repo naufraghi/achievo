@@ -21,7 +21,7 @@
   
 
   $g_layout->output('
-        <frameset rows="73,*" frameborder="0" border="0">
+        <frameset rows="80,*" frameborder="0" border="0">
           <frame name="top" scrolling="no" noresize src="top.php" marginwidth="0" marginheight="0">
        ');    
     
@@ -35,7 +35,7 @@
     $g_layout->output('
         <noframes>
           <body bgcolor="#CCCCCC" text="#000000">
-            <p>Your browser doesnt support frames, but this is required to run '.$txt_app_title.'</p>
+            <p>Your browser doesnt support frames, but this is required to run '.text("app_title").'</p>
           </body>
         </noframes>
       </frameset>

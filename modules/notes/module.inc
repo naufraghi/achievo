@@ -4,8 +4,7 @@
   {
     function getNodes()
     {
-      registerNode("notes.project_notes", array("admin", "add", "edit", "delete"));
-      registerNode("notes.project_notesview", array("admin", "add", "edit", "delete"));
+      registerNode("notes.project_notes", array("admin", "add", "edit", "delete"));     
     }
     
     function getMenuItems()
@@ -18,8 +17,13 @@
       } 
       else
       {        
-        menuitem("project_notesview", dispatch_url("notes.project_notesview", "edit", array("atkselector" => "project.id=".$selectedproject)), "projectmanagement", array("notes.project_notesview", "admin"));   
+        menuitem("project_notesview", dispatch_url("notes.project_notesview", "edit", array("atkselector" => "project.id=".$selectedproject)), "projectmanagement", array("notes.project_notes", "admin"));   
       }   
+    }
+    
+    function getDependencies($mode)
+    {
+      return array("project");
     }
   }
   

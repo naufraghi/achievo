@@ -85,19 +85,19 @@
       if (trim($this->m_view) == "") { $this->m_view = "dayview"; }
 
       $this->m_user     = $g_sessionManager->stackVar("user");
-      if ($this->m_user=="") 
+      if ($this->m_user=="")
       {
-        $user = getUser();        
+        $user = getUser();
         if ($user["calendar_defaultuserview"]!="*")
         {
           $this->m_user = $user["userid"];
-        }        
+        }
         else
         {
           // User has opted to show all users by default.
           $this->m_user = "all";
         }
-        
+
       }
 
       $this->m_viewdate = $g_sessionManager->stackVar("viewdate");
@@ -118,7 +118,7 @@
 
 
     function initial_values()
-    {      
+    {
       $user = getUser();
       $initial["owner"]["id"] = $user["id"];
       $initial["publicitem"] = 1;
@@ -192,9 +192,9 @@
       return $employee_code;
     }
 
-    function get_employees2()
+    function get_employees2($selemployee)
     {
-      global $g_db, $selemployee;
+      global $g_db;
 
       $sql = "SELECT lastname,firstname,userid,id
               FROM person
@@ -207,8 +207,8 @@
       $employee_code='<INPUT TYPE="checkbox" VALUE="all" NAME="employee[]" '.$sel.'><font size="-1">'.text("allusers")."</font><br>";
       for($i=0;$i<count($records);$i++)
       {
-        if($selemployee[$records[$i]["id"]]==$records[$i]["id"]) { $sel="CHECKED"; } else { $sel=""; }
-        $employee_code.='<INPUT TYPE="checkbox" VALUE="'.$records[$i]["id"].'"  NAME="employee[]" '.$sel.'><font size="-1">'.$records[$i]["lastname"].', '.$records[$i]["firstname"]."(".$records[$i]["userid"].")</font><br>";
+        if($selemployee[$records[$i]["userid"]]==$records[$i]["userid"]) { $sel="CHECKED"; } else { $sel=""; }
+        $employee_code.='<INPUT TYPE="checkbox" VALUE="'.$records[$i]["userid"].'"  NAME="employee[]" '.$sel.'><font size="-1">'.$records[$i]["lastname"].', '.$records[$i]["firstname"]."(".$records[$i]["userid"].")</font><br>";
       }
       return $employee_code;
     }
@@ -220,7 +220,10 @@
       if (method_exists($this, $this->m_view))
       {
         $funcname = $this->m_view;
-        $result = $this->$funcname($this->m_viewdate);
+              // link to weekview and monthview and employeeview
+        $result= href($_SERVER["PHP_SELF"]."?view=dayview&viewdate=$this->m_viewdate",text("dayview")) ."&nbsp;".href($_SERVER["PHP_SELF"]."?view=weekview&viewdate=$this->m_viewdate",text("weekview")) ."&nbsp;". href($_SERVER["PHP_SELF"]."?view=monthview&viewdate=$this->m_viewdate", text("monthview"))."&nbsp;".href($_SERVER["PHP_SELF"]."?view=employeeview&viewdate=$viewdate", text("employeeview"));
+
+        $result.= $this->$funcname($this->m_viewdate);
       }
       else
       {
@@ -316,7 +319,7 @@
       $form  = "<FORM name='frmemployeeview' method='post' action='".$_SERVER["PHP_SELF"]."'>\n";
       $form .= session_form();
       $form .= "<input type='hidden' name='viewdate' value='$viewdate'>\n";
-      $form .= $this->get_employees2();
+      $form .= $this->get_employees2($selemployee);
       $form .= "<br>";
 
       $recs["viewdate"]["day"] = $day;
@@ -353,7 +356,7 @@
       $year  = substr($viewdate, 0,4);
 
       $form = $this->getUserSelector($viewdate);
-      
+
       // get the rendered matrix
       $dummy = new dayView($day, $month, $year);
       $dummy->viewerWidth = "600";
@@ -366,10 +369,10 @@
       $legend .= $dummy->legend;
 
       // link to weekview and monthview and employeeview
-      $buff = href($_SERVER["PHP_SELF"]."?view=weekview&viewdate=$viewdate",text("weekview")) ."&nbsp;". href($_SERVER["PHP_SELF"]."?view=monthview&viewdate=$viewdate", text("monthview"))."&nbsp;".href($_SERVER["PHP_SELF"]."?view=employeeview&viewdate=$viewdate", text("employeeview"));
-
+      //$buff = href($_SERVER["PHP_SELF"]."?view=weekview&viewdate=$viewdate",text("weekview")) ."&nbsp;". href($_SERVER["PHP_SELF"]."?view=monthview&viewdate=$viewdate", text("monthview"))."&nbsp;".href($_SERVER["PHP_SELF"]."?view=employeeview&viewdate=$viewdate", text("employeeview"));
+     
       // assign our output buffer
-      $buff .= "<br><br><table width='".$dummy->viewerWidth."'><tr>";
+      $buff= "<br><br><table width='".$dummy->viewerWidth."'><tr>";
       $buff .= "<td valign='top' align='left'>".$dummy->dayNav()."</td>";
       $buff .= "<td valign='top' align='right'>$form</td>";
       $buff .= "</tr><tr><td valign='top' align='left'><b>".$dummy->title."</b></td>";
@@ -379,9 +382,9 @@
 
       return $buff;
     }
-    
+
     function getUserSelector($viewdate)
-    {  
+    {
       // get all users we can view
       $form  = "<FORM method='post' action='".$_SERVER["PHP_SELF"]."'>\n";
       $form .= session_form();

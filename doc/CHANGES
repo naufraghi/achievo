@@ -4,6 +4,101 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changes in Achievo 1.0.4
+------------------------
++ Sender field of Achievo mails can now be configured with 
+  $config_mail_sender. [Ivo]
++ Added missing scheduler navigation links. (bug #247) [Sandy]
++ Added 'all users' option to the employee statistics. (bug #261) [Ivo]
+* Fixed bug in remark search in hoursurvey. [Ivo]
+* Fixed bug in display of locked weeks in employee weekreport. [Lineke]
+* Fixed bug in weeknumbers in the scheduler monthview. (bug #258) [Sandy]
+* Fixed problem with top frame layout. (bug #229) [Sandy]
+* Fixed missing userid field when using pop3 auth. (bug #274) [Ivo]
+* Updated adodb-time.inc.php to latest version. (bug #273) [Sandy]
+* Fixed bug when adding phases. [Sandy]
+* Fixed problem in 1 Phase Ganttchart. (part of bug #272) [Sandy]
++ Added Catalan language file. [Lluis]
+* Updated Italian language file. [Andrea]
+* Updated German language file. (bug #267 & #268) [Christian]
+
+Changes in Achievo 1.0.3
+------------------------
++ Added piecharts and textual stats for employees. [Ivo]
++ Added detail links to the hoursurvey to projectstats. [Ivo]
++ Added textual stats to the project stats. (bug #248) [Ivo]
++ Added 'grant all' privilege, which allows users to grant rights they do not
+  explicitly have themselves. [Ivo]
++ Added VAT number to organizations. (bug #252) [Ivo]
++ The resolution for time entry can now be configured. (bug #256) [Ivo]
++ The 'time survey' report can now be filtered by remark. [Ivo]
++ Added menu-item to manage contact persons. [Ivo]
+* Contacts found with the searchbox now show their company. (bug #227) [Ivo]
++ Added decimals to employee contracts. [S.Leblanc]
++ Roles that are not in use can now be deleted. (bug #236) [Ivo]
++ The employee weekreport now displays negative overtime (shortages). [Lineke]
+* Modified employee add screen so contracts will not be overlooked. [Ivo]
+* Employee contracts' enddate is now optional. [Ivo]
++ Added support for cumulative usercontracts. [Lineke]
++ Added birthdate field for employees. [Lineke]
+* Setup.php now accepts include_paths with only ".". (bug #237) [Mike]
+* The project stats page now has the project name in the title box. [Ivo]
+* Added several untranslated strings to the language files. [Nele]
+* Fixed bug when using the alphabetical indexes on pages > 1. [Ivo]
+* Updated Swedish language file. [Thomas]
+* Updated German language file. [Nele]
+* Updated French language file. [Hicham]
+* Updated Dutch language file. [Ivo]
+
+Changes in Achievo 1.0.2
+------------------------
++ Added second address field to organization mail and visit address. [Ivo]
+* The conversion script now warns the user if default contactpersons are
+  generated. [Ivo]
+* If add-on modules were activated before the Achievo db was installed,
+  database errors could occur. This is now fixed. [Ivo]
+* Upgrade patches can now report important information to the user. [Ivo]
+* Workaround of wrong patch version number in 1.0.1. [Ivo]
+* Fixed bug in formatting of negative time entries. [Ivo]
+* Updated German language file. [Stephan]
+
+Changes in Achievo 1.0.1
+------------------------
++ Separated mail and visit address for organizations. (bug #230) [Martin, Ivo]
+* Employee supervisor information is now properly converted. (bug #234) [Ivo]
+* Fixed bug when adding individual week locks. [Lineke]
+* Updated Spanish language file. [Daniel]
+* Added questions about extension modules to the FAQ. [Ivo]
+
+Changes in Achievo 1.0.0
+-------------------------
+* Fixed bug #213. [Ivo]
+* Fixed a few untranslated strings. (bug #224) [Martin, Ivo]
+* Updated Danish language file. [Junaid]
+
+Changes in Achievo 1.0RC3
+-------------------------
+* Fixed bug when setup.php was run with $config_auth_dropdown set to
+  true. (bug #180) [Sandy, Kevin]
+* Fixed several themes. (bug #200) [Kevin, Sandy, Ivo]
+* Fixed bug in schedule comparison. (bug #197) [Lineke]
+* Fixed project menu, notes disappeared when a project was selected. [Sandy]
++ Project edit has an extra tab with notes. [Sandy]
+* Fixed bugs #45, #92, #99, #172, #194, #210. [Ivo]
+* Fixed bug #207. [Sandy]
+* Fixed tiny bug in todo mailer. [Ivo]
+* Fixed conversion: Employees could be converted to contacts in some cases. [Ivo]
+* Updated German language file. [Nele]
+* Updated Brazilian-Portuguese language file. [Marcus]
+
+Changes in Achievo 1.0RC2
+-------------------------
+* Fixed logout problem. (bug #177) [Sandy]
+* Bugfixes for bugs #181, #183, #185, #187, #189. [Ivo]
+* Bugfix for bug #191. [Jaap]
+* Changed cron method so add-on modules can add custom crons. [Ivo]
+* Updated German language file. [Nele]
+
 Changes in Achievo 1.0RC1
 -------------------------
 + In employee management, inactive employees are now hidden by default. [Ivo]

@@ -26,28 +26,34 @@ Achievo grows not only through contributions from the Open Source community,
 but also through financial donations from sponsors, who finance the
 development of new features.
 
-* Tryllian BV, Netherlands (http://www.tryllian.nl) sponsored the following
-  developments:
+* Ibuildings.nl BV, Netherlands (http://www.ibuildings.nl) sponsors the 
+  development of Achievo and sponsors Achievo's hosting and development
+  facilities (site, mailinglists, cvs etc).
 
-  - hourlocking feature
-  - employee week report
-  - CSV export function
-  - employee contracts
-  - timereg_check cron script
-  - hoursurvey improvements
+* Tryllian BV, Netherlands (http://www.tryllian.nl) sponsored the following
+  enhancements: hourlocking feature, employee week report, CSV export
+  function, employee contracts, the timereg_check cron script and various
+  hoursurvey improvements.
 
 * S&W Consultancy BV, Netherlands (http://www.s-w.nl) sponsored the following
-  enhancements:
-
-  - contactpersons per project
-  - userinterface improvements
-  - improvements to the extended search feature
-  - additional fields to customers and projects
+  enhancements: contactpersons per project, userinterface improvements, 
+  improvements to the extended search feature, and several additional fields 
+  for customers and projects.
 
 * Lilleborg AG, Norway (http://www.lilleborg.no) sponsored some parts of
   the billing feature.
 
-To become a sponsor, please read http://www.ibuildings.nl/en/sponsor/achievo.
+* Plan42 GMBH, Germany (http://www.plan42.de) sponsored the development
+  of the Deposit add-on module, and some parts of the billing module.
+
+* Prosa.dk, Denmark (http://www.prosa.dk) sponsored the development of the
+  weektimereg add-on module.
+  
+* Kern8, The Netherlands (http://www.kern8.nl) sponsored the development
+  of cumulative usercontracts, the displaying of shortages in the employee 
+  weekreport and the holidayreport add-on module.
+
+To become a sponsor, please read http://www.achievo.org/support/sponsor.
 
 
 Translators
@@ -58,27 +64,34 @@ Braz. Portuguese: Armando M. Baratti   <ambaratti@aduaneiras.com.br>
                   Kevin Golding        <kevin@caomhin.demon.co.uk>
                   Geraldo L M Fonseca  <glmfonseca@uol.com.br>
                   Marcus TB de Aquino  <tulio@mondo.com.br>
+Catalan         : Lluís Torrent        <lluis6a@teleline.es>
 Chinese         : Xiaogang Sun         <sun.xiao.g@263.net>
 Czech           : Jakub Kahovec        <jakub.kahovec@newton.cz>
 Dutch           : Ivo Jansch           <ivo@achievo.org>
 Danish          : Morten Oersted       <mo@moch.dk>
+                  Junaid Mukhtar       <JUM@prosa.dk>
 Finnish         : Skyttä Kari          <kari.skytta@koskisen.fi>
                   Arto Saraniva        <arto.saraniva@imnetti.fi>
 French          : Benoit des Ligneris  <benoit.des.ligneris@physique.usherb.ca>
                   Olivier Fourdan      <fourdan@xfce.org>
                   Kevin Golding        <kevin@caomhin.demon.co.uk>
                   Timduru              <timduru@timduru.org>
+                  Hicham Abassi        <h.abassi@datapresse.com>
 German          : Bastian Kleineidam   <bastian.kleineidam@triplex.de>
                   Lars Martin          <lars@smb-tec.com>
                   Michael Gaehwiler    <pegatron@gmx.net>
                   Lucas Smith          <smith@dybnet.de>
                   Dirk Weigenand       <Dirk.Weigenand@smb-tec.com>
                   Rainer Wedrich       <rainer.wedrich@ebd-networks.de>
+                  Nele Vogel           <nele.vogel@hamburg.de>
+                  Stephan Reichhelm    <reichhelm@grit.de>
+                  Christian Veron      <veronc@schneiderkreuznach.com>
 Hungarian       : Miklos Bagi Jr.      <bagim@muszakikiado.hu>
 Italian         : Marco De Toni        <marco.detoni@dedalomedia.it>
                   Luca Pescatore       <l.pescatore@network.it>
                   Christophe Vallet    <chris@prismanet.com>
                   Nicola Busetto       <nicola@cnbtech.it>
+                  Andrea Trasatti      <trasatti@bware.it>
 Norwegian       : Stein Bjorndal       <stein@proact.no>
                   Tommy Stiansen       <Tommy@tradeit.as>
                   Stian Hartviksen     <stian.hartviksen@itsopen.no>
@@ -90,7 +103,7 @@ Spanish         : Jorge Ibsen          <jibsen@eso.org>
                   Antonio              <avico@menta.net>
                   Kevin Golding        <kevin@caomhin.demon.co.uk>
                   Daniel Adad          <info@adad.net>
-Swedish         : Thomas Karlsson      <thomas.karlsson3@comhem.se>
+Swedish         : Thomas Karlsson      <thomas.karlsson@relea.se>
 
 
 Major Contributors
@@ -100,8 +113,8 @@ significant contributions to the Achievo project.
 
 Stefan Niederhauser <sn@atelier-w.ch>
 
-  Stefan came up with the aditional idea and design of the 'node'
-  concept, which later became the basis of the ATK backend.
+  Stefan came up with the idea and design of the 'node' concept, which 
+  later became the basis of the ATK backend.
 
 William Rhee <willrhee@umich.edu>
 
@@ -152,3 +165,7 @@ Bruno Meneuvrier                      <bruno@cameleons.net>
 Ajit Deshpande                        <ajit@pobox.com>
 Jean-Charles Rogez                    <jean-charles.rogez@edfgdf.fr>
 Jonas Lincoln                         <lincoln@unit.liu.se>
+Jaap Bouma                            <jaap@buyways.nl>
+Martin ?                              <acmail@sebastian.nl>
+Mike Izydorski                        <achievobug@mizydors.rubikon.pl>
+Stefan Leblanc                        <sleblanc@radicalhorizon.com>

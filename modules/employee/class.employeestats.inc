@@ -1,17 +1,17 @@
 <?php
 
-  class projectstats extends atkNode
+  class employeestats extends atkNode
   {   
     var $m_viewstart = ""; 
     var $m_viewend = "";
     var $m_zoom = "";
-    var $m_projectid = "";
+    var $m_employeeid = "";
     var $m_resolution = "";
   
-    function projectstats()
+    function employeestats()
     {
-      global $g_sessionManager;
-      $this->atkNode("projectstats", NF_READONLY);
+      global $g_sessionManager, $ATK_VARS;
+      $this->atkNode("employeestats", NF_READONLY);
             
       $this->m_viewstart = $g_sessionManager->stackVar("viewstart");    
       
@@ -40,12 +40,28 @@
       
       $this->m_zoom = $g_sessionManager->stackVar("zoom");      
       
-      $this->m_projectid = $g_sessionManager->stackVar("projectid");
+      if ($ATK_VARS["employee_sel"]!="")
+      {        
+        // A selection was made with the dropdown.
+        userelation("atkmanytoonerelation");
+        $empattr = new atkManyToOneRelation("employee_sel", "employee.employee");
+        $sel = $empattr->fetchValue($ATK_VARS);
+        $this->m_employeeid = $sel["id"];        
+      }
+      else
+      {
+        $this->m_employeeid = $g_sessionManager->stackVar("employeeid");
+        if ($this->m_employeeid=="") 
+        {
+          $user=getUser();
+          $this->m_employeeid = $user["id"];
+        }      
+      }
       
       $this->m_resolution = $g_sessionManager->stackVar("resolution");
       if ($this->m_resolution=="") $this->m_resolution = "auto";
       
-      $this->setSecurityAlias("project.project");
+      $this->setSecurityAlias("employee.employee");
     }
     
     function action_stats()
@@ -55,27 +71,27 @@
       include_once("achievotools.inc");
       
       $g_layout->initGui();
-      $g_layout->ui_top(text("parameters", "projectstats", "project"));          
+      $g_layout->ui_top(text("parameters", "employeestats", "employee")); 
       
       $startdate = $this->m_viewstart;
       $enddate = $this->m_viewend;
-      $projectid = $this->m_projectid;
+      $employeeid = $this->m_employeeid;
       
       $g_layout->output('<br>'.$this->navigator().'<br>');
       
       $g_layout->ui_bottom();
       
-      $prjnode = &getNode("project.project");
+      $empnode = &getNode("employee.employee");
       
       $descriptor="";
-      if ($projectid!="")
+      if ($employeeid!="")
       {
         // Get descriptor. 
-        $recs = $prjnode->selectDb("project.id=".$projectid, "", "", "", $prjnode->descriptorFields());
-        $descriptor = " - ".$prjnode->descriptor($recs[0]);
+        $recs = $empnode->selectDb("person.id=".$employeeid, "", "", "", $empnode->descriptorFields());
+        $descriptor = $empnode->descriptor($recs[0]);
       }
       
-      $g_layout->ui_top(text("stats").$descriptor);
+      $g_layout->ui_top(text("stats").($descriptor!=""?" - ".$descriptor:""));
          
       $backbtn = "";
       if (atkLevel()>0)
@@ -84,57 +100,45 @@
                 '<input type="submit" value="&lt;&lt; '.text('back').'"></form>';
       }
       
-      $output.=$backbtn;
+      $output.=$backbtn;            
       
-      if ($this->m_projectid=="")
-      {      
-        $output.= "<br>".$this->topProjects($startdate, $enddate, ($this->m_zoom=="topprojects"?0:10));
+      $params["employeeid"] = $employeeid;
+      $params["viewstart"] = $startdate;
+      $params["viewend"] = $enddate;
+      $params["resolution"] = $this->m_resolution;
+      
+      $detailparams["startdate"] = $startdate;
+      $detailparams["enddate"] = $enddate;        
+      $detailparams["userid"] = $employeeid;
+      
+      $prjdata = $empnode->graph_prjtime($params, true);
+      
+      if (count($prjdata)==0)
+      {
+        // There is no data.
+        $output.='<br><br>'.sprintf(text('nodata', $this->m_type), $descriptor).'<br>';
       }
       else
       {
-      
-        $params["projectid"] = $projectid;
-        $params["viewstart"] = $startdate;
-        $params["viewend"] = $enddate;
-        $params["resolution"] = $this->m_resolution;
-        
-        $detailparams["projectid"] = $projectid;
-        $detailparams["startdate"] = $startdate;
-        $detailparams["enddate"] = $enddate;        
-        $detailparams["userid"] = "all";
-        
-        useattrib("graph.dataGraphAttribute");
-        
-        $timeline = &new dataGraphAttribute("timeline", "timeline", $params, "line");
-        $timeline->setSource("project.project");
-        $timeline->addDynamicParam("resolution", array("day", "week", "month", "auto"));
-        
-        $output.= "<br>".$timeline->showGraph();                                              
             
-        $phasestats = &new dataGraphAttribute("phasetimedistribution", "phasetime", $params, "auto");
-        $phasestats->setSource("project.project");
+        useattrib("graph.dataGraphAttribute");            
+                
+        $prjstats = &new dataGraphAttribute("prjtimedistribution", "prjtime", $params, "auto");
+        $prjstats->setSource("employee.employee");                
         
-        $output.= "<br>".$phasestats->showGraph();
-        
-        // Textual version:
-        $output.= "<br><br>".$this->_tableStats(text("phase"), $prjnode->graph_phasetime($params, true), array("name"), $detailparams, "phaseid");        
-      
-        $empstats = &new dataGraphAttribute("emptimedistribution", "emptime", $params, "auto");
-        $empstats->setSource("project.project");                
-        
-        $output.= "<br><br>".$empstats->showGraph();
+        $output.= "<br><br>".$prjstats->showGraph();
         
         // Textual version:
-        $output.= "<br><br>".$this->_tableStats(text("employee"), $prjnode->graph_emptime($params, true), array("firstname", "lastname"), $detailparams, "userid");        
+        $output.= "<br><br>".$this->_tableStats(text("project"), $prjdata, array("name"), $detailparams, "projectid");        
         
         $activitystats = &new dataGraphAttribute("activitytimedistribution", "activitytime", $params, "auto");      
-        $activitystats->setSource("project.project");
+        $activitystats->setSource("employee.employee");
         
         $output.= "<br><br>".$activitystats->showGraph();
         
         // Textual version:
-        $output.= "<br><br>".$this->_tableStats(text("activity"), $prjnode->graph_activitytime($params, true), array("name"), $detailparams, "activity_id");        
-      }      
+        $output.= "<br><br>".$this->_tableStats(text("activity"), $empnode->graph_activitytime($params, true), array("name"), $detailparams, "activity_id");              
+      }
       
       $output.="<br>".$backbtn."<br>";
       
@@ -152,14 +156,20 @@
     function navigator()
     {      
       useattrib("atkdateattribute");
+      userelation("atkmanytoonerelation");
       $startdate = $this->m_viewstart;
       $enddate = $this->m_viewend;
+      
+      $empattr = new atkManyToOneRelation("employee_sel", "employee.employee");
+      
       $dummyrec = array("viewstart"=>array("year"=>substr($startdate,0,4),
                                            "month"=>substr($startdate,5,2),
                                            "day"=>substr($startdate,8,2)),
                         "viewend"=>array("year"=>substr($enddate,0,4),
                                          "month"=>substr($enddate,5,2),
-                                         "day"=>substr($enddate,8,2)));
+                                         "day"=>substr($enddate,8,2)),
+                        "employee_sel"=>array("id"=>$this->m_employeeid));
+                                                
 
       $startdateatt = new atkDateAttribute("viewstart","F d Y","d F Y", 0, date("Ymd"));
       $enddateatt = new atkDateAttribute("viewend","F d Y","d F Y", 0, date("Ymd"));
@@ -169,72 +179,22 @@
       $output.= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
       $output.= '<input type="hidden" name="atkaction" value="'.$this->m_action.'">';
       
-      $output.= text("timespan").': '.$startdateatt->edit($dummyrec).' &nbsp;'.
-                text("until").'&nbsp; '.$enddateatt->edit($dummyrec);
+      $output.= '<table border="0"><tr><td class="table">'.text("timespan").': </td><td class="table">'.$startdateatt->edit($dummyrec).' &nbsp;'.
+                text("until").'&nbsp; '.$enddateatt->edit($dummyrec).'</td></tr>';
+                
+      if ($this->allowed("view_all"))
+      {
+        $output.= '<tr><td class="table">'.text("employee").': </td><td>'.$empattr->edit($dummyrec).'</td></tr>';
+      }
+      
+      $output.= '</table>';
                 
       $output.= ' &nbsp;<input type="submit" value="'.text("refresh").'">';
       
       $output.= '</form>';
       return $output;
     }
-    
-    function topProjects($start, $end, $max=0)
-    {    
-      global $g_db, $g_layout;
-      
-      $query = &atkQuery::create();
-      
-      $query->addTable("hours");
-      $query->addJoin("phase", "", "phase.id = hours.phaseid", false);
-      $query->addJoin("project", "", "phase.projectid = project.id", false);
-      $query->addField("project.name");
-      $query->addField("project.id");
-      $query->addField("sum(time) as totaltime");
-      $query->addCondition("hours.activitydate BETWEEN '".$start."' AND '".$end."'");
-      if ($max) 
-      {
-        $query->setLimit(0,$max);
-      }
-      $query->addOrderBy("totaltime DESC");
-      $query->addGroupBy("project.name");
-      $projects = $g_db->getrows($query->buildSelect());
-            
-      if ($max)
-      {
-        $output ="<b>".sprintf(text("top_projects"), $max).'</b> (';
-        $output.=href(dispatch_url($this->atkNodeType(), "stats", array("zoom"=>"topprojects")), text("complete_list"));
-      }
-      else
-      {
-        $output ="<b>".text("allprojects").'</b> (';
-        $output.=href(dispatch_url($this->atkNodeType(), "stats", array("zoom"=>"0")), sprintf(text("top_projects"), 10));
-      }
-      $output.=')<br>';
-      
-      $output.= $g_layout->data_top();
-   
-      $output.= $g_layout->tr_top();
-      $output.= $g_layout->ret_td_datatitle("#");
-      $output.= $g_layout->ret_td_datatitle(text("project"));
-      $output.= $g_layout->ret_td_datatitle(text("time"));
-      $output.= $g_layout->tr_bottom();
-      
-      for ($i=0, $_i=count($projects); $i<$_i; $i++)
-      {        
-        $output.= $g_layout->tr_top($i%2);
-        $output.= $g_layout->ret_td($i+1);
-        $output.= $g_layout->ret_td(href("dispatch.php?atknodetype=".$this->atkNodeType().
-                                                     "&atkaction=".$this->m_action.
-                                                     "&projectid=".$projects[$i]["id"], 
-                                         $projects[$i]["name"],
-                                         SESSION_NESTED));
-        $output.= $g_layout->ret_td(time_format($projects[$i]["totaltime"], true));
-        $output.= $g_layout->tr_bottom();
-      }
-      
-      $output.= $g_layout->data_bottom();
-      return $output;
-    }
+                
     
     function _tableStats($itemheader, $dataset, $datasetdescriptors, $detailparams, $idparam)
     {
@@ -248,6 +208,8 @@
       }
       
       $mayviewdetail = $g_securityManager->allowed("reports.hoursurvey", "view_all");
+      
+      if ($detailparams["userid"]=="") $detailparams["userid"]="all"; // workaround, the hoursurvey will select current user if no user is passed.
       
       $res = $g_layout->data_top();
       $res.= $g_layout->tr_top();
