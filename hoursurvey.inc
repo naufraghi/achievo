@@ -12,6 +12,7 @@
   global $selectedprojectid;
   global $phaseid;
   global $userid;
+  global $nameswitch;
 
 //  global $printable;
 //  global $export;
@@ -74,8 +75,8 @@
   }
 
   
-  // Determine collumn suppresslist:
-  $arr_col = array("activitydate","userid","phaseid","activityid","remark","time");
+  // Determine collumn suppresslist:  
+  $arr_col = $this->getHourSurveyColumns();
  
   $suppress = array(); 
   if (!is_array($col)||count($col)==0)
@@ -118,6 +119,11 @@
   {
     $userid=$g_user["name"];
   }
+  
+  if (!isset($nameswitch)||$nameswitch=="")
+  {
+    $nameswitch="name";
+  }    
   
   // If we came from 'search all projects', a selectedprojectid var is filled.
   if (isset($selectedprojectid)&&$selectedprojectid!="")
@@ -166,14 +172,15 @@
     $g_layout->output('</tr><tr>');  
     $g_layout->td('<hr>','colspan="2"');
     $g_layout->output('</tr><tr>');
-    $g_layout->td(text("name").':</b> ');   
+    $g_layout->td('<SELECT name="nameswitch"><OPTION VALUE="name">'.text("name").': <OPTION VALUE="supervisor" '.($nameswitch=="supervisor"?"selected":"").'>'.text("supervisor").': </SELECT>');     
   
     if($view_all)
     {
-      $g_layout->td('<SELECT name="userid">'.get_employees($userid).'</SELECT>');
+      $g_layout->td('<SELECT name="userid">'.get_employees($userid).'</SELECT>');      
     }
     else
     {
+      $userid = $g_user["name"];
       $g_layout->td($g_user["name"].'<input type="hidden" name="userid" value="'.$g_user["name"].'">');
     }
     $g_layout->output('</tr><tr>');  
@@ -187,8 +194,8 @@
      
     $g_layout->td(text("timespan").': ');
   
-    $startdateatt = new atkDateAttribute("startdate","F d Y","d F Y", 0, date("Ymd"));
-    $enddateatt = new atkDateAttribute("enddate","F d Y","d F Y", 0, date("Ymd"));
+    $startdateatt = new atkDateAttribute("startdate","F d Y","d F Y", 0, date("Ymd"),AF_OBLIGATORY);
+    $enddateatt = new atkDateAttribute("enddate","F d Y","d F Y", 0, date("Ymd"),AF_OBLIGATORY);
       
     $g_layout->td($startdateatt->edit($dummyrec).' &nbsp;'.
                     text("until").
@@ -196,7 +203,26 @@
                     
     $g_layout->output('</tr><tr>');  
     $g_layout->td('<hr>','colspan="2"');
-    $g_layout->output('</tr><tr>');
+    $g_layout->output('</tr>');
+    
+    // Get default selection items.
+    $selitems = $this->getSelectionItems();
+    
+    if (is_array($selitems))
+    {
+      foreach ($selitems as $label=>$html)
+      {
+        $g_layout->output('<tr>');      
+        $g_layout->td(text($label, $this->m_type).":");
+        $g_layout->td($html);
+        $g_layout->output('</tr><tr>');  
+        $g_layout->td('<hr>','colspan="2"');
+        $g_layout->output('</tr>');
+      }
+    }
+    
+    
+    $g_layout->output('<tr>');
               
     $g_layout->td('<b>'.text("report_output_options").'</b>','colspan="2"');
     
@@ -208,9 +234,7 @@
                      <option value="1">'.text("report_output_printable").'
                      <option value="2">'.text("report_output_export").'
                      </select>');                     
-    
 
-    
     $g_layout->output('</tr><tr>');  
 
     //$g_layout->td(text("PDF"));
@@ -247,28 +271,31 @@
   if(!empty($activity_id)&&$activity_id!="") $filter.=" AND hours.activityid=".$activity_id;
   if(!empty($phaseid)&&$phaseid!="") $filter.=" AND hours.phaseid=".$phaseid;
   if(!empty($projectid)&&$projectid!="") $filter.=" AND A.projectid=".$projectid;
-   
-  if (!$view_all)
-  {
-    $filter.=" AND hours.userid='".$g_user["name"]."'";    
+  
+  // employee table is not yet added to the query. Force that by adding a manytoonerel,
+  // so we display a users name.
+  $this->add(new atkManyToOneRelation("userid", "employee"));
+  
+  if ($nameswitch=="supervisor")
+  {      
+    if ($userid!="all") 
+    {      
+      $filter.= " AND userid.supervisor = '$userid' ";
+    }
   }
   else
   {
-    if ($userid!="all")
-    {
-      $filter.=" AND hours.userid='".$userid."'";
-    }
-  }  
-  
-   $data = $this->selectDb($filter,$atkorderby);
-
+    if ($userid!="all") $filter.= " AND hours.userid ='$userid' "; 
+  }
+      
+  $data = $this->selectDb($filter,$atkorderby);
 
   if ($outputType=="0")
   {
     $g_layout->ui_bottom();
     $g_layout->ui_top(text("title_hoursurvey_hours")." ".text("of")." ".$userid." ".text("report_intimespan")." ".$startdate." t/m ".$enddate);
     $g_layout->output('<br><br>');
-    $g_layout->output($this->recordList($data, array(),true,$suppress));
+    $g_layout->output($this->recordList($data, array(),false,$suppress));
     $g_layout->output('<br><br>');
     $g_layout->ui_bottom(); 
    }
@@ -278,7 +305,7 @@
     }
    if ($outputType=="2")
    {
-    // specail RecordList can export to file
+    // special RecordList can export to file
      $this->specialRecordList($data, "", '"', '";', "\r\n", "1", $suppress);
    }
 

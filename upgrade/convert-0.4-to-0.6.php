@@ -28,7 +28,7 @@ $default_user_passwd = "";
 
 // If you set this to 0, no logfile will be generated.
 // It is useful to leave this at 1 though. If you encounter errors
-// during the conversion, you can mail the logfile to ivo@achievo.com
+// during the conversion, you can mail the logfile to ivo@achievo.org
 // to check out what the errors are.
 $write_log = 1; // 0 = no  / 1 = yes
 $log_file = "/tmp/achievo_convert.log";
@@ -112,7 +112,7 @@ if(!empty($convert)&&$convert==1)
   write_log("Start conversion of 0.4.x database ($old_db_name) -> 0.6 ($config_databasename)");
   // make connection to the old database, for the new one, we use the achievo settings
   $old_db = @mysql_connect ($old_db_host, $old_db_user, $old_db_passwd)
-          or die("Could not connect to old database $old_db_name (check username/password in convert.php3).");
+          or die("Could not connect to old database $old_db_name (check username/password in convert-0.4-to-0.6.php).");
   mysql_select_db($old_db_name, $old_db);
   write_log("Succesful connect to $old_db_name.");
   
@@ -280,11 +280,11 @@ if(!empty($convert)&&$convert==1)
   {
     $g_layout->output('<br><b>There were errors during the conversion!!</b>');
     $g_layout->output('<br><br>It can not be guaranteed that your new database contains all information of the old database.');
-    $g_layout->output('Please mail the exact error messages to <a href="mailto:ivo@achievo.com">ivo@achievo.com</a>. We will try to find out what the problem is so you can try a new conversion.');
+    $g_layout->output('Please mail the exact error messages to <a href="mailto:ivo@achievo.org">ivo@achievo.org</a>. We will try to find out what the problem is so you can try a new conversion.');
   }
   else
   {
-    $g_layout->output('<br><a href="index.php3">Click here</a> to start Achievo!');
+    $g_layout->output('<br><a href="index.php">Click here</a> to start Achievo!');
   }
   $g_layout->output('</div>');
 }

@@ -1,7 +1,7 @@
-<?
+<?php
  /*  
   * @version $Revision$
-  * @Author Ivo Jansch <ivo@achievo.com>
+  * @Author Ivo Jansch <ivo@achievo.org>
   *
   * Sends an email reminder if someone did not enter all of his hours in 
   * the previous week.

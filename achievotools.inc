@@ -177,6 +177,10 @@
   
   function usermail($to, $subject, $body, $add_header="")
   {
+    if (is_array($to) && count($to)>0)
+    {
+      $to = implode(",",$to);
+    }
     if ($to!="" && $subject!="")
     {
       mail($to,"[achievo notice] ".$subject,$body,"From: achievo\n".$add_header);
@@ -188,9 +192,13 @@
     }
   }
     
-  function time_format($time)
+  function time_format($time, $displayzero=false)
   {
-    if ($time==0) return "&nbsp;";
+    if ($time==0) 
+    {
+      if ($displayzero) return "00:00";
+      return "&nbsp;";
+    }
     return floor($time/60).":".sprintf("%02d",($time%60));
   }
 
