@@ -18,7 +18,7 @@ class contracts extends atkNode
     $this->atkNode("contracts",NF_ADD_LINK);
 
     $this->add(new atkAttribute("id",AF_AUTOKEY));
-    $this->add(new atkAttribute("number",AF_SEARCHABLE, 20));
+    $this->add(new atkAttribute("contractnumber",AF_SEARCHABLE, 20));
     $this->add(new atkManyToOneRelation("contracttype","organization.contracttype",AF_SEARCHABLE|AF_OBLIGATORY|AF_RELATION_AUTOLINK));
     $this->add(new atkManyToOneRelation("customer","organization.organization",AF_SEARCHABLE|AF_OBLIGATORY|AF_RELATION_AUTOLINK));
     $this->add(new atkListAttribute("billing_period",array("monthly","quarterly","yearly", "per_incident"),"",AF_OBLIGATORY|AF_HIDE_LIST));
