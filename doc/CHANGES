@@ -6,21 +6,20 @@ Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 
 Changes in Achievo 1.1.1
 ------------------------
-+ Made chart height/width configurable [Harrie]
-+ Added ability to assign department to employee [Harrie]
-+ Hoursurvey is now also able to search on department 
-  and functionlevel [Harrie]
-+ Made max bookable hours configurable [Boy]
-+ Added ability to approve locked weeks [Boy]
-+ Added ability to make a rate per projectphase and time [Boy]
-+ Added 'commercial' and 'salary' ratetype [Boy]
-+ Added ability to book on times instead of hours [Boy]
-+ Added PDA mode for Achievo [Boy]
++ Made chart height/width configurable. [Harrie]
++ Added ability to assign department to employee. [Harrie]
++ Hoursurvey is now able to search on department and functionlevel. [Harrie]
++ Made max bookable hours configurable. [Boy]
++ Added ability to approve locked weeks. [Boy]
++ Added ability to make a rate per projectphase and time. [Boy]
++ Added 'commercial' and 'salary' ratetype. [Boy]
++ Added ability to book on times instead of hours. [Boy]
++ Added PDA mode for Achievo. [Boy]
 + Added feature to let the user confirm to something upon first
-  timeregistration to a project [Boy]
-+ Added banknumber and social security number to employee [Boy]
-+ Made hoursurvey display rates and costs per timeregistration [Boy]
-* Minor PHP error bugfix to billing module [Boy]
+  timeregistration to a project. [Boy]
++ Added banknumber and social security number to employee. [Boy]
++ Made hoursurvey display rates and costs per timeregistration. [Boy]
+* Minor PHP error bugfix to billing module. [Boy]
 
 Changes in Achievo 1.1.0
 ------------------------
