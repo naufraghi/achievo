@@ -124,7 +124,7 @@
     $w = 0;
     for ($i=0;$i<=$this->weeks;$i++)
     {
-     $weekno = strftime("%W", mktime(0,0,0,substr($this->items[$item]["date"],5,2), substr($this->items[$item]["date"],8,2), substr($this->items[$item]["date"],0,4)));
+     $weekno = strftime("%V", mktime(0,0,0,substr($this->items[$item]["date"],5,2), substr($this->items[$item]["date"],8,2), substr($this->items[$item]["date"],0,4)));
      $href   = $_SERVER["PHP_SELF"]."?view=weekview&viewdate=".$this->items[$item]["date"];
      $buff  .= "<tr>";
      $buff  .= "<td width='$colwidth' bgcolor='#D0D0D0' valign='top' align='left'><font size='-1'>".href($href, $weekno)."</font></td>";
