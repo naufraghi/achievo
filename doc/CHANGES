@@ -9,6 +9,7 @@ Changed in Achievo 1.1RC3
 + Contact person field in project edit screen can be made obligatory with
   a config setting. [Harrie]
 + If only one search result is found, it is displayed directly. [Ivo]
++ Added bookmark icon (the 'swish' from achievo.org). [Ivo]
 * Fixed sql injection vulnerability in the login screen. (bug #368) [Sandy]
 * Fixed security bug with session hijacking. (bug #373) [Sandy]
 * Fixed problem with empty dropdowns. (bug #333) [Sandy]
