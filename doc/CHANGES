@@ -10,6 +10,8 @@ Changed in Achievo 1.1RC3
 * Fixed bug in manytoone when there is only 1 record. [Sandy]
 * Fixed bug in registering time. (bug #331) [Sandy]
 * Fixed bug with getvars in the help popup. (bug #348) [Sandy]
+* Fixed bug in search module. (bug #369) [Sandy]
+* Fixed an sql injection the login screen. [Sandy]
 + Contact person field in project edit screen can be made 
   obligatory with a config setting. [Harrie]
 + If only one search result is found, it is displayed directly. [Ivo]
