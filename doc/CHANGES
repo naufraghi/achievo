@@ -19,6 +19,8 @@ Changes in Achievo 1.0.3
 + Roles that are not in use can now be deleted. (bug #236) [Ivo]
 + The employee weekreport now displays negative overtime (shortage). [Lineke]
 * Modified employee add screen so contracts will not be overlooked. [Ivo]
+* Employee contracts' enddate is now optional. [Ivo]
++ The birthdate of an employee can now be entered. [Lineke]
 * Setup.php now accepts include_paths with only ".". (bug #237) [Mike]
 * The project stats page now has the project name in the title box. [Ivo]
 * Added several untranslated strings to the language files. [Nele]

@@ -26,33 +26,32 @@ Achievo grows not only through contributions from the Open Source community,
 but also through financial donations from sponsors, who finance the
 development of new features.
 
-* Tryllian BV, Netherlands (http://www.tryllian.nl) sponsored the following
-  developments:
+* Ibuildings.nl BV, Netherlands (http://www.ibuildings.nl) sponsors the 
+  development of Achievo and sponsors Achievo's hosting and development
+  facilities (site, mailinglists, cvs etc).
 
-  - hourlocking feature
-  - employee week report
-  - CSV export function
-  - employee contracts
-  - timereg_check cron script
-  - hoursurvey improvements
+* Tryllian BV, Netherlands (http://www.tryllian.nl) sponsored the following
+  enhancements: hourlocking feature, employee week report, CSV export
+  function, employee contracts, the timereg_check cron script and various
+  hoursurvey improvements.
 
 * S&W Consultancy BV, Netherlands (http://www.s-w.nl) sponsored the following
-  enhancements:
-
-  - contactpersons per project
-  - userinterface improvements
-  - improvements to the extended search feature
-  - additional fields to customers and projects
+  enhancements: contactpersons per project, userinterface improvements, 
+  improvements to the extended search feature, and several additional fields 
+  for customers and projects.
 
 * Lilleborg AG, Norway (http://www.lilleborg.no) sponsored some parts of
   the billing feature.
 
 * Plan42 GMBH, Germany (http://www.plan42.de) sponsored the development
-  of the Deposit module, and some parts of the billing module.
+  of the Deposit add-on module, and some parts of the billing module.
+
+* Prosa.dk, Denmark (http://www.prosa.dk) sponsored the development of the
+  weektimereg add-on module.
   
 * Kern8, The Netherlands (http://www.kern8.nl) sponsored the development
-  of cumulative usercontracts and the displaying of shortages in the employee 
-  weekreport.
+  of cumulative usercontracts, the displaying of shortages in the employee 
+  weekreport and the holidayreport add-on module.
 
 To become a sponsor, please read http://www.achievo.org/support/sponsor.
 
