@@ -11,6 +11,7 @@ Changed in Achievo 1.1RC2
 * Fixed possible date incompatibilities on Windows installs. (bug #337) [Ivo]
 * When the session expires after long period of inactivity, a message is 
   displayed instead of an error message. (bug #325) [Ivo]
+* Updated the FAQ. (bug #329) [Ruhshad]
 * Updated German language file. [Udo]
 * Updated Spanish language file. [Jose]
 * Updated Russian language file and fixed charset problems. [Konstantin]
