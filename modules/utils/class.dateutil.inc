@@ -28,6 +28,26 @@
     {
       return array("year"=>substr($strdate,0,4), "month"=>substr($strdate,4,2), "day"=>substr($strdate,6,2));
     }
+    
+    function str2stamp($strdate)
+    {
+      return dateutil::arr2stamp(dateutil::str2arr($strdate));      
+    }
+    
+    function arr2stamp($arrdate)
+    {
+      return mktime(12,0,0,$arrdate["month"],$arrdate["day"],$arrdate["year"]);
+    }
+    
+    function stamp2str($timestamp)
+    {
+      return date("Ymd", $timestamp);
+    }
+    
+    function stamp2arr($timestamp)
+    {
+      return dateutil::str2arr(dateutil::stamp2str($timestamp));
+    }
 
   }
 
