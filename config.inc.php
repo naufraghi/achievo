@@ -21,7 +21,7 @@
   // the database to use and the user/password.
   //
   $config_databasehost = "localhost";
-  $config_databasename = "achievo_189_test";  
+  $config_databasename = "achievo_1_0";  
   $config_databaseuser = "demo";
   $config_databasepassword = "demo";
 
@@ -85,7 +85,7 @@
   // an input box to manually enter the userid. Use the dropdown only if
   // the number of users is small.
   //
-  $config_auth_dropdown = true;
+  $config_auth_dropdown = false;
 
   // -------------------------------------------
   //            TIME REGISTRATION
@@ -133,7 +133,6 @@
   // it can be found as the second parameter.
   //
   // module("somemodule","../achievo_modules/somemodule/");
-  module("autoduty", "../achievo_modules/autoduty/");
   
   // -------------------------------------------
   //            END OF CONFIGURATION
