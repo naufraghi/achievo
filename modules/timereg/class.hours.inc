@@ -8,15 +8,52 @@ useattrib("atklistattribute");
 useattrib("atktextattribute");
 useattrib("atkdurationattribute");
 useattrib("atkdummyattribute");
+useattrib("atktimeattribute");
 userelation("atkmanytoonerelation");
 
 function date_format($datestamp,$dateformat)
-{ 
+{
   if($dateformat!="")
   {
     return date($dateformat,$datestamp);
   }
   return date("m-d",$datestamp)." (".text(strtolower(date("D",$datestamp))).")";
+}
+
+
+/**
+* Converts the starttime - endtime notation to a duration notation
+*/
+function convertHoursToDuration(&$record)
+{
+  $starttime  += $record["starttime"]["hours"]   *  60;
+  $starttime  += $record["starttime"]["minutes"] *   1;
+  $starttime  += $record["starttime"]["seconds"] /  60;
+
+  $endtime    += $record["endtime"]["hours"]     *  60;
+  $endtime    += $record["endtime"]["minutes"]   *   1;
+  $endtime    += $record["endtime"]["seconds"]   /  60;
+
+  $record["time"] = $endtime - $starttime;
+}
+
+function convertDurationToHours(&$record)
+{
+  if ($record['starttime'])
+  {
+    $rest = $record['time']%60;
+    $record['time']               = $record['time']-$rest;
+    $record['endtime']['hours']   = "".$record['starttime']['hours'] + $record['time']/60 ."";
+    $record['time']               = $rest;
+
+    $rest = $record['time']%1;
+    $record['time']               = $record['time']-$rest;
+    $record['endtime']['minutes'] = "".$record['starttime']['minutes']+$record['time']/1 ."";
+    $record['time']               = $rest;
+
+    $record['time']=round($record['time']*60);
+    $record['endtime']['seconds']   = "".$record['starttime']['seconds']+$record['time'] ."";
+  }
 }
 
 class to_date extends atkDateAttribute 
@@ -29,6 +66,17 @@ class to_date extends atkDateAttribute
   function load() {}
   function store() {}  
   function addtoeditarray() {}
+}
+
+class to_time extends atkTimeAttribute 
+{
+  function to_time()
+  {
+    $this->atkTimeAttribute("endtime","0","23",array(0,15,30,45),"12", AF_OBLIGATORY);
+  }
+  function load() {}
+  function store() {}  
+  function display($record) {convertDurationToHours($record); return parent::display($record);}
 }
 
 class hours extends atkNode
@@ -76,7 +124,7 @@ class hours extends atkNode
     $this->add(new atkProjectPhaseAttribute("phaseid",AF_OBLIGATORY|AF_JS_UPDATEACTIVITY));
     $this->add(new atkListAttribute("activityid",array("dummy","dummy","dummy","dummy","dummy"),array(0,0,0,0,0),AF_OBLIGATORY, 10));
     $this->add(new atkTextAttribute("remark", atkconfig("timereg_remark_lines", 1), 0));
-    $this->add(new atkDurationAttribute("time",atkconfig("timereg_resolution", "15m"), '10h',AF_OBLIGATORY|AF_TOTAL));
+    $this->addTime();
     
     $relation = new atkManyToOneRelation("workperiod","timereg.workperiod", AF_OBLIGATORY|AF_HIDE_LIST);
     $relation->setHideWhenEmpty(true);
@@ -88,7 +136,24 @@ class hours extends atkNode
     $this->setOrder("hours.id"); // Sort by order of input..
 
     $this->setTable("hours","hours");
-
+  }
+  
+  function addTime()
+  {
+    $durationflags = AF_TOTAL;
+    
+    if (!atkconfig("use_duration", true))
+    {
+      $this->add(new atkTimeAttribute("starttime","0","23",array(0,15,30,45),"12", AF_OBLIGATORY));
+      $this->add(new to_time());
+      $durationflags|=AF_HIDE_ADD|AF_HIDE_EDIT;
+    }
+    else 
+    {
+      $durationflags|=AF_OBLIGATORY;
+    }
+    
+    $this->add(new atkDurationAttribute("time",atkconfig("timereg_resolution", "15m"), '10h',$durationflags));
   }
     
   function setLock()
@@ -891,6 +956,72 @@ class hours extends atkNode
     }
   }  
 
-}
+  function preAdd(&$record)
+  {    
+    $this->modifyfortime($record);
+  }
+  
+  function preUpdate(&$record)
+  {
+    $this->modifyfortime($record);
+  }
+  
+  function modifyfortime(&$record)
+  {
+    // if we don't have duration, then we have a begin and an end time
+    // however, we still store it as a duration, only with a start time
+    // so we need to remove the end time and add a 'time'
+    if ($record['starttime'])
+    {
+      $this->performTimeChecks($record);
+      convertHoursToDuration($record);
+    }
+  }
+  
+  function edit_values($defaults)
+  {
+    // Here we make sure that if we have a starttime (don't worry,
+    // the convertDurationToHours() function checks for it) that
+    // we convert the duration to a starttime and entime notation
+    // for editting
+    convertDurationToHours($defaults);
+    return array('endtime'=>$defaults['endtime']);
+  }
 
+  /**
+   * Does checks on a record with a starttime and endtime in it
+   * before it is converted and goes into the database
+   */
+  function performTimeChecks(&$record)
+  {
+    // Check if the endtime isn't before the starttime
+     if ($record["starttime"]["hours"]>$record["endtime"]["hours"] || 
+        ($record["starttime"]["hours"]==$record["endtime"]["hours"] && $record["starttime"]["minutes"]>$record["endtime"]["minutes"]) || 
+        ($record["starttime"]["hours"]==$record["endtime"]["hours"] && $record["starttime"]["minutes"]==$record["endtime"]["minutes"] && $record["starttime"]["seconds"]>$record["endtime"]["seconds"])) 
+        triggerError($record, "starttime", "error_begintime_before_endtime");
+        
+    // Check if that period is still available
+    
+    // WARNING!
+    // Here we do a selectDb on ourselves for the current activitydate, 
+    // normally this would fail, however, because this function is only called in
+    // a special mode and never directly from the constructor, it should always work.
+    $select = $this->selectDb("activitydate = '".$record['activitydate']['year']."-".$record['activitydate']["month"]."-".$record['activitydate']["day"]."'");
+    foreach ($select as $dbrecord)
+    {
+      convertDurationToHours($dbrecord);
+      if (!($dbrecord["starttime"]["hours"]<$record["endtime"]["hours"] || 
+           ($dbrecord["starttime"]["hours"]==$record["endtime"]["hours"] && $dbrecord["starttime"]["minutes"]<$record["endtime"]["minutes"]) || 
+           ($dbrecord["starttime"]["hours"]==$record["endtime"]["hours"] && $dbrecord["starttime"]["minutes"]==$record["endtime"]["minutes"] && $dbrecord["starttime"]["seconds"]<$record["endtime"]["seconds"])) ||
+          !($record["starttime"]["hours"]>$dbrecord["endtime"]["hours"] || 
+            ($record["starttime"]["hours"]==$dbrecord["endtime"]["hours"] && $record["starttime"]["minutes"]>$dbrecord["endtime"]["minutes"]) || 
+          ($record["starttime"]["hours"]==$dbrecord["endtime"]["hours"] && $record["starttime"]["minutes"]==$dbrecord["endtime"]["minutes"] && $record["starttime"]["seconds"]>$dbrecord["endtime"]["seconds"]))) 
+      {
+          triggerError($record, "starttime", "error_time_already_registered");
+          return false;
+      }
+    }
+    // END WARNING
+  }
+}
 ?>
