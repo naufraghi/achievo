@@ -448,12 +448,8 @@ class weekreport extends atkNode
             $record["userid"] = $userdata["name"];
             $record["total"] = $userdata["total"];
             $record["contract"] = $userdata["contract"];
-            $record["overtime"] = max(0,($userdata["total"]-$userdata["contract"]));
-            if ($record["overtime"] == 0)
-            {
-            	// check to see if we are short of hours
-            	$record["overtime"] = min(0,($userdata["total"]-$userdata["contract"]));
-            }
+            $record["overtime"] = $userdata["total"]-$userdata["contract"];
+            
             if ($userdata["status"]!="")
             {
               $record["status"] = $userdata["status"];
