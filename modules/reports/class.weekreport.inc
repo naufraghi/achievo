@@ -94,7 +94,7 @@ class weekreport extends atkNode
   function action_report()
 	{
     global $g_layout, $g_securityManager, $g_user, $g_db;
-    $atkorderby = $_REQUEST["atkorderby"];    
+    $atkorderby = $_REQUEST["atkorderby"];
     $userid = $_REQUEST["userid"];
     $nameswitch = $_REQUEST["nameswitch"];
     $showdetails = $_REQUEST["showdetails"];
@@ -251,12 +251,12 @@ class weekreport extends atkNode
 
       $g_layout->ui_bottom();
     }
-        
-    if ($userid!="") // If we haven't got a userid by now, don't display the 
+
+    if ($userid!="") // If we haven't got a userid by now, don't display the
                      // report.
     {
       $weekdata = array();
-  
+
       // first fill the weeks and start/end dates..
       $startstamp = mktime(12,0,0,substr($startdate,5,2),
                                  substr($startdate,8,2),
@@ -264,31 +264,31 @@ class weekreport extends atkNode
       $endstamp = mktime(12,0,0,substr($enddate,5,2),
                                substr($enddate,8,2),
                                substr($enddate,0,4));
-  
+
       // overzicht moet beginnen op de eerste dag van de week van de gekozen datum.
       $realweekstart = startOfWeek($startdate);
       $realstartstamp = mktime(12,0,0,substr($realweekstart,5,2),
                                      substr($realweekstart,8,2),
                                      substr($realweekstart,0,4));
-  
+
       $nrofdays = ceil(($endstamp-$realstartstamp)/(ONEDAY));
-  
+
       for ($i=0;$i<=$nrofdays;$i++)
       {
         $curstamp = $realstartstamp + (ONEDAY*$i);
         if (strftime("%w",$curstamp)==1)
         {
           $key = weekstamp($curstamp);
-          $weekdata[$key]["week"] = $key;          
+          $weekdata[$key]["week"] = $key;
           $weekdata[$key]["startdate"] = strftime("%d-%m-%Y",$curstamp);
           $weekdata[$key]["enddate"] = strftime("%d-%m-%Y",$curstamp+(6*ONEDAY));
           $i+=6;
         }
       }
-  
+
       $report_start_week = weekstamp($startstamp);
       $report_end_week = weekstamp($endstamp);
-  
+
       // determine contracthours per week..
       $query = "SELECT
                   uc_hours, startdate, enddate, person.id, lastname, firstname
@@ -309,7 +309,7 @@ class weekreport extends atkNode
                 ORDER BY
                   startdate";
       $contracts = $g_db->getrows($query);
-  
+
       /*for ($i=0;$i<count($contracts);$i++)
       {
         $start_week = mktime(12,0,0,substr($contracts[$i]["startdate"],5,2),
@@ -317,22 +317,22 @@ class weekreport extends atkNode
                                    substr($contracts[$i]["startdate"],0,4));
         $end_week = mktime(12,0,0,substr($contracts[$i]["enddate"],5,2),
                                  substr($contracts[$i]["enddate"],8,2),
-                                 substr($contracts[$i]["enddate"],0,4));        
-        
+                                 substr($contracts[$i]["enddate"],0,4));
+
         for ($j=$start_week;$j<=$end_week;$j+=ONEWEEK)
-        {          
+        {
           $weekstamp = weekstamp($j);
           atk_var_dump($weekstamp);
           if ($weekstamp>=$report_start_week && $weekstamp <= $report_end_week) // check if week is within report boundary.
-          {        
-            $weekdata[$weekstamp]["week"] = $weekstamp;            
+          {
+            $weekdata[$weekstamp]["week"] = $weekstamp;
             $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["contract"] = $contracts[$i]["uc_hours"]*60;
             $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["name"] = $contracts[$i]["lastname"].", ".$contracts[$i]["firstname"];
           }
         }
       }*/
       for ($j=$startstamp;$j<=$endstamp;$j+=ONEWEEK)
-      {          
+      {
         $weekstamp = weekstamp($j);
         $start_week = date("Y-m-d", mktime(12,0,0,substr($weekdata[$weekstamp]["startdate"],3,2),
                                  substr($weekdata[$weekstamp]["startdate"],0,2),
@@ -340,14 +340,14 @@ class weekreport extends atkNode
         $end_week = date("Y-m-d", mktime(12,0,0,substr($weekdata[$weekstamp]["enddate"],3,2),
                                substr($weekdata[$weekstamp]["enddate"],0,2),
                                substr($weekdata[$weekstamp]["enddate"],6,4)));
-        $weekdata[$weekstamp]["week"] = $weekstamp;        
+        $weekdata[$weekstamp]["week"] = $weekstamp;
         for ($i=0;$i<count($contracts);$i++)
-        {       
+        {
           if ($contracts[$i]["startdate"] <= $start_week && ($contracts[$i]["enddate"] >= $start_week || $contracts[$i]["enddate"]==NULL)) $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["contract"] += $contracts[$i]["uc_hours"]*60;
           $weekdata[$weekstamp]["userdata"][$contracts[$i]["id"]]["name"] = $contracts[$i]["lastname"].", ".$contracts[$i]["firstname"];
         }
       }
-  
+
       // collect data..
       $query = "SELECT
                   sum(time) as time, activitydate, hours.userid, person.lastname, person.firstname
@@ -367,16 +367,16 @@ class weekreport extends atkNode
                   AND hours.userid = person.id
                 GROUP BY
                   hours.userid, activitydate";
-  
+
       $raw = $g_db->getrows($query);
-  
+
       $strdow = array("sun","mon","tue","wed","thu","fri","sat");
-  
+
       for ($i=0;$i<count($raw);$i++)
       {
         $stamp = mktime(12,0,0,substr($raw[$i]["activitydate"],5,2),
                               substr($raw[$i]["activitydate"],8,2),
-                              substr($raw[$i]["activitydate"],0,4));        
+                              substr($raw[$i]["activitydate"],0,4));
         $dow = strftime("%w",$stamp);
         $key = weekstamp($stamp);
         $weekdata[$key]["week"] = $key;
@@ -384,12 +384,12 @@ class weekreport extends atkNode
         $weekdata[$key]["userdata"][$uid][$strdow[$dow]] = $raw[$i]["time"];
         $weekdata[$key]["userdata"][$uid]["total"] = $weekdata[$key]["userdata"][$uid]["total"]+$raw[$i]["time"];
         $weekdata[$key]["userdata"][$uid]["name"] = $raw[$i]["lastname"].", ".$raw[$i]["firstname"];
-  
+
         // We need to display the first date and last date of each week.
         // Since we are looping days now, it is easiest if we calculate the
         // beginning of a week here.
       }
-  
+
       if ($nameswitch=="supervisor" && $userid!='all')
       {
         $query = "SELECT
@@ -419,16 +419,16 @@ class weekreport extends atkNode
       $locks = $g_db->getrows($query);
       for ($i=0;$i<count($locks);$i++)
       {
-        if ($locks[$i]["userid"]=="")
+        if ($locks[$i]["userid"]=="" || $locks[$i]["userid"]==0)
         {
-          $weekdata[$locks[$i]["week"]]["status"]="locked";
+          $weekdata[$locks[$i]["week"]]["userdata"][$userid]["status"]="locked";
         }
         else
         {
           $weekdata[$locks[$i]["week"]]["userdata"][$locks[$i]["userid"]]["status"]="locked";
         }
       }
-  
+
       // weekdata is an associative array, indexed by weeknumber.
       // it must be converted to a normal array in order to be usable
       // by recordlist functions.
@@ -449,7 +449,7 @@ class weekreport extends atkNode
             $record["total"] = $userdata["total"];
             $record["contract"] = $userdata["contract"];
             $record["overtime"] = $userdata["total"]-$userdata["contract"];
-            
+
             if ($userdata["status"]!="")
             {
               $record["status"] = $userdata["status"];
@@ -470,11 +470,11 @@ class weekreport extends atkNode
           }
         }
       }
-  
+
       // sorting..
       if ($atkorderby=="") $atkorderby = "week";
       usort($rldata,$atkorderby."_cmp");
-  
+
       if ($showdetails==1)
       {
         $suppress = array(); // show all columns
@@ -486,17 +486,17 @@ class weekreport extends atkNode
         $suppress[] = "enddate";
       }
       if ($nameswitch=="name" && $userid!="all") $suppress[] = "userid";
-  
+
       if ($outputType=="0")
-      {      
+      {
         $g_layout->ui_top(text("weekreport")." ".text("report_intimespan")." ".$startdate." t/m ".$enddate);
-  
+
         if ($userid!="all")
         {
           $emprec = $this->get_employee($userid);      ;
-  
+
           $employeedata = '<br>'.$g_layout->ret_table_simple().'<tr>';
-  
+
           if ($nameswitch=="supervisor")
           {
             $label = text("supervisor");
@@ -511,12 +511,12 @@ class weekreport extends atkNode
           $employeedata.= $g_layout->ret_td(text("email").": ");
           $employeedata.= $g_layout->ret_td($emprec["email"]);
           $employeedata.= '</tr></table>';
-  
+
           $g_layout->output($employeedata);
           $g_layout->output('<br>');
         }
-  
-  
+
+
         $g_layout->output('<br>'.$this->recordList($rldata, array(),false,$suppress));
         $g_layout->output('<br><br>');
         $g_layout->ui_bottom();
@@ -530,7 +530,7 @@ class weekreport extends atkNode
         // specail RecordList can export to file
         $this->specialRecordList($rldata, "", '"', '";', "\r\n", "1", "",$suppress);
       }
-    
+
     }
   }
 }
