@@ -49,7 +49,7 @@
   $setup->addColumn("person", "function", "varchar(50)");
   $setup->addColumn("person", "role", "varchar(15)", false);
   $setup->addColumn("person", "entity", "int(10)");
-  $setup->addColumn("person", "supervisor", "int(10)");
+  $setup->addColumn("person", "supervisor", "varchar(15)"); // make it a varchar first to allow employee table conversion
   $setup->addColumn("person", "status", "varchar(9)");
   $setup->addColumn("person", "userid", "varchar(15)", false);
   $setup->addColumn("person", "password", "varchar(40)");
@@ -65,7 +65,7 @@
  
   //set role = "contact" for all persons in person table
   //these persons are only contacts at this moment  
-  $g_db->query("UPDATE person SET role = 'contact'");  
+  $g_db->query("UPDATE person SET role = 'contact' WHERE role IS NULL OR role=''");  
 
   //copy employees to persons table  
   $employees = $g_db->getrows("SELECT * FROM employee");
