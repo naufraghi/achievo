@@ -10,6 +10,7 @@ Changes in Achievo 1.0RC2
 * Bugfixes for bugs #181, #183, #185, #187, #189. [Ivo]
 * Bugfix for bug #191. [Jaap]
 * Changed cron method so add-on modules can add custom crons. [Ivo]
+* Updated German language file. [Nele]
 
 Changes in Achievo 1.0RC1
 -------------------------
