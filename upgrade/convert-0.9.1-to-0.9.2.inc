@@ -171,7 +171,7 @@
                     new auto-generated contact person was added to be part of 
                     projects that did not have a contactperson yet. ".($defaultcnt>1?"These 
                     contacts have":"This contact has")." been named 'Auto-generated default 
-                    contact'. Please update this name to the correct value.", "warning");
+                    contact'. Please update this name to the correct value.", "important");
   }
 
   $setup->dropColumn("project", "contact");
