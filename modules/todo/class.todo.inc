@@ -235,6 +235,23 @@ class todo extends atkNode
      $historynode->addDb($rec["atkorgrec"]);
    }
   }
+  
+  /** Workaround for bug #194.
+   * By setting this method, the owner field is always filled with something, so ownerless
+   * todo's will not complain that they can't be saved.
+   * Note that this will not actually store the new owner, for that would be even more 
+   * dangerous.
+   * Since this only happens to very few todo's that were converted when a certain 
+   * conversion bug was still present, this workaround suffices.
+   */
+  function edit_values($record)
+  {
+    if ($record["owner"]["id"]=="")
+    {
+      $record["owner"]=getUser();
+    }    
+    return $record;
+  }
 
 }
 
