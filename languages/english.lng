@@ -45,6 +45,7 @@
   $txt_bgcolor = "Backgroundcolor";
   $txt_bill = "Bill";
   $txt_billing_period = "Billing per";
+  $txt_birthday = "Birthday";
   $txt_booked = "Booked";
   $txt_both = "Both";
   $txt_calendar_defaultuserview = "Default user in scheduler views";

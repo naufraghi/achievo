@@ -45,6 +45,7 @@
   $txt_bgcolor = "Achtergrondkleur";
   $txt_bill = "Factuur";
   $txt_billing_period = "Facturatie per";
+  $txt_birthday = "Geboortedatum";
   $txt_booked = "Geboekt";
   $txt_both = "Beide";
   $txt_calendar_defaultuserview = "Default gebruiker in agenda overzichten";
