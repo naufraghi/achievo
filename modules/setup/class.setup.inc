@@ -918,6 +918,7 @@
         if ($this->upgradedb($result))
         {
           $output.=$this->renderResult($result);
+          $this->renderReport($output);
         }
       } 
       $this->setupscreen("Upgrading from version $orgversion",
@@ -964,6 +965,7 @@
       {
         // things have been installed. Show result.
         $output = $this->renderResult($result);     
+        $this->renderReport($output);
 
         if ($this->m_cancontinue)
         {
