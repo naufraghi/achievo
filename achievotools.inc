@@ -195,7 +195,7 @@
     }
     if ($to!="" && $subject!="")
     {
-      mail($to,"[achievo notice] ".$subject,$body,"From: achievo\n".$add_header);
+      mail($to,"[achievo notice] ".$subject,$body,"From: achievo\r\n".$add_header);
       atkdebug("Sent mail to $to");
     }
     else
