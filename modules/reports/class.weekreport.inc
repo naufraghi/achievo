@@ -383,7 +383,13 @@ class weekreport extends atkNode
                   AND activitydate <= '$enddate'
                   AND hours.userid = person.id
                 GROUP BY
-                  hours.userid, activitydate";
+                  hours.userid, activitydate, person.lastname, person.firstname, workperiod";
+ // @todo JvdW 12-01-2004 Oracle needs all columns not used in aggregate functions to be in the group by clause.
+ // There might be more places in the code where this is true and need adjusting.
+ // MySQL has an extended GROUP BY which doesn't need this according to the documentation:
+ // "MySQL has extended the use of GROUP BY to allow you to select fields that are not mentioned in the GROUP BY clause.
+ // If you are not getting the results you expect from your query, please read the GROUP BY description.
+ // See section 6.3.7 Functions and Modifiers for Use with GROUP BY Clauses."
           
       $raw = $g_db->getrows($query);
           
