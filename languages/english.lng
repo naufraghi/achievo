@@ -419,5 +419,5 @@
   $txt_workingdays = "Workingdays";
   $txt_yearly = "Year";
   $txt_zipcode = "Zipcode";
-
+  $txt_permission_grantall = "Grant all";
 ?>
