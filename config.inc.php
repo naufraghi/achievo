@@ -152,6 +152,13 @@
   //
   $config_timereg_checkweeks = 5; 
 
+  // -------------------------------------------
+  //             PROJECT MODULE
+  // -------------------------------------------
+  // This variable indicated wheter contacts in the project module are
+  // obligatory
+  $config_project_contact_obligatory = false;
+  
   
   // -------------------------------------------
   //            EXTERNAL MODULES
@@ -171,5 +178,5 @@
   // Also, you should not change the atkconf.inc file, since that would
   // break Achievo.
   //
-  include "atkconf.inc";
+  include "atkconf.inc";  
 ?>

@@ -46,7 +46,16 @@
         $this->addFilter("project.status","active");
       }
 
-      $this->add(new atkOneToManyRelation("contacts","project.project_personcontact", "projectid", AF_HIDE_LIST));
+      if (($ATK_VARS['atkaction'] == "edit" || $ATK_VARS['atkaction'] == "update") && atkconfig("project_contact_obligatory"))
+      {
+      	$flags = AF_OBLIGATORY;
+      }
+      else
+      {
+      	$flags = 0;
+      }
+      
+      $this->add(new atkOneToManyRelation("contacts","project.project_personcontact", "projectid", AF_HIDE_LIST|AF_HIDE_ADD|$flags));      
       $this->add(new atkOneToManyRelation("members","project.project_personemployee", "projectid", AF_HIDE_LIST), "planning");
       $this->add(new atkDummyAttribute("hint", text("project_member_fuzzyhint"), AF_HIDE_LIST|AF_HIDE_VIEW|AF_HIDE_ADD), "planning");
       $this->add(new fuzzySearchAttribute("member_add", "employee.employee", "storeMembers", FSA_MULTISELECT, AF_HIDE_ADD|AF_BLANK_LABEL), "planning");
