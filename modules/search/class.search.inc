@@ -21,7 +21,7 @@
       // but we need to store it in the session stack, so the system
       // remembers the last searchstring when coming back from a 
       // view action.
-      $searchstring = $g_sessionManager->stackVar("searchstring");
+      $searchstring = strip_tags($g_sessionManager->stackVar("searchstring"));
       
       if ($searchstring!="")
       {  
