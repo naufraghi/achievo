@@ -1,6 +1,39 @@
 <?php
 
-  userelation("atkmanytoonerelation");
+  userelation("atkmanytoonerelation");  
+  useattrib("atkdurationattribute");
+  
+  // special case of the duration attrib, that uses a sum(), to facilitate aggregations
+  class sumAttribute extends atkDurationAttribute 
+  {
+    var $m_groupbyfields;
+    
+    function sumAttribute($name, $groupbyfields)
+    {      
+      $this->atkDurationAttribute($name, atkconfig("timereg_resolution", "15m"), '10h',AF_OBLIGATORY|AF_TOTAL);
+      
+      $this->m_groupbyfields = $groupbyfields;
+    }
+    
+    function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec="", $level, $mode)
+    {      
+      $query->addField("SUM(".$tablename.".".$this->fieldName().")","","",$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES));    
+      
+      foreach($this->m_groupbyfields as $field)
+      {
+        if ($field!=$this->fieldName()) // can't aggregate on ourselves
+        {
+          $query->addGroupBy($tablename.".".$field);
+        }
+      }
+    }
+    
+    function db2value($rec)
+    {
+      $rec["time"] = $rec['SUM(hours.time)'];
+      return parent::db2value($rec);
+    }
+  }
   
   class hoursurvey extends atkNode
   {
@@ -25,6 +58,7 @@
       $nameswitch = $g_sessionManager->pageVar("nameswitch");
       $roleid = $g_sessionManager->pageVar("roleid");
       $remark = $g_sessionManager->pageVar("remark");            
+      $aggregate = $g_sessionManager->pageVar("aggregate");            
  
       /** $outputType gives control over the kind of output:
        * 0 standard (onscreen in compliance with theme, default)
@@ -121,6 +155,25 @@
       }
 
       $view_all = $this->allowed('view_all');
+      
+      if ($aggregate==1)
+      {
+        // determine group by fields.
+        $groupfields = $columnConfig->getOrderFields();
+        
+        $hoursnode->add(new sumAttribute("time", $groupfields));
+        
+        $suppress = array();
+        
+        // We must suppress everything we don't sort on.
+        foreach(array_keys($hoursnode->m_attribList) as $field)
+        {
+          if ($columnConfig->getOrder($field)<=0 && $field!="time") // time is displayed even in aggregate mode
+          {
+            $suppress[] = $field;
+          }
+        }
+      }
 
       // DIRTY HACK:
       // userid and activitydate are HIDE_LIST by default.
@@ -161,6 +214,7 @@
                           "enddate"=>array("year"=>substr($enddate,0,4),
                                            "month"=>substr($enddate,5,2),
                                           "day"=>substr($enddate,8,2)),
+                          "aggregate"=>$aggregate,
                           "remark"=>$remark);
                           
         $sortfieldcount = max(3, $columnConfig->countSortAttribs());
@@ -299,10 +353,16 @@
           $field = new atkListAttribute("orderby[$i]",$arr_col);
           $direction =new atkListAttribute("orderdirection[$i]",array('down', 'up'), array('asc', 'desc'));
           $orderstr.=($i+1).". ".$field->edit($dummyrec)." ".$direction->edit($dummyrec)."<br>";
-        }
-        
+        }        
 
         $g_layout->td($orderstr);
+        
+        $g_layout->output('</tr><tr>');
+        
+        $g_layout->td(text("aggregate"));
+        
+        $boolattrib = new atkListAttribute("aggregate", array("do_not_aggregate", "aggregate_by_order"), array(0,1), AF_OBLIGATORY);
+        $g_layout->td($boolattrib->edit($dummyrec));
         
         $g_layout->output('</tr></table><input type="submit" value="'.text("refresh").'"></form><br>');
 
@@ -342,7 +402,7 @@
         if ($userid!="all") $filter.= " AND hours.userid ='$userid' ";
       }
 
-      $data = $hoursnode->selectDb($filter,$columnConfig->getOrderByStatement());
+      $data = $hoursnode->selectDb($filter,$columnConfig->getOrderByStatement(), "");
 
       if ($outputType=="0")
       {
@@ -350,7 +410,14 @@
         $g_layout->ui_top(text("title_hoursurvey_hours")." ".text("report_intimespan")." ".$startdate." t/m ".$enddate);        
         
         $g_layout->output('<br>'.(atkLevel()>0?atkButton('<< '.text("back"), "", SESSION_BACK)."<br>":"").'<br>');
-        $g_layout->output($hoursnode->normalRecordList($data, $hoursnode->defaultActions("list"), RL_EXT_SORT, $suppress));
+        
+        $actions = array();
+        if (!$aggregate)
+        {
+          $actions = $hoursnode->defaultActions("list");
+        }
+        
+        $g_layout->output($hoursnode->normalRecordList($data, $actions, RL_EXT_SORT, $suppress));
         $g_layout->output('<br>'.(atkLevel()>0?atkButton('<< '.text("back"), "", SESSION_BACK)."<br>":"").'<br>');
         
         $g_layout->ui_bottom();
