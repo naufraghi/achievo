@@ -9,6 +9,7 @@ Changed in Achievo 1.1RC2
 * Removed the erroneous 'todate' column from timeregscreens. [Ivo]
 * Updated German language file. [Udo]
 * Updated Spanish language file. [Jose]
+* Updated Russian language file and fixed charset problems. [Konstantin]
 
 Changes in Achievo 1.1RC1
 -------------------------
