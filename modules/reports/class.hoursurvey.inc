@@ -11,17 +11,20 @@
 
     function action_report()
     {
-      global $g_layout, $g_user;
-      $atkorderby = $this->m_postvars["atkorderby"];
-      if ($atkorderby=="") $atkorderby = "activitydate";
-      $activity_id = $this->m_postvars["activity_id"];
-      $projectid = $this->m_postvars["projectid"];
-      $selectedprojectid = $this->m_postvars["selectedprojectid"];
-      $phaseid = $this->m_postvars["phaseid"];
-      $userid = $this->m_postvars["userid"];
-      $nameswitch = $this->m_postvars["nameswitch"];
-      $roleid = $this->m_postvars["roleid"];
-      $remark = $this->m_postvars["remark"];
+      global $g_layout, $g_user, $g_sessionManager;
+      
+      // Manual sort config
+      $orderby = $this->m_postvars["orderby"];
+      $orderdirection = $this->m_postvars["orderdirection"];      
+      
+      $activity_id = $g_sessionManager->pageVar("activity_id");
+      $projectid = $g_sessionManager->pageVar("projectid");
+      $selectedprojectid = $g_sessionManager->pageVar("selectedprojectid");
+      $phaseid = $g_sessionManager->pageVar("phaseid");
+      $userid = $g_sessionManager->pageVar("userid");
+      $nameswitch = $g_sessionManager->pageVar("nameswitch");
+      $roleid = $g_sessionManager->pageVar("roleid");
+      $remark = $g_sessionManager->pageVar("remark");            
  
       /** $outputType gives control over the kind of output:
        * 0 standard (onscreen in compliance with theme, default)
@@ -35,9 +38,9 @@
         $outputType=0;   //default=standard
       }
 
-      $startdate = $this->m_postvars["startdate"];
-      $enddate = $this->m_postvars["enddate"];
-      $col = $this->m_postvars["col"];
+      $startdate = $g_sessionManager->pageVar("startdate");
+      $enddate = $g_sessionManager->pageVar("enddate");
+      $col = $g_sessionManager->pageVar("col");
 
       // the selected customer_id is found as "customer.id='3'" in the postvars
       $organizationarr = decodeKeyValuePair($this->m_postvars["organizationid"]);
@@ -45,6 +48,21 @@
 
       $hoursnode = &getNode("timereg.hours");
       $hoursnode->m_postvars = $this->m_postvars; // Share postvars.
+      
+      $columnConfig = &$hoursnode->getColumnConfig();
+      
+      if (is_array($orderby))
+      {
+        $columnConfig->clearOrder();
+        for ($i=0, $_i=count($orderby); $i<$_i; $i++)
+        {
+          if ($orderby[$i]!="-")
+          {
+            $columnConfig->setSortDirection($orderby[$i], $orderdirection[$i]);
+            $columnConfig->setSortOrder($orderby[$i], ($i+1));
+          }
+        }
+      }      
       
       // Determine collumn suppresslist:  
       $arr_col = $hoursnode->getHourSurveyColumns();
@@ -123,7 +141,7 @@
         $g_layout->output(session_form());
 
         $g_layout->output('<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">');
-        $g_layout->output('<input type="hidden" name="atkaction" value="'.$this->m_action.'">');
+        $g_layout->output('<input type="hidden" name="atkaction" value="report">');
         $g_layout->table_simple();
         $g_layout->output('<tr>');
         $g_layout->td('<b>'.text('sethoursfilter').'</b>', 'colspan="2"');
@@ -134,7 +152,7 @@
         $projectatt = new atkProjectAttribute('projectid');
 
         // we have to pass a 'dummy' record to the attributes to set their default value.
-        $dummyrec = Array("projectid"=>$projectid,
+        $dummyrec = array("projectid"=>$projectid,
                           "organizationid"=>array("id"=>$organizationid), // manytoonerelation needs subarray
                           "phaseid"=>Array("phaseid"=>$phaseid), // is implemented as an array in projphaseattrib.
                           "startdate"=>array("year"=>substr($startdate,0,4),
@@ -143,8 +161,17 @@
                           "enddate"=>array("year"=>substr($enddate,0,4),
                                            "month"=>substr($enddate,5,2),
                                           "day"=>substr($enddate,8,2)),
-                          "remark"=>$remark,
-                          "atkorderby"=>$atkorderby);
+                          "remark"=>$remark);
+                          
+        $sortfieldcount = max(3, $columnConfig->countSortAttribs());
+                          
+        for ($i=0; $i<$sortfieldcount; $i++)
+        {
+          $dummyrec["orderby[$i]"]=$columnConfig->getAttributeByOrder($i+1);
+          $dummyrec["orderdirection[$i]"]=$columnConfig->getDirectionByOrder($i+1);
+        }
+        
+        atk_var_dump($dummyrec, 'dummyrec');
 
         $g_layout->td($projectatt->edit($dummyrec));
         $g_layout->output('</tr><tr>');
@@ -252,14 +279,30 @@
 
         $g_layout->output('</tr><tr>');
 
-        $g_layout->td(text("orderby").': ');
+        $g_layout->td(text("orderby").': ', 'valign="top"');
 
-        $listcol = array();
-        for($i=0,$_i=count($arr_col);$i<$_i;$i++) $listcol[] = "hours.".$arr_col[$i];
+        //$listcol = array();
+        //for($i=0,$_i=count($arr_col);$i<$_i;$i++) $listcol[] = "hours.".$arr_col[$i];
+        
+        $orderattrs = array();
+        $orderstr = "";
 
-        $orderatt = new atkListAttribute("atkorderby",$arr_col, $listcol);
+        for ($i=0; $i<$sortfieldcount; $i++)
+        {
+          if ($i==1)
+          {
+            // Add empty option after the first.
+            array_unshift($arr_col, "-");
+          //  array_unshift($listcol, "");
+          }
+         
+          $field = new atkListAttribute("orderby[$i]",$arr_col);
+          $direction =new atkListAttribute("orderdirection[$i]",array('down', 'up'), array('asc', 'desc'));
+          $orderstr.=($i+1).". ".$field->edit($dummyrec)." ".$direction->edit($dummyrec)."<br>";
+        }
+        
 
-        $g_layout->td($orderatt->edit($dummyrec));
+        $g_layout->td($orderstr);
         
         $g_layout->output('</tr></table><input type="submit" value="'.text("refresh").'"></form><br>');
 
@@ -299,7 +342,7 @@
         if ($userid!="all") $filter.= " AND hours.userid ='$userid' ";
       }
 
-      $data = $hoursnode->selectDb($filter,$atkorderby);
+      $data = $hoursnode->selectDb($filter,$columnConfig->getOrderByStatement());
 
       if ($outputType=="0")
       {
@@ -307,7 +350,7 @@
         $g_layout->ui_top(text("title_hoursurvey_hours")." ".text("report_intimespan")." ".$startdate." t/m ".$enddate);        
         
         $g_layout->output('<br>'.(atkLevel()>0?atkButton('<< '.text("back"), "", SESSION_BACK)."<br>":"").'<br>');
-        $g_layout->output($hoursnode->recordList($data, $hoursnode->defaultActions("list"),false,$suppress));
+        $g_layout->output($hoursnode->normalRecordList($data, $hoursnode->defaultActions("list"), RL_EXT_SORT, $suppress));
         $g_layout->output('<br>'.(atkLevel()>0?atkButton('<< '.text("back"), "", SESSION_BACK)."<br>":"").'<br>');
         
         $g_layout->ui_bottom();
