@@ -179,12 +179,12 @@
       $output.= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
       $output.= '<input type="hidden" name="atkaction" value="'.$this->m_action.'">';
       
-      $output.= '<table border="0"><tr><td class="table">'.text("timespan").': </td><td>'.$startdateatt->edit($dummyrec).' &nbsp;'.
+      $output.= '<table border="0"><tr><td class="table">'.text("timespan").': </td><td class="table">'.$startdateatt->edit($dummyrec).' &nbsp;'.
                 text("until").'&nbsp; '.$enddateatt->edit($dummyrec).'</td></tr>';
                 
       if ($this->allowed("view_all"))
       {
-        $output.= '<tr><td class="table">'.text("employee").'</td><td>'.$empattr->edit($dummyrec).'</td></tr>';
+        $output.= '<tr><td class="table">'.text("employee").': </td><td>'.$empattr->edit($dummyrec).'</td></tr>';
       }
       
       $output.= '</table>';
