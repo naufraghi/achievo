@@ -9,7 +9,10 @@ Changes in Achievo 1.0.2
 + Added second address field to organization mail and visit address. [Ivo]
 * The conversion script now warns the user if default contactpersons are
   generated. [Ivo]
+* If add-on modules were activated before the Achievo db was installed,
+  database errors could occur. This is now fixed. [Ivo]
 * Upgrade patches can now report important information to the user. [Ivo]
+* Workaround of wrong patch version number in 1.0.1. [Ivo]
 * Fixed bug in formatting of negative time entries. [Ivo]
 * Updated German language file. [Stephan]
 
