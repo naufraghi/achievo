@@ -9,6 +9,7 @@ Changes in Achievo 1.0.1
 + Separated mail and visit address for organizations. (bug #230) [Martin, Ivo]
 * Employee supervisor information is now properly converted. (bug #234) [Ivo]
 * Fixed bug when adding individual week locks. [Lineke]
+* Updated Spanish language file. [Daniel]
 
 Changes in Achievo 1.0.0
 -------------------------
