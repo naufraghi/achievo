@@ -4,7 +4,7 @@
   {
     function getNodes()
     {
-      registerNode("employee.profile", array("admin", "add", "edit", "delete"));
+      registerNode("employee.profile", array("admin", "add", "edit", "delete" , "grantall"));
       registerNode("employee.employee", array("admin", "add", "edit", "delete", "stats", "view_all"));
       registerNode("employee.usercontracts", array("admin", "add", "edit", "delete"));
       registerNode("employee.userprefs", array("edit"));
