@@ -426,5 +426,7 @@
   $txt_workingdays = "Workingdays";
   $txt_yearly = "Year";
   $txt_zipcode = "Zipcode";
+  
+  $txt_menu_contact_admin = "Contacts";
 
 ?>
