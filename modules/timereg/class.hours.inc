@@ -41,7 +41,7 @@ class hours extends atkNode
 
   function hours()
   {
-    global $g_sessionManager,$ATK_VARS,$g_user;
+    global $g_sessionManager,$g_user;
 
     // weekview and viewdate are variables that we need to remember..
     $this->m_weekview = $g_sessionManager->pageVar("weekview");
@@ -76,7 +76,7 @@ class hours extends atkNode
     $this->add(new atkProjectPhaseAttribute("phaseid",AF_OBLIGATORY|AF_JS_UPDATEACTIVITY));
     $this->add(new atkListAttribute("activityid",array("dummy","dummy","dummy","dummy","dummy"),array(0,0,0,0,0),AF_OBLIGATORY, 10));
     $this->add(new atkTextAttribute("remark", atkconfig("timereg_remark_lines", 1), 0));
-    $this->add(new atkDurationAttribute("time",atkconfig("timereg_resolution", "15m"), '10h',AF_OBLIGATORY|AF_TOTAL));
+    $this->add(new atkDurationAttribute("time",atkconfig("timereg_resolution", "15m"), atkconfig("max_bookable",10).'h',AF_OBLIGATORY|AF_TOTAL));
     
     $relation = new atkManyToOneRelation("workperiod","timereg.workperiod", AF_OBLIGATORY|AF_HIDE_LIST);
     $relation->setHideWhenEmpty(true);
@@ -264,9 +264,10 @@ class hours extends atkNode
   function weekview()
   {
     global $g_layout;
+    
     if ($this->m_viewdate!="")
     {
-      $viewtime = adodb_mktime(12,12,0,substr($this->m_viewdate,5,2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4));
+      $viewtime = mktime(12,12,0,substr($this->m_viewdate,5,2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4));
     }
     else
     {
@@ -276,6 +277,15 @@ class hours extends atkNode
     $g_layout->initGUI();
     $g_layout->ui_top(text('title_houradmin_weekview').' '.strftime('%V, %Y',$viewtime));
 
+    $g_layout->output($this->getWeekviewData($viewtime));
+    $g_layout->ui_bottom();
+  }
+  
+  function getWeekviewData($viewtime)
+  {
+    global $g_layout;
+    
+    $userid = $this->m_user;
     $weekday = strftime("%w",$viewtime);
     if ($weekday==0) $weekday=7;
 
@@ -290,90 +300,60 @@ class hours extends atkNode
     $projtotals = Array();
     $daytotals = Array();
 
-    $data = $this->selectDb("activitydate >= '".$weekdates[1]['date']."' AND activitydate <= '".$weekdates[7]['date']."'","","",$this->m_listExcludes);
+    $data = $this->selectDb("activitydate >= '".$weekdates[1]['date']."' AND activitydate <= '".$weekdates[7]['date']."' AND hours.userid = '$userid'","","",$this->m_listExcludes);
 
     for ($i=0;$i<count($data);$i++)
     {
       $rec = $data[$i];
       $key = $rec["phaseid"]["projname"]."-".$rec["phaseid"]["phasename"];
       $date = $rec["activitydate"]["year"]."-".$rec["activitydate"]["month"]."-".$rec["activitydate"]["day"];
-      $time = $rec["time"];
+      $time = ($rec["time"]["hours"]*60)+$rec["time"]["minutes"];
       $week[$key][$date] += $time;
       $projtotals[$key] += $time;
       $daytotals[$date] += $time;
       $total += $time;
     }
 
-    $userid = $this->m_user;
+    $weekviewheader = $this->weekviewHeader($weekdates, $viewtime);
 
-    // First a line with previous and next week links..
-    $prevnextlinks='<form name="weekview" method="post" action="dispatch.php">';
-    $prevnextlinks.=session_form();
-    $prevnextlinks.='<table border=0 cellpadding=0 cellspacing=0 width="100%" class="table">';
-    $prevnextlinks.='<tr><td valign="top" align="left">';
-    $prevnextlinks.= ''.href('dispatch.php?viewuser='.$userid.'&weekview=1&viewdate='.$weekdates[0]['date'], text('previousweek'));
-    if ($weekdates[8]['date'] <= date("Y-m-d"))
-    {
-      $prevnextlinks.='&nbsp;&nbsp;'.href('dispatch.php?viewuser='.$userid.'&weekview=1&viewdate='.$weekdates[8]['date'],text('nextweek'));
-    }
-    $prevnextlinks.= '&nbsp;&nbsp;'.href('dispatch.php?viewuser='.$userid.'&weekview=1&viewdate='.date("Y-m-d"), text('thisweek'));
-    
-    if ($this->m_lock=="individual" && $this->allowed("unlock"))
-    {
-      $prevnextlinks.='&nbsp;&nbsp;'.href('dispatch.php?atkaction=unlock&userid='.$userid.'&viewdate='.$this->m_viewdate,'<b>'.text("unlock").'</b>');
-    }
-    // users may only lock weeks that are not already locked. they must have the proper permission
-    // and, if configured, they may only lock a week once they have booked all their hours.
-    else if ($this->m_lock=="" && $this->allowed("lock") && (atkconfig("timereg_incompleteweeklock") || $this->weekComplete($userid, $this->m_viewdate)))
-    {
-      $prevnextlinks.='&nbsp;&nbsp;'.href('dispatch.php?atkaction=lock&userid='.$userid.'&viewdate='.$this->m_viewdate,'<b>'.text("lock").'</b>');
-    }
-    $prevnextlinks.='</td><td valign="top" align="right">';
-    $prevnextlinks.=$this->getUserSelect().'&nbsp;';
-    $prevnextlinks.=$this->getDateJumper();
-    $prevnextlinks.='&nbsp;<input type="submit" value="'.text("goto").'">';
-    $prevnextlinks.='</td></tr></table></form>';
+    $output.=$weekviewheader;
+    $output.=$g_layout->data_top();
+    $output.=$g_layout->tr_top();
 
-    $prevnextlinks.='<b>'.text("week").' '.strftime('%V, %Y',$viewtime).'</b>'.$this->getLockIcon().'<br><br><br>';
-
-    $g_layout->output($prevnextlinks);
-    $g_layout->output($g_layout->data_top());
-    $g_layout->output($g_layout->tr_top());
-
-    $g_layout->td_datatitle(text('project').'/'.text('phase'));
+    $output.=$g_layout->ret_td_datatitle(text('project').'/'.text('phase'));
     for ($i=1;$i<=7;$i++)
     {
       if ($weekdates[$i]['date'] <= date("Y-m-d"))
       {
-        $url = 'dispatch.php?viewuser='.$userid.'&viewdate='.$weekdates[$i]['date']."&weekview=0";
-        $g_layout->td_datatitle(href($url,text($weekdates[$i]['day'])).'<br>('.substr($weekdates[$i]['date'],5,2).'-'.substr($weekdates[$i]['date'],8,2).')','align="center"');
+        $url = 'dispatch.php?viewdate='.$weekdates[$i]['date']."&weekview=0";
+        $output.=$g_layout->ret_td_datatitle(href($url,text($weekdates[$i]['day'])).'<br>('.substr($weekdates[$i]['date'],5,2).'-'.substr($weekdates[$i]['date'],8,2).')','align="center"');
       }
       else
       {
-        $g_layout->td_datatitle(text($weekdates[$i]['day']).'<br>('.substr($weekdates[$i]['date'],5,2).'-'.substr($weekdates[$i]['date'],8,2).')','align="center"');
+        $output.=$g_layout->ret_td_datatitle(text($weekdates[$i]['day']).'<br>('.substr($weekdates[$i]['date'],5,2).'-'.substr($weekdates[$i]['date'],8,2).')','align="center"');
       }
 
     }
-    $g_layout->td_datatitle(text('total'));
+    $output.=$g_layout->ret_td_datatitle(text('total'));
 
-    $g_layout->output($g_layout->tr_bottom());
+    $output.=$g_layout->tr_bottom();
 
     $row = 0;
     while (list($proj, $times)=each($week))
     {
-      $g_layout->output($g_layout->tr_top((++$row)%2==0));
-      $g_layout->td($proj);
+      $output.=$g_layout->tr_top((++$row)%2==0);
+      $output.=$g_layout->ret_td($proj);
       for ($i=1;$i<=7;$i++)
       {
-        $g_layout->td(time_format($times[$weekdates[$i]['date']]), 'align="center"');
+        $output.=$g_layout->ret_td($times[$weekdates[$i]['date']], 'align="center"');
       }
-      $g_layout->td(time_format($projtotals[$proj]), 'align="center"');
-      $g_layout->output($g_layout->tr_bottom());
+      $output.=$g_layout->ret_td(time_format($projtotals[$proj]), 'align="center"');
+      $output.=$g_layout->tr_bottom();
     }
 
-    $g_layout->output($g_layout->tr_top());
+    $output.=$g_layout->tr_top();
 
-    $g_layout->td_datatitle(text('total'));
+    $output.=$g_layout->ret_td_datatitle(text('total'));
 
     for ($i=1;$i<=7;$i++)
     {
@@ -383,15 +363,53 @@ class hours extends atkNode
       }
       else
       {
-        $color = "#009900";
+        $color = "#000000";
       }
-      $g_layout->td_datatitle('<font color="'.$color.'">'.time_format($daytotals[$weekdates[$i]['date']]).'</font>','align="center"');
+      $output.=$g_layout->ret_td_datatitle('<font color="'.$color.'">'.time_format($daytotals[$weekdates[$i]['date']]).'</font>','align="center"');
     }
-    $g_layout->td_datatitle(time_format($total), 'align="center"');
+    $output.=$g_layout->ret_td_datatitle(time_format($total), 'align="center"');
 
-    $g_layout->output($g_layout->tr_bottom());
-    $g_layout->output($g_layout->data_bottom());
-    $g_layout->ui_bottom();
+    $output.=$g_layout->tr_bottom();
+    $output.=$g_layout->data_bottom();
+    return $output;
+  }
+  
+  function weekviewHeader($weekdates, $viewtime)
+  {
+    global $g_user;
+    $userid = $this->m_user;
+
+    // First a line with previous and next week links..
+    $output='<form name="weekview" method="post" action="dispatch.php">';
+    $output.=session_form();
+    $output.='<table border=0 cellpadding=0 cellspacing=0 width="100%" class="table">';
+    $output.='<tr><td valign="top" align="left">';
+    $output.= ''.href('dispatch.php?weekview=1&viewdate='.$weekdates[0]['date'], text('previousweek'));
+    if ($weekdates[8]['date'] <= date("Y-m-d"))
+    {
+      $output.='&nbsp;&nbsp;'.href('dispatch.php?weekview=1&viewdate='.$weekdates[8]['date'],text('nextweek'));
+    }
+    $output.= '&nbsp;&nbsp;'.href('dispatch.php?weekview=1&viewdate='.date("Y-m-d"), text('thisweek'));
+    $output.= '&nbsp;&nbsp;'.href('dispatch.php?weekview=0&viewdate='.date("Y-m-d"), text('dayoverview'));
+
+    if ($this->m_lock=="individual" && $this->allowed("unlock"))
+    {
+      $output.='&nbsp;&nbsp;'.href('dispatch.php?atkaction=unlock&userid='.$userid.'&viewdate='.$this->m_viewdate,'<b>'.text("unlock").'</b>');
+    }
+    // users may only lock weeks that are not already locked. they must have the proper permission
+    // and, if configured, they may only lock a week once they have booked all their hours.
+    else if ($this->m_lock=="" && $this->allowed("lock") && (atkconfig("timereg_incompleteweeklock") || $this->weekComplete($userid, $this->m_viewdate)))
+    {
+      $output.='&nbsp;&nbsp;'.href('dispatch.php?atkaction=lock&userid='.$userid.'&viewdate='.$this->m_viewdate,'<b>'.text("lock").'</b>');
+    }
+
+    $output.='</td><td valign="top" align="right">';
+    $output.=$this->getDateJumper();
+    $output.='&nbsp;<input type="submit" value="'.text("goto").'">';
+    $output.='</td></tr></table></form>';
+
+    $output.='<b>'.$g_user["firstname"].' '.$g_user["lastname"].' - '.text("week").' '.strftime('%V, %Y',$viewtime).'</b>'.$this->getLockIcon().'<br><br><br>';
+    return $output;
   }
 
   function postAdd($rec)
@@ -527,11 +545,21 @@ class hours extends atkNode
 
   function action_lock()
   {
+    if (atkconfig("lock_week_approval_required"))
+      $this->lockWeek();    
+    else 
+      $this->lockWeek("1");
+  }
+  
+  function lockWeek($approved=null)
+  {
     $viewdate = $this->m_postvars["viewdate"];
+    $record = array();
     $record["userid"]["id"] = $this->m_postvars["userid"];
     $record["week"] = weekstamp(adodb_mktime(0,0,0,substr($viewdate,5,2),
                                    substr($viewdate,8,2),
                                    substr($viewdate,0,4)));
+    $record["approved"] = $approved;
     $locknode = &getNode("timereg.hours_lock");
     $locknode->addDb($record);
     $this->redirect();
@@ -691,7 +719,7 @@ class hours extends atkNode
 
   function getHourSurveyColumns()
   {
-    return array("activitydate","userid","phaseid","activityid","remark","time");
+    return array("activitydate","userid","phaseid","activityid","remark","time","functionlevel");
   }
 
   
