@@ -17,6 +17,8 @@ Changed in Achievo 1.1RC3
 * Fixed bug in registering time. (bug #331) [Sandy]
 * Fixed the help popup. (bug #348) [Sandy]
 * Fixed bug in search module. (bug #369) [Sandy]
+* Fixed bug in postgresql detection. (bug #378) [Ivo]
+* Fixed bug in weekstamp generation on windows servers. (bug #48) [Joachim]
 + Added Slovak translation. [Danielk]
 
 Changed in Achievo 1.1RC2
