@@ -14,7 +14,7 @@ Changes in Achievo 1.0.3
   explicitly have themselves. [Ivo]
 + The 'time survey' report can now be filtered by remark. [Ivo]
 + Contact persons now have their own menu item. [Ivo]
-* Contacts found with the topright searchbox now show their company. [Ivo]
+* Contacts found with the searchbox now show their company. (bug #227) [Ivo]
 + Added decimals to employee contracts. [S.Leblanc]
 + Roles that are not in use can now be deleted. (bug #236) [Ivo]
 + The employee weekreport now displays negative overtime (shortage). [Lineke]
