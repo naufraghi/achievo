@@ -40,7 +40,7 @@ Note 2: The FAQ is targeted at the latest stable release of Achievo.
           possibly others), the default apache user and group (nobody and 
           Group #-1 on SuSE) should be changed. A new user and group should 
           be created and set accordingly in the User and Group directives in
-          httpd.conf.
+          httpd.conf. (See http://www.achievo.org/bug/329 for more info)
 
  1.3. Does Achievo run on Windows?
  
