@@ -2,6 +2,7 @@
 
   userelation("atkmanytoonerelation");  
   useattrib("atkdurationattribute");
+  useattrib("atkboolattribute");
   
   // special case of the duration attrib, that uses a sum(), to facilitate aggregations
   class sumAttribute extends atkDurationAttribute 
@@ -49,6 +50,7 @@
       // Manual sort config
       $orderby = $this->m_postvars["orderby"];
       $orderdirection = $this->m_postvars["orderdirection"];      
+      $subtotal = $this->m_postvars["subtotal"];
       
       $activity_id = $g_sessionManager->pageVar("activity_id");
       $projectid = $g_sessionManager->pageVar("projectid");
@@ -94,6 +96,8 @@
           {
             $columnConfig->setSortDirection($orderby[$i], $orderdirection[$i]);
             $columnConfig->setSortOrder($orderby[$i], ($i+1));
+            
+            $columnConfig->setSubTotal($orderby[$i], ($subtotal[$i]==1));
           }
         }
       }      
@@ -223,9 +227,10 @@
         {
           $dummyrec["orderby[$i]"]=$columnConfig->getAttributeByOrder($i+1);
           $dummyrec["orderdirection[$i]"]=$columnConfig->getDirectionByOrder($i+1);
+          $dummyrec["subtotal[$i]"]=($columnConfig->hasSubTotalByOrder($i+1)?1:0);
         }
         
-        atk_var_dump($dummyrec, 'dummyrec');
+        //atk_var_dump($dummyrec, 'dummyrec');
 
         $g_layout->td($projectatt->edit($dummyrec));
         $g_layout->output('</tr><tr>');
@@ -352,7 +357,8 @@
          
           $field = new atkListAttribute("orderby[$i]",$arr_col);
           $direction =new atkListAttribute("orderdirection[$i]",array('down', 'up'), array('asc', 'desc'));
-          $orderstr.=($i+1).". ".$field->edit($dummyrec)." ".$direction->edit($dummyrec)."<br>";
+          $total = new atkBoolAttribute("subtotal[$i]",0);
+          $orderstr.=($i+1).". ".$field->edit($dummyrec)." ".$direction->edit($dummyrec)." ".$total->edit($dummyrec)."<br>";
         }        
 
         $g_layout->td($orderstr);
