@@ -194,7 +194,7 @@
   $txt_menu_role_admin = "Schablonen 'Rollen'";
   $txt_menu_schedule = "Terminplan verwalten";
   $txt_menu_schedule_types = "Schablonen 'Termintypen'";
-  $txt_menu_setup = "Schablonen verwalten";
+  $txt_menu_setup = "Setup";
   $txt_menu_support = "Support";
   $txt_menu_time_registration = "Stunden verwalten";
   $txt_menu_tpl_phase_admin = "Schablonen 'Phasen'";
