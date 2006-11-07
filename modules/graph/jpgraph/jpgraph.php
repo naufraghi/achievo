@@ -4,7 +4,7 @@
 // Description:	PHP Graph Plotting library. Base module.
 // Created: 	2001-01-08
 // Author:	Johan Persson (johanp@aditus.nu)
-// Ver:		$Id$
+// Ver:		$Id: jpgraph.php,v 1.3 2006/03/12 14:51:53 sandy Exp $
 //
 // Copyright (c) Aditus Consulting. All rights reserved.
 //========================================================================

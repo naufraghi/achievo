@@ -4,7 +4,7 @@
 // Description:	PHP4 Graph Plotting library. Extension module.
 // Created: 	2004-02-18
 // Author:	Johan Persson (johanp@aditus.nu)
-// Ver:		$Id$
+// Ver:		$Id: jpgraph_iconplot.php,v 1.1 2006/03/12 14:51:54 sandy Exp $
 //
 // Copyright (c) Aditus Consulting. All rights reserved.
 //========================================================================

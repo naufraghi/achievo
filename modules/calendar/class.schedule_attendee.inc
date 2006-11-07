@@ -7,9 +7,9 @@
  * This class makes it possible to add attendees to a schedule. These attendees can be employees and contacts.
  * That is why the relation is linked to person.
  *
- * $Id$
+ * $Id: class.schedule_attendee.inc,v 1.5 2003/02/20 23:48:07 ivo Exp $
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision$
+ * @version $Revision: 1.5 $
  *
  */
 

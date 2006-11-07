@@ -13,8 +13,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License 2
    *
-   * @version $Revision$
-   * $Id$
+   * @version $Revision: 1.4 $
+   * $Id: test.php,v 1.4 2006/04/05 15:26:23 guido Exp $
    */
 
   // Include ATK library

@@ -5,9 +5,9 @@
 # Usage         : Run with 'perl phase_convert.pl -h' for help.
 # 
 # Contributed by: Maciej Maczynski <macmac@xdsnet.pl>
-# Version       : $Revision$
+# Version       : $Revision: 1.2 $
 #
-# $Id$
+# $Id: phase_convert.pl,v 1.2 2002/04/25 21:54:19 ivo Exp $
 #
 use DBI;
 use Getopt::Long;

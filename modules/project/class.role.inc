@@ -14,8 +14,8 @@
    * @copyright (c) 2006 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision$
-   * $Id$
+   * @version $Revision: 1.10 $
+   * $Id: class.role.inc,v 1.10 2006/04/11 20:48:17 sandy Exp $
    */
   useattrib("atknumberattribute");
   /**

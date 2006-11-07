@@ -6,9 +6,9 @@
  *
  * This class makes it possible to add notes to a schedule.
  *
- * $Id$
+ * $Id: class.schedule_notes.inc,v 1.7 2006/04/11 20:43:12 sandy Exp $
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision$
+ * @version $Revision: 1.7 $
  *
  */
 

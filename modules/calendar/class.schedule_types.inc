@@ -7,9 +7,9 @@
  * This class makes it possible to define schedule_types like sales appointment, meeting, etc with their own
  * background and foreground color.
  *
- * $Id$
+ * $Id: class.schedule_types.inc,v 1.7 2006/04/11 20:43:12 sandy Exp $
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision$
+ * @version $Revision: 1.7 $
  *
  */
 

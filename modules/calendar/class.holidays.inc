@@ -11,8 +11,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision$
-   * $Id$
+   * @version $Revision: 1.2 $
+   * $Id: class.holidays.inc,v 1.2 2005/11/03 17:03:56 guido Exp $
    */
 
   // Load the used attribute classes

@@ -10,8 +10,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision$
-   * $Id$
+   * @version $Revision: 1.2 $
+   * $Id: class.projectstatus.inc,v 1.2 2005/12/02 13:08:02 ivo Exp $
    */
 
   /**

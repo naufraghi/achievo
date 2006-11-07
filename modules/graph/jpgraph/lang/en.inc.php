@@ -4,7 +4,7 @@
 // Description: English language file for error messages
 // Created: 	2006-01-25
 // Author:	Johan Persson (johanp@aditus.nu)
-// Ver:		$Id$
+// Ver:		$Id: en.inc.php,v 1.1 2006/03/15 19:54:03 sandy Exp $
 //
 // Copyright (c) Aditus Consulting. All rights reserved.
 //========================================================================

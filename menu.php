@@ -18,8 +18,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
-   * $Id$
+   * @version $Revision: 4.27 $
+   * $Id: menu.php,v 4.27 2005/11/15 22:07:51 ivo Exp $
    */
 
   /**
