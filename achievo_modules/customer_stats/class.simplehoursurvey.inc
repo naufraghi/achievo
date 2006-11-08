@@ -450,7 +450,7 @@
       {
         $projectsnode = &atkGetNode("project.project");
         $projectsnode->m_postvars = $this->m_postvars; // Share postvars.
-        $pids = implode(",", $projectsnode->get_involved_projects());
+        $pids = implode(",", $projectsnode->get_user_projects());
 		$filter.= " AND A.projectid IN (".$pids.")";
       }
 /*naufraghi: 2006-11-07 ******************************************************/

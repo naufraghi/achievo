@@ -1,32 +1,26 @@
 <?php
 
-  class mod_reports extends achievoModule
+  class mod_customer_stats extends achievoModule
   {
     function getNodes()
     {
-      registerNode("reports.weekreport",array("report","view_all"));
-      registerNode("reports.hoursurvey",array("report","view_all"));
-/*naufraghi: 2006-11-07 ******************************************************/
-      registerNode("reports.simplehoursurvey",array("report","view_all","any_project"));
-/*naufraghi: 2006-11-07 ******************************************************/
-      registerNode("reports.projectstatus",array("report", "any_user"));
+      registerNode("customer_stats.simplehoursurvey",array("report","view_all","any_project"));
     }
 
     function pdaNodes()
     {
       return array(
-      "hours_hoursurvey"=>dispatch_url("reports.hoursurvey", "report"));
+      "hours_hoursurvey"=>dispatch_url("customer_stats.simplehoursurvey", "report"));
     }
 
     function getMenuItems()
     {
-      $this->menuitem("reports", "","main",true,370);
-      // TODO FIXME: hoursurvey is part of timereg.hours class. This should
-      // be in a separate class in this module that delegates to the hours class.
-      $this->menuitem("hours_hoursurvey", dispatch_url("reports.hoursurvey", "report"),"reports", array("reports.hoursurvey", "report"));
-      $this->menuitem("hours_simple_hoursurvey", dispatch_url("reports.simplehoursurvey", "report"),"reports", array("reports.simplehoursurvey", "report"));
-      $this->menuitem("weekreport", dispatch_url("reports.weekreport", "report"),"reports",array("reports.weekreport","report"));
-      $this->menuitem("projectstatus", dispatch_url("reports.projectstatus", "report"), "reports", array("reports.projectstatus", "report"));
+      $this->menuitem("customer_stats",
+                      dispatch_url("customer_stats.simplehoursurvey", "report"),
+                      "main",true,370);
+      $this->menuitem("simplehoursurvey",
+                      dispatch_url("customer_stats.simplehoursurvey", "report"),
+                      "customer_stats");
     }
   }
 
