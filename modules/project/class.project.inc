@@ -538,12 +538,12 @@
     {
     	if (!$this->allowed("any_project"))
         {
-			$pids = implode(",", $this->get_involved_projects());
+			$pids = implode(",", $this->get_user_projects());
 			$this->addFilter("project.id IN ($pids)");
         }
         return $handler->action_select();
     }
-    function get_involved_projects()
+    function get_user_projects()
     {
       global $g_user;
       $db = &atkGetDb();
