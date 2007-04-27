@@ -9,6 +9,23 @@
 
 useattrib("atkdateattribute");
 
+function str_number_format($var, $digits)
+{
+    if (is_numeric($var))
+        return number_format($var, $digits, ",", ".");
+    else
+        return $var;
+}
+
+//Supporto per la colorazione alternata delle righe
+$_flipflop = true;
+function flipflop()
+{
+    global $_flipflop;
+    $_flipflop = !$_flipflop;
+    return $_flipflop;
+}
+
 class timesummary extends atkNode
 {
     function timesummary()
@@ -65,8 +82,8 @@ class timesummary extends atkNode
                     activitydate <= '$date_end'";
         if (!$this->allowed("any_user")) $filter.= " AND hours.userid ='$userid' ";
         $groupby = "
-                GROUP BY userid, prj
-                ORDER BY userid, prj";
+                GROUP BY lower(person.userid), lower(prj)
+                ORDER BY lower(person.userid), lower(prj)";
 
         $sql = $select . $filter . $groupby;
 
@@ -134,7 +151,11 @@ class timesummary extends atkNode
             else
                 $persone[$r['userid']]['euro'] = "Manca euro/h";
 
-            $content .= "<tr><td>".$r['userid']."</td><td>".$r['prj']."</td><td>".round($r['ore'], 2)."</td><td>".$r['euro']."</td></tr>\n";
+            if (flipflop())
+                $content .= "<tr>";
+            else
+                $content .= "<tr style='background: #DDDDC0'>";
+            $content .= "<td>".$r['userid']."</td><td>".$r['prj']."</td><td align='right'>".str_number_format($r['ore'], 2)."</td><td align='right'>".str_number_format($r['euro'], 2)."</td></tr>\n";
         }
         $content .= "</table>";
 
@@ -144,25 +165,39 @@ class timesummary extends atkNode
             ksort($progetti); //Ordina per chiave, le persone sono già ordinate
             foreach ($progetti as $key => $r)
             {
-                $content .= "<tr><th>$key</th><td>".$r['ore']."</td><td>".$r['euro']."</td></tr>";
+                if (flipflop())
+                    $content .= "<tr>";
+                else
+                    $content .= "<tr style='background: #DDDDC0'>";
+                $content .= "<th>$key</th><td align='right'>".str_number_format($r['ore'], 2)."</td><td align='right'>".str_number_format($r['euro'], 2)."</td></tr>\n";
             }
             $content .= "</table>";
         $content .= "</td><td>";
             $content .= "<table border='1'><tr><th>Totale persona</th><th>ore</th><th>euro</th></tr>";
+            $totale_ore_develer = 0;
             foreach ($persone as $key => $r)
             {
-                $content .= "<tr><th>$key</th><td>".$r['ore']."</td><td>".$r['euro']."</td></tr>";
+                if (flipflop())
+                    $content .= "<tr>";
+                else
+                    $content .= "<tr style='background: #DDDDC0'>";
+                $content .= "<th>$key</th><td align='right'>".str_number_format($r['ore'], 2)."</td><td align='right'>".str_number_format($r['euro'], 2)."</td></tr>\n";
+                $totale_ore_develer += $r['ore'];
             }
+            $content .= "<th>Totale</th><td align='right'>".str_number_format($totale_ore_develer, 2)."</td><td align='right'>&nbsp;</td></tr>\n";
             $content .= "</table>";
         $content .= "</td></tr></table>";
 
+        $content .= '<input type="submit" value="'.atktext("refresh").'">';
+
         $content .= "<table><tr><td>Inserire: nome_utente euro/h</td></tr>\n";
-        $content .= "<tr><td><textarea rows='20' cols='80' name='euro_ora_text'>".$this->m_postvars['euro_ora_text']."</textarea>";
+        $content .= "<tr><td><textarea rows='10' cols='40' name='euro_ora_text'>".$this->m_postvars['euro_ora_text']."</textarea>";
         $content .= "</td></tr></table>\n";
 
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
         $content .= '<input type="hidden" name="atkaction" value="report">';
+
         $content .= '</form>';
         $page->addContent($ui->renderBox(array("title"=>$title,"content"=>$content)));
     }
