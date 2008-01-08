@@ -9,11 +9,7 @@
 
 include_once (moduleDir("timestats")."class.hours.inc");
 
-//XML stuff da http://www.xml.com/pub/a/2003/03/19/dive-into-xml.html
-if (stristr($_SERVER[HTTP_ACCEPT], "application/xhtml+xml"))
-    header("Content-Type: application/xhtml+xml");
-else
-    header("Content-Type: text/html");
+header('Content-Type: text/xml');
 
 function is_valid_date($date)
 {
