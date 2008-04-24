@@ -318,7 +318,7 @@ $$Firstname$$: first name of the user, eg. "admin"
 $$Lastname$$: last name of the user, eg. "admin"
 $$Domain$$: domain name for mail-address, eg. ""
 $$E-Mail$$: email-address of the user, eg. "admin@"
-$$Date$$: todays date, eg. "2006/09/22"
+$$Date: 2008/01/07 17:44:46 $$: todays date, eg. "2006/09/22"
 $$to-fullname$$: Fullname of person to notify
 $$to-firstname$$: Firstname of person to notify
 $$to-lastname$$: Lastname of person to notify
