@@ -1224,7 +1224,6 @@
       // clean compiled template file
       unlink($file);
     }
-
   }
 
 ?>
