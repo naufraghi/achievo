@@ -948,7 +948,7 @@ class hoursurvey extends atkNode
       $filter.= $filterarray[$i]["columnname"]." ".$filterarray[$i]["condition"];
     }
 
-    $data = $this->getHourRecords($nameswitch, $userid, $filter, $orderbystatement, $col);
+    $data = $this->getHourRecords($hoursnode, $nameswitch, $userid, $filter, $orderbystatement, $col);
     
     if ($outputType=="0")
     {
@@ -986,7 +986,7 @@ class hoursurvey extends atkNode
     return "reports.surveyhours";
   }
 
-  function getHourRecords($nameswitch, $user, $filter, $orderby, $col)
+  function getHourRecords($hoursnode, $nameswitch, $user, $filter, $orderby, $col)
   {
     require_once(moduleDir('report').'utils/class.reportutils.inc');
 
@@ -1008,7 +1008,7 @@ class hoursurvey extends atkNode
 
         $filterExtended .= $and;
 
-        $records = $this->getHourRecordsFromDB($filterExtended, $orderby, $col);
+        $records = $this->getHourRecordsFromDB($hoursnode, $filterExtended, $orderby, $col);
 
         if (is_array($records) && count($records) > 0)
           $hourrecords = array_merge($hourrecords, $records);
@@ -1021,14 +1021,12 @@ class hoursurvey extends atkNode
       if ($user != "all")
         $filter.= " AND hours.userid ='$user' ";
 
-      return $this->getHourRecordsFromDB($filter, $orderby, $col);
+      return $this->getHourRecordsFromDB($hoursnode, $filter, $orderby, $col);
     }
   }
 
-  function getHourRecordsFromDB($filter, $orderby, $col)
+  function getHourRecordsFromDB($hoursnode, $filter, $orderby, $col)
   {
-    $hoursnode = &atkGetNode("timereg.hours");
-    
     $records = $hoursnode->selectDb($filter,implode(",",$orderby), "", "", $col);
 
     if (is_array($records) && count($records) > 0)

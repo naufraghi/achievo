@@ -4,6 +4,19 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changes in Achievo 1.3.2
+------------------------
+* Fixed edit button of non recurring events in the scheduler. [Sandy]
+* Fixed saving of the duration of an event. [Sandy]
+* Fixed adding todos which caused an SQL error. [Dennis]
+* Fixed adding new contacts from the project screen. (bug #949) [Sandy]
+* Fixed adding new projects on 29 Feb. (bug #954) [Sandy]
+* Created workaroung for adding projects based on a phase
+  template, see ticket for more information. (bug #948) [Sandy]
+* Fixed SQL error when selecting activities that are also in
+  the selected template when adding a phase. [Sandy]
+* Fixed aggregation of unsorted columns [Guido,Jeroen]
+
 Changes in Achievo 1.3.1
 ------------------------
 * Fixed SQL Error and interface problems in hours approval functionallity.

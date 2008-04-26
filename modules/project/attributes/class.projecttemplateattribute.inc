@@ -22,7 +22,16 @@ class projecttemplateAttribute extends atkManyToOneRelation
     return ADDTOQUERY|POSTSTORE;
   }
 
-
+  /**
+   * Store phases and activities
+   *
+   * @todo add template field to the phase table (again) to activate the projectphasematrix 
+   * 
+   * @param object $db
+   * @param array $record
+   * @param string $type
+   * @return boolean
+   */
   function store($db, $record, $type)
   {
     // Todo, here we must save the activities from the template to the projectactivities table
@@ -40,8 +49,8 @@ class projecttemplateAttribute extends atkManyToOneRelation
            $id_table[$phases[$i]['id']] = $new_id;
            $phase_tpl_id = $phases[$i]['id'];
 
-           $query = "INSERT INTO phase (id, name, status, projectid, description, template)
-                     VALUES ('".$new_id."','".escapeSQL($phases[$i]['name'])."','active','".$record['id']."','".escapeSQL($phases[$i]['description'])."','".$phase_tpl_id."')";
+           $query = "INSERT INTO phase (id, name, status, projectid, description)
+                     VALUES ('".$new_id."','".escapeSQL($phases[$i]['name'])."','active','".$record['id']."','".escapeSQL($phases[$i]['description'])."')";
            $db->query($query);
 
            //activities per phase
