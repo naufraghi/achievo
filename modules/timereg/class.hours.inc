@@ -702,7 +702,7 @@ class hours extends atkNode
     if ($filterbycoordinator)
     {
       $coordinator = getUser();
-      $where.= " AND B.coordinator = '".$coordinator["id"]."'";
+      $where.= " AND projectid.coordinator = '".$coordinator["id"]."'";
     }
     $data = $this->selectDb($where,"","",$this->m_listExcludes);
 

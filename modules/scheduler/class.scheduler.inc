@@ -251,7 +251,7 @@
       {
           $page = &$this->getPage();
           $page->register_script('./atk/javascript/formsubmit.js');
-          return $attr->edit($record);
+          return $attr->edit($record, '', 'edit');
       }
       else
       {
@@ -963,7 +963,7 @@
       $total = $attendee_node->countDb("scheduler_id = ".$scheduler_id." AND person_id = ".$person_id);
       if($total==0)
       {
-        $rec = array("scheduler_id"=>array("id"=>$scheduler_id),
+        $rec = array("scheduler_id"=>$scheduler_id,
                      "person_id"=>array("id"=>$person_id,
                                          "role"=>$role),
                      "status"=>$status);
