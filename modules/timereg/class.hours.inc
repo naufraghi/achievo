@@ -12,15 +12,6 @@ useattrib("atktimeattribute");
 useattrib("atknumberattribute");
 userelation("atkmanytoonerelation");
 
-function date_format($datestamp,$dateformat)
-{
-  if($dateformat!="")
-  {
-    return date($dateformat,$datestamp);
-  }
-  return date("m-d",$datestamp)." (".atktext(strtolower(date("D",$datestamp))).")";
-}
-
 /**
 * Converts the starttime - endtime notation to a duration notation
 */
