@@ -11,8 +11,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing/ ATK open source license
    *
-   * @version $Revision: 1.2 $
-   * $Id: class.atkdocumentattribute.inc,v 1.2 2006/01/30 11:03:31 boy Exp $
+   * @version $Revision: 1.5 $
+   * $Id: class.atkdocumentattribute.inc,v 1.5 2007/08/20 09:51:53 guido Exp $
    */
 
   // Use the atkdummyattribute to extend from
@@ -48,9 +48,9 @@
      * @param array $record The record that holds the value for this attribute.
      * @return string HTML code for selection control
      */
-    function edit($record)
+    function edit($record, $mode)
     {
-      return $this->documentSelector($record);
+      return $this->documentSelector($record, $mode, false);
     }
 
     /**
@@ -88,7 +88,7 @@
      * @param string $mode Name of the mode in which the document selector will be displayed
      * @return string Display code for this attribute in the specified mode
      */
-    function documentSelector($record, $mode = "")
+    function documentSelector($record, $mode = "", $addForm=true)
     {
       // Compose the path to use when searching for docuemnt templates
       $basepath = atkconfig("doctemplatedir", "doctemplates/");
@@ -97,37 +97,44 @@
       $path = $basepath . $module . "/" . $node;
 
       // Only continue if the path is valid and exists
-      if (is_dir($path))
+      if (!is_dir($path))
       {
-        // Get the list of document files
-        $contents = $this->getDocumentFiles($path, $record);
-
-        // Add the select box to the html
-        $html = '<select name="atkdoctpl">';
-        foreach ($contents as $entry)
-        {
-          if (is_file($path . "/" . $entry)) // todo: && check of tie een open office extensie heeft
-          {
-            $html .= '<option value="' . urlencode($entry) . '">' . $entry;
-          }
-        }
-        $html .= '</select>';
-
-        // Add the button to the html
-        $selector = $this->m_ownerInstance->primaryKey($record);
-        $onclickscript = 'window.location="'.session_url(dispatch_url($module . "." . $node, "document", array("atkselector"=>$selector)), SESSION_DEFAULT).'atkdoctpl="+this.form.atkdoctpl.value;';
-        $html .= '<input type="button" class="btn_doc_open" name="atkdocument" value="' . atktext("open") . '" onclick=\''.$onclickscript.'\'>';
-
-        // Wrap the input elements in a unique session form when no form is present yet (in list and view mode)
-        if (($mode=="list")||($mode=="view")) {
-          static $documentSelectorFormCounter = 0;
-          $html = '<form name="documentSelectorForm' . ++$documentSelectorFormCounter . '">' . session_form(). $html . '</form>';
-        }
-
-        // Return the generated html
-        return $html;
+      	return $this->text("invalid_path");
       }
-      return "";
+      
+      // Get the list of document files
+      $contents = $this->getDocumentFiles($path, $record);
+
+      if (empty($contents))
+      {
+      	return $this->text("no_document_templates_found");
+      }
+
+      // Add the select box to the html
+      $html = '<select name="atkdoctpl">';
+      foreach ($contents as $entry)
+      {
+        if (is_file($path . "/" . $entry)) // todo: && check of tie een open office extensie heeft
+        {
+          $html .= '<option value="' . urlencode($entry) . '">' . $entry;
+        }
+      }
+      $html .= '</select> ';
+
+      // Add the button to the html
+      $selector = $this->m_ownerInstance->primaryKey($record);
+      $onclickscript = 'window.location="'.session_url(dispatch_url($module . "." . $node, "document", array("atkselector"=>$selector)), SESSION_DEFAULT).'&atkdoctpl="+this.form.atkdoctpl.value;';
+
+      $html .= '<input type="button" class="btn_doc_open" name="atkdocument" value="' . atktext("open") . '" onclick=\''.$onclickscript.'\'>';
+
+      // Wrap the input elements in a unique session form when no form is present yet (in list and view mode)
+      if ((($mode=="list")||($mode=="view")) && $addForm) {
+        static $documentSelectorFormCounter = 0;
+        $html = '<form name="documentSelectorForm' . ++$documentSelectorFormCounter . '">' . session_form(). $html . '</form>';
+      }
+
+      // Return the generated html
+      return $html;
     }
   }
 

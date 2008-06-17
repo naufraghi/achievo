@@ -1,6 +1,6 @@
 <?php
-//  module("core","./");
   module("utils");
+  module("email_template");
   module("setup");
   module("employee");
   module("person");
@@ -8,10 +8,13 @@
   module("project");
   module("organization");
   module("notes");
-  module("calendar");
+  module("scheduler");
   module("todo");
-  module("reports");  
+  module("reports");
   module("pim");
-  module("search");  
+  module("search");
   module("graph");
+  module("quotation");
+  module("docmanager");
+  module("crm");
 ?>

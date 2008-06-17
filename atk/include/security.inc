@@ -1,5 +1,4 @@
 <?php
-
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
@@ -12,8 +11,8 @@
    * @copyright (c)2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.4 $
-   * $Id: security.inc,v 1.4 2006/01/30 11:03:31 boy Exp $
+   * @version $Revision: 1.13 $
+   * $Id: security.inc,v 1.13 2007/12/11 09:53:33 boy Exp $
    */
 
   // initialise g_ array.
@@ -31,7 +30,7 @@
 
     if (!$securityMgr->authenticate())
     {
-      echo '<b>'.text("login_failed").'</b>';
+      echo '<b>'.atktext("login_failed", "atk").'</b>';
       echo '<br><br>'.$securityMgr->m_fatalError;
       exit;
     }
@@ -39,29 +38,60 @@
 
   /**
    * Retrieve all known information about the currently logged-in user.
+   * @deprecated use atkGetUser instead
    * @return array Array with userinfo, or "" if no user is logged in.
    */
   function getUser()
   {
-    global $g_sessionManager;
+    return atkGetUser();
+  }
+
+  /**
+   * Retrieve all known information about the currently logged-in user.
+   * @todo move to its own 'atkUser' class
+   * @return array Array with userinfo, or "" if no user is logged in.
+   */
+  function atkGetUser($key='')
+  {
+    $sessionmanager = &atkGetSessionManager();
     $session = &atkSessionManager::getSession();
     $user = "";
-    $session_auth = $g_sessionManager->getValue("authentication", "globals");
+    $session_auth = is_object($sessionmanager) ? $sessionmanager->getValue("authentication", "globals") : array();
     if (atkconfig("authentication_session") &&
-        $session["login"]==1 &&
+        atkArrayNvl($session, "login", 0)==1 &&
         $session_auth["authenticated"]==1 &&
         !empty($session_auth["user"]))
     {
       $user = $session_auth["user"];
-      if($user["access_level"]=="") $user["access_level"]=0;
+      if(!isset($user["access_level"]) || empty($user["access_level"]))
+        $user["access_level"]=0;
     }
 
+    if ($key) return $user[$key];
     return $user;
+  }
+
+  /**
+   * Retrieve id of the currently logged-in user.
+   * @todo move to its own 'atkUser' class
+   * @return int user id or 0 if not logged in or administrator
+   */
+  function atkGetUserId()
+  {
+    $user = atkGetUser();
+    $userpk = atkConfig('auth_userpk');
+
+    // check if logged in || logged in as administrator
+    if ($user == "" || $userpk == "" ||
+       (is_array($user) && !isset($user[$userpk]))) return 0;
+
+    return $user[$userpk];
   }
 
   /**
    * Wrapper method to access the security manager.
    * @todo Rewrite to a getInstance method in atkSecurityManager.
+   * @return atkSecurityManager
    */
   function &atkGetSecurityManager()
   {
@@ -70,7 +100,7 @@
                                // In ATK5 we must create a clean singleton with
                                // a static instance.
     if (!is_object($g_securityManager))
-    {      
+    {
       atkimport("atk.security.atksecuritymanager");
       // The one and only security manager.
       $authentication = atkconfig("authentication", "none");
@@ -80,10 +110,10 @@
     }
     return $g_securityManager;
   }
-  
+
   /**
    * Replaced the securitymanager at runtime with a different instance.
-   * 
+   *
    * Useful for testing, for example replacing the security manager with a
    * mock version.
    * @param atkSecurityManager Securitymanager instance
@@ -96,6 +126,4 @@
     $g_securityManager = $mgr;
     return $obj;
   }
-
-
 ?>

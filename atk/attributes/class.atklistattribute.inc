@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.33 $
-   * $Id: class.atklistattribute.inc,v 5.33 2006/05/03 13:05:55 sandy Exp $
+   * @version $Revision: 5.53 $
+   * $Id: class.atklistattribute.inc,v 5.53 2007/12/31 13:12:20 sandy Exp $
    */
 
   atkimport("atk.attributes.atkattribute");
@@ -23,15 +23,20 @@
    */
   define("AF_NO_TRANSLATION", AF_SPECIFIC_1);
 
-   /**
-    * Do not add a default null option.
-    */
-   define("AF_LIST_NO_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_2);
+  /**
+   * Do not add a default null option.
+   */
+  define("AF_LIST_NO_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_2);
 
   /**
    * Do not add null option ever
    */
   define("AF_LIST_NO_NULL_ITEM", AF_SPECIFIC_3);
+
+  /**
+   * Add a default null option to obligatory items
+   */
+  define("AF_LIST_OBLIGATORY_NULL_ITEM", AF_SPECIFIC_4);
 
 
   /**
@@ -59,6 +64,11 @@
      * Array for fast lookup of what value belongs to what option.
      */
     var $m_lookup = array();
+
+    /**
+     * Array which holds the options,values and lookup array in cache
+     */
+    var $m_types = array();
 
     /**
      * Attribute that is to be selected
@@ -98,6 +108,8 @@
     {
       if (!is_array($valueArray) || count($valueArray)==0)
       {
+        if (is_numeric($valueArray))
+          $flags = $valueArray;
         $valueArray = $optionArray;
       }
 
@@ -121,15 +133,64 @@
       }
 
       $this->atkAttribute($name, $flags, $size); // base class constructor
-      $this->m_options = $optionArray;
-      $this->m_values = $valueArray;
 
-      for ($i=0, $_i=count($optionArray); $i<$_i; $i++)
-      {
-        $this->m_lookup[$this->m_values[$i]] = $optionArray[$i];
-      }
+      $this->setOptions($optionArray, $valueArray);
     }
 
+    /**
+     * Creates a lookup array to speedup translations
+     *
+     * @param array $optionArray
+     * @param array $valueArray
+     */
+    function createLookupArray($optionArray,$valueArray)
+    {
+      for ($i=0, $_i=count($optionArray); $i<$_i; $i++)
+      {
+        $this->m_lookup[$valueArray[$i]] = $optionArray[$i];
+      }
+      $this->_set("lookup",$this->m_lookup);
+    }
+
+    /**
+     * get functions to access member variables.
+     * For backwards compatibility we also check the old member variables m_options,
+     * m_values and m_lookup.
+     */
+    function getOptions($rec=null) {
+    	if(!isset($this->m_types["options"]) || count($this->m_types["options"]) == 0)
+    		return $this->m_options;
+    	return $this->_get("options",$rec);
+    }
+    function getValues($rec=null) {
+    	if(!isset($this->m_types["values"]) || count($this->m_types["values"]) == 0)
+    		return $this->m_values;
+    	return $this->_get("values",$rec);
+    }
+    function getLookup($rec=null) {
+    	if(!isset($this->m_types["lookup"]) || count($this->m_types["lookup"]) == 0)
+    		return $this->m_lookup;
+    	return $this->_get("lookup",$rec);
+    }
+
+    /**
+     * Returns one of the following arrays
+     * options => optionarray
+     * values => valuearray
+     * lookup => lookuparray
+     *
+     * @param string $type
+     */
+    function _get($type,$rec=null)
+    {
+      return $this->m_types[$type];
+    }
+
+    function _set($type,$value)
+    {
+      $this->m_types[$type]=$value;
+      return true;
+    }
 
     /**
      * Display's text version of Record
@@ -138,13 +199,25 @@
      */
     function display($record)
     {
-      if(isset($this->m_lookup[$record[$this->fieldName()]]))
-      {
-        if($this->hasFlag(AF_NO_TRANSLATION)) $res = $this->m_lookup[$record[$this->fieldName()]];
-        else $res = atktext($this->m_lookup[$record[$this->fieldName()]],$this->m_ownerInstance->m_module, $this->m_owner);
+      return $this->_translateValue($record[$this->fieldName()],$record);
+    }
 
-        return $res;
+    /**
+     * Translates the database value
+     *
+     * @param string $value
+     * @return string
+     */
+    function _translateValue($value,$rec=null)
+    {
+      $lookup = $this->getLookup($rec);
+      $res="";
+      if(isset($lookup[$value]))
+      {
+        if($this->hasFlag(AF_NO_TRANSLATION)) $res = $lookup[$value];
+        else $res = $this->text($lookup[$value]);
       }
+      return $res;
     }
 
     /**
@@ -163,20 +236,20 @@
       if (count($this->m_onchangecode))
       {
         $onchange = 'onChange="'.$id.'_onChange(this);"';
-        $this->renderChangeHandler($fieldprefix);
+        $this->_renderChangeHandler($fieldprefix);
       }
 
       $result = '<select id="'.$id.'" name="'.$id.'"  class="atklistattribute" '.$onchange.($this->m_width?" style='width: {$this->m_width}px'":"").'>';
 
-      if(!$this->hasFlag(AF_OBLIGATORY)&&!$this->hasFlag(AF_LIST_NO_NULL_ITEM)||(atkconfig("list_obligatory_null_item")&&$record[$this->fieldName()]==""&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM)))
-      {
-        $result.= '<option value="'.$this->m_emptyvalue.'">'.atktext('list_null_value', '', $this->m_ownerInstance->m_type);
-      }
-      for ($i=0;$i<count($this->m_values);$i++)
+      $result.=$this->_addEmptyListOption();
+
+      $values = $this->getValues($record);
+      $recvalue = atkArrayNvl($record,$this->fieldName());
+      for ($i=0;$i<count($values);$i++)
       {
         // If the current value is selected or occurs in the record
-        if ((!is_null($this->m_selected) && $this->m_values[$i] == $this->m_selected) ||
-            ( is_null($this->m_selected) && $this->m_values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!=""))
+        if ((!is_null($this->m_selected) && $values[$i] == $this->m_selected) ||
+            ( is_null($this->m_selected) && $values[$i] == $recvalue && $recvalue!==""))
         {
           $sel = "selected";
         }
@@ -184,13 +257,37 @@
         {
           $sel = "";
         }
-        if ($this->hasFlag(AF_NO_TRANSLATION)) $option=$this->m_options[$i];
-        else $option = atktext($this->m_options[$i],$this->m_ownerInstance->m_module, $this->m_owner);
 
-        $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.$option.'</option>';
+        $result.= '<option value="'.$values[$i].'" '.$sel.'>'.$this->_translateValue($values[$i],$record);
       }
       $result.='</select>';
       return $result;
+    }
+
+    /**
+     * If this attribute is NOT obligatory
+     * Or if the attribute is obligatory and we set a config saying all obligatory lists should have a null item
+     * and we didn't add the flag AF_LIST_NO_OBLIGATORY_NULL_ITEM
+     * Or if the AF_LIST_OBLIGATORY_NULL_ITEM is set
+     * ... we add an empty list option
+     * @return The empty list option or an empty string
+     */
+    function _addEmptyListOption()
+    {
+      $ret='';
+      
+      // use a different (more descriptive) text for obligatory items
+      $text_key = $this->hasFlag(AF_OBLIGATORY) ? "list_null_value_obligatory" : "list_null_value";
+      
+      if (!$this->hasFlag(AF_LIST_NO_NULL_ITEM) ||
+           ($this->hasFlag(AF_OBLIGATORY) &&
+           // CONFIG IS DEPRECATED
+          ((atkconfig("list_obligatory_null_item")&&!$this->hasFlag(AF_LIST_NO_OBLIGATORY_NULL_ITEM))||
+           ($this->hasFlag(AF_LIST_OBLIGATORY_NULL_ITEM)))))
+      {
+        $ret = '<option value="'.$this->m_emptyvalue.'">'.atktext($text_key, "", is_object($this->m_ownerInstance) ? $this->m_ownerInstance->m_type : "");
+      }
+      return $ret;
     }
 
     /**
@@ -201,10 +298,12 @@
     function search($record="", $extended=false, $fieldprefix="")
     {
       // todo: configurable rows
+
+      $values = $this->getValues($record);
       $result = '<select ';
       if ($extended)
       {
-        $result.='multiple size="'.min(5,count($this->m_values)+1).'"';
+        $result.='multiple size="'.min(5,count($values)+1).'"';
       }
 
       if (strstr($fieldprefix,"]["))
@@ -214,9 +313,9 @@
 
       $result.= '<option value="">'.atktext('search_all');
 
-      for ($i=0,$_i=count($this->m_values);$i<$_i;$i++)
+      for ($i=0,$_i=count($values);$i<$_i;$i++)
       {
-        if (atk_in_array(((string)$this->m_values[$i]),$record[$this->fieldName()], true) && $record[$this->fieldName()]!=="")
+        if (atk_in_array(((string)$values[$i]),$record[$this->fieldName()], true) && $record[$this->fieldName()]!=="")
         {
           $sel = "selected";
         }
@@ -224,10 +323,7 @@
         {
           $sel = "";
         }
-        if($this->hasFlag(AF_NO_TRANSLATION)) $string = $this->m_options[$i];
-        else $string = atktext($this->m_options[$i], $this->m_ownerInstance->m_module);
-
-        $result.= '<option value="'.$this->m_values[$i].'" '.$sel.'>'.$string;
+        $result.= '<option value="'.$values[$i].'" '.$sel.'>'.$this->_translateValue($values[$i],$record);
       }
       $result.='</select>';
       return $result;
@@ -246,14 +342,15 @@
 
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
-    	// We only support 'exact' matches.
+      // We only support 'exact' matches.
       // But you can select more than one value, which we search using the IN() statement,
       // which should work in any ansi compatible database.
+      $searchcondition = "";
       if (is_array($value) && count($value)>0 && $value[0]!="") // This last condition is for when the user selected the 'search all' option, in which case, we don't add conditions at all.
       {
         if (count($value)==1) // exactly one value
         {
-          $searchcondition = $query->exactCondition($table.".".$this->fieldName(),escapeSQL($value[0]));
+          $searchcondition = $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value[0]));
         }
         else // search for more values using IN()
         {
@@ -279,19 +376,6 @@
       return $this->m_dbfieldtype;
     }
 
-    function renderChangeHandler($fieldprefix)
-    {
-      if (count($this->m_onchangecode))
-      {
-        $page = &$this->m_ownerInstance->getPage();
-        $page->register_scriptcode("function ".$this->getHtmlId($fieldprefix)."_onChange(el)
-                                    {
-                                      newvalue = el.options[el.selectedIndex].value;
-                                      ".implode("\n", $this->m_onchangecode)."
-                                    }\n");
-      }
-    }
-
     function setAutoHide($attrib, $valuearr)
     {
       $conditions = array();
@@ -304,7 +388,11 @@
 
     /**
      * Sets the selected listitem
+     * 
      * @param string $selected the listitem you want to have selected
+     * 
+     * @deprecated 
+     * @see atkNode::initial_values
      */
     function setSelected($selected)
     {
@@ -313,7 +401,11 @@
 
     /**
      * Gets the selected listattribute
+     * 
      * @return string the selected listitem
+     * 
+     * @deprecated 
+     * @see atkNode::initial_values
      */
     function getSelected()
     {
@@ -351,22 +443,24 @@
      */
     function parseStringValue($stringvalue)
     {
-      foreach($this->m_values as $value)
+      $values = $this->getValues();
+      foreach($values as $value)
         if(strtolower($stringvalue) == strtolower($value))
           return $value;
 
       $i=0;
-      foreach($this->m_options as $option)
+      $options = $this->getOptions();
+      foreach($options as $option)
       {
         if(strtolower($stringvalue) == strtolower($option))
-          return $this->m_values[$i];
+          return $values[$i];
 
         if(strtolower(atktext($stringvalue)) == strtolower($option))
-          return $this->m_values[$i];
+          return $values[$i];
         $i++;
       }
 
-      return $this->m_value[0];
+      return $values[0];
     }
 
     /**
@@ -385,6 +479,60 @@
     function getWidth()
     {
       return $this->m_width;
+    }
+    
+    /**
+     * Add option/value to dropdown
+     *
+     * @param string $option
+     * @param string $value
+     */
+    function addOption($option, $value="")
+    {
+      if ($value!=0 && empty($value)) $value = $option;
+      $currentOptions = $this->_get("options");
+      $currentOptions[] = $option;
+      $this->_set("options", $currentOptions);
+            
+      $currentValues = $this->_get("values");
+      $currentValues[] = $value;
+      $this->_set("values", $currentValues);
+      
+      $this->createLookupArray($currentOptions,$currentValues);
+      return $this;
+    }
+    
+    /**
+     * Remove option from dropdown
+     *
+     * @param string $option
+     */
+    function removeOption($option)
+    {
+      $currentOptions = $this->_get("options");
+      $currentValues = $this->_get("values");      
+      
+      $index = array_search($option, $currentOptions);
+      $value = $currentValues[$index];
+      
+      array_splice($currentOptions, $index, 1); // remove option
+      array_splice($currentValues, $index, 1);  // remove value
+      
+      $this->_set("options",$currentOptions);
+      $this->_set("values",$currentValues);
+      return $this;
+    }
+
+    function setOptions($optionArray, $valueArray)
+    {
+      // m_options and m_values array are still here for backwardscompatibility
+      $this->m_options = $optionArray;
+      $this->_set("options",$optionArray);
+      $this->m_values = $valueArray;
+      $this->_set("values",$valueArray);
+
+      $this->createLookupArray($optionArray,$valueArray);
+      return $this;
     }
   }
 

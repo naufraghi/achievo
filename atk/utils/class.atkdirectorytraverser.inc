@@ -12,8 +12,8 @@
    * @copyright (c)2005 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.3 $
-   * $Id: class.atkdirectorytraverser.inc,v 1.3 2005/10/28 09:11:54 guido Exp $
+   * @version $Revision: 1.6 $
+   * $Id: class.atkdirectorytraverser.inc,v 1.6 2007/02/15 14:47:48 dennis Exp $
    */
 
   /**
@@ -82,12 +82,12 @@
      */
     function traverse($path)
     {
-      if (is_file($path))
+      if (@is_file($path))
       {
         $this->_callback("visitFile", $path);
         return true;
       }
-      elseif (is_dir($path))
+      elseif (@is_dir($path))
       {
         $this->_callback("visitDir", $path);
         $filenames = $this->getDirContents($path);
@@ -100,6 +100,8 @@
         }
         return true;
       }
+      elseif (@is_link($path)) return true;
+
       return false;
     }
 
@@ -114,6 +116,7 @@
       $dir = opendir($path);
       while (($file = readdir($dir)) !== false) $result[] = $file;
       closedir($dir);
+      sort($result);
       return $result;
     }
 

@@ -5,15 +5,15 @@ Read this first
 ---------------
 Depite our efforts to keep this UPGRADE file as accurate as possible, there
 might be situations in which the described procedure does not work.
-In this case send an email to ivo@achievo.org or to the mailinglist
-(achievo@achievo.org) and we will try to help you out.
+In this case send an email to sandy@achievo.org or visit our forums at
+http://www.achievo.org/forum and we will try to help you out.
 
 IMPORTANT
 ---------
 Upgrading is never without risk. ALWAYS BACKUP YOUR ACHIEVO DATABASE before
 attempting to upgrade. A good way to do the upgrade is to copy the entire 
 database. For example, if your database is achievo_0_6, and you want to 
-upgrade to Achievo 1.2, then copy the database to achievo_1_2. Then proceed
+upgrade to Achievo 1.2, then copy the database to achievo_1_3. Then proceed
 with the instructions below.
 
 Support

@@ -12,8 +12,8 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.3 $
-   * $Id: function.atkmessages.php,v 1.3 2006/05/25 01:32:05 guido Exp $
+   * @version $Revision: 1.6 $
+   * $Id: function.atkmessages.php,v 1.6 2007/11/29 09:35:31 patrick Exp $
    */
 
   atkimport("atk.utils.atkmessagequeue");
@@ -30,7 +30,7 @@
    *   {atkmessages}
    *
    *   {foreach from=$atkmessages item=message}
-   *     {$message}<br>
+   *     {$message.message}<br>
    *   {/foreach}
    * </code>
    *
@@ -47,10 +47,6 @@
       if (empty($msgs))
       {
         atkdebug("No messages in atkMessageQueue");
-      }
-      else
-      {
-        atk_var_dump($msgs, "Messages");
       }
       return "";
     }

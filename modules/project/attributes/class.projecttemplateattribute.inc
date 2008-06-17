@@ -22,7 +22,16 @@ class projecttemplateAttribute extends atkManyToOneRelation
     return ADDTOQUERY|POSTSTORE;
   }
 
-
+  /**
+   * Store phases and activities
+   *
+   * @todo add template field to the phase table (again) to activate the projectphasematrix 
+   * 
+   * @param object $db
+   * @param array $record
+   * @param string $type
+   * @return boolean
+   */
   function store($db, $record, $type)
   {
     // Todo, here we must save the activities from the template to the projectactivities table
@@ -31,20 +40,17 @@ class projecttemplateAttribute extends atkManyToOneRelation
       if ($record['template']['id']!="")
       {
         // phase templates
-        $query = "SELECT tpl_phase.id, tpl_phase.name, tpl_phase.description FROM tpl_phase,tpl_project_phase
-                  WHERE tpl_phase.id = tpl_project_phase.phaseid AND tpl_project_phase.projectid = ".$record['template']['id'];
-
-        $phases = $db->getRows($query);
+        $phases = $this->selectTemplates($db, $record);
 
         // loop to insert phases , create reference table
         for ($i=0;$i<count($phases);$i++)
         {
            $new_id = $db->nextid('phase');
            $id_table[$phases[$i]['id']] = $new_id;
+           $phase_tpl_id = $phases[$i]['id'];
 
            $query = "INSERT INTO phase (id, name, status, projectid, description)
                      VALUES ('".$new_id."','".escapeSQL($phases[$i]['name'])."','active','".$record['id']."','".escapeSQL($phases[$i]['description'])."')";
-
            $db->query($query);
 
            //activities per phase
@@ -78,6 +84,21 @@ class projecttemplateAttribute extends atkManyToOneRelation
     }
     return true;
   }
+  
+  function selectTemplates(&$db, $record)
+  {
+    $query = "
+      SELECT 
+        tpl_phase.id, tpl_phase.name, tpl_phase.description 
+      FROM 
+        tpl_phase,tpl_project_phase
+      WHERE 
+        tpl_phase.id = tpl_project_phase.phaseid 
+        AND tpl_project_phase.projectid = ".$record['template']['id'];
+
+    return $db->getRows($query);
+  }    
+  
 
   /*function dbFieldType()
   {

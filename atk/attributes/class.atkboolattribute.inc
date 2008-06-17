@@ -11,9 +11,22 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.10 $
-   * $Id: class.atkboolattribute.inc,v 5.10 2006/04/14 15:16:18 peter Exp $
+   * @version $Revision: 5.21 $
+   * $Id: class.atkboolattribute.inc,v 5.21 2007/11/12 14:39:46 peter Exp $
    */
+
+  /**
+   * Make bool attribute obligatory (normal AF_OBLIGATORY flag is always removed).
+   */
+  define("AF_BOOL_OBLIGATORY", AF_SPECIFIC_1);
+  
+  /**
+   * Show an extra label right next to the checkbox. ATK searches the language 
+   * file for the following variants <attribute>_label, <attribute> (next to 
+   * the module/node prefixes). Don't forget to add the AF_BLANK_LABEL flag
+   * if you don't want to show the normal label.
+   */
+  define("AF_BOOL_INLINE_LABEL", AF_SPECIFIC_2);
 
   /**
    * The atkBoolAttribute class represents an attribute of a node
@@ -33,11 +46,46 @@
      */
     function atkBoolAttribute($name, $flags=0)
     {
-      //Setting AF_OBLIGATORY has no use, so prevent setting it.
-      if (($flags & AF_OBLIGATORY) == AF_OBLIGATORY) $flags &= (~ AF_OBLIGATORY);
-
-     // Call base class constructor. Size of boolean value is always 1.
+      // Call base class constructor. Size of boolean value is always 1.
       $this->atkAttribute($name,$flags, 1);
+      if ($this->hasFlag(AF_BOOL_OBLIGATORY))
+      {
+        $this->addFlag(AF_OBLIGATORY);
+      }
+    }
+    
+    function addFlag($flags)
+    {
+      // setting AF_OBLIGATORY has no use, so prevent setting it.
+      if (hasFlag($flags, AF_OBLIGATORY)) 
+      {
+        $flags &= (~AF_OBLIGATORY);     
+      }
+
+      // except if someone really really really wants to show this attribute is obligatory
+      if (hasFlag($flags, AF_BOOL_OBLIGATORY))
+      {
+        $flags |= AF_OBLIGATORY;
+      } 
+      
+      parent::addFlag($flags);
+    }
+
+    /**
+     * Is empty?
+     *
+     * @param array $record
+     * @return boolean empty?
+     */
+    function isEmpty($record)
+    {
+      $empty = parent::isEmpty($record);
+
+      // if bool_obligatory flag is set the value must be true else we treat this record as empty
+      if ($this->hasFlag(AF_BOOL_OBLIGATORY) && !$record[$this->fieldName()])
+        $empty = true;
+
+      return $empty;
     }
 
     /**
@@ -48,13 +96,28 @@
      */
     function edit($record="", $fieldprefix="")
     {
+      $id = $this->getHtmlId($fieldprefix);
+      $onchange='';
+      if (count($this->m_onchangecode))
+      {
+        $onchange = 'onClick="'.$id.'_onChange(this);" ';
+        $this->_renderChangeHandler($fieldprefix);
+      }
       $checked = "";
       if (isset($record[$this->fieldName()]) && $record[$this->fieldName()]>0) $checked="checked";
-      $id = $fieldprefix.$this->fieldName();
       $this->registerKeyListener($id, KB_CTRLCURSOR|KB_CURSOR);
-      return '<input type="checkbox" id="'.$id.'" name="'.$id.'" value="1" '.$checked.'>';
+      
+      $result = '<input type="checkbox" id="'.$id.'" name="'.$id.'" value="1" '.$onchange.$checked.' '.$this->getCSSClassAttribute("atkcheckbox").' />';
+      
+      if ($this->hasFlag(AF_BOOL_INLINE_LABEL))
+      {
+        $result .= '&nbsp;<label for="'.$id.'">'.$this->text(array($this->fieldName().'_label', $this->fieldName())).'</label>';
+      }
+      
+      return $result;
     }
 
+    
 
     /**
      * Get the value if it exits, otherwise return 0
@@ -101,7 +164,7 @@
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
       if (is_array($value)) $value = $value[$this->fieldName()];
-      if (isset($value)) return $query->exactCondition($table.".".$this->fieldName(),escapeSQL($value));
+      if (isset($value)) return $query->exactCondition($table.".".$this->fieldName(),$this->escapeSQL($value));
     }
 
     /**
@@ -115,6 +178,30 @@
 	    if ($record[$this->fieldName()]>0) return atktext("yes", "atk");
 	    return atktext("no", "atk");
     }
+    
+    /**
+     * Get the HTML label of the attribute.
+     *
+     * The difference with the label() method is that the label method always
+     * returns the HTML label, while the getLabel() method is 'smart', by
+     * taking the AF_NOLABEL and AF_BLANKLABEL flags into account.
+     *
+     * @param array $record The record holding the value for this attribute.
+     * @return String The HTML compatible label for this attribute, or an
+     *                empty string if the label should be blank, or NULL if no
+     *                label at all should be displayed.
+     */
+    function getLabel($record = array(), $mode='')
+    {
+      if ($mode == 'view' && $this->hasFlag(AF_BLANK_LABEL|AF_BOOL_INLINE_LABEL))
+      {
+        return $this->label($record);
+      }
+      else 
+      {
+        return parent::getLabel($record);
+      }
+    }    
 
     function fetchValue($postvars)
     {

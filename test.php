@@ -13,18 +13,22 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License 2
    *
-   * @version $Revision: 1.4 $
-   * $Id: test.php,v 1.4 2006/04/05 15:26:23 guido Exp $
+   * @version $Revision: 1.8 $
+   * $Id: test.php,v 1.8 2007/06/27 06:17:18 guido Exp $
    */
 
-  // Include ATK library
+  /**
+   * @internal includes 
+   */
   $config_atkroot = "./";
   include_once("atk.inc");
 
+  // Start session
+  atksession();
+
   // Require ATK authentication if not running in text mode
-  if(!$_SERVER['PWD'])
+  if(PHP_SAPI != "cli")
   {
-    atksession();
     atksecure();
   }
 
@@ -34,7 +38,8 @@
   // Include the Achievo extended webtestcase (features loginAchievo function)
   atkimport("test.achievowebtestcase");
 
-  // Let the atktestsuite run all test files having a name starting with "class.test_"
+  // Let the atktestsuite run the requested tests in an appropriate format
   $suite = &atknew("atk.test.atktestsuite");
-  $suite->run((!$_SERVER['PWD']) ? "html" : "text");
+  $suite->run((PHP_SAPI != "cli") ? "html" : "text", atkArrayNvl($_REQUEST, "atkmodule"));
+
 ?>

@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.4 $
-   * $Id: class.atkoci8query.inc,v 5.4 2005/10/24 21:55:20 ivo Exp $
+   * @version $Revision: 5.5 $
+   * $Id: class.atkoci8query.inc,v 5.5 2007/03/13 22:38:20 ivo Exp $
    */
 
   /**
@@ -39,14 +39,14 @@
     * @param $table Table name
     * @param $alias Alias for the table
     * @param $condition Condition for the join
-    * @since ATK 0.5.2
+    * @return atkQuery The query object (for fluent usage).
     */
-
-    function addJoin($table, $alias, $condition, $outer)
+    function &addJoin($table, $alias, $condition, $outer)
     {
       if ($outer) $condition.=" (+)";
       $this->addtable($table,$alias);
       $this->addcondition($condition);
+      return $this;
     }
 
     function _addLimiter(&$query)

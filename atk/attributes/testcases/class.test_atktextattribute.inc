@@ -13,8 +13,8 @@
      * @copyright (c)2005 Ivo Jansch
      * @license http://www.achievo.org/atk/licensing ATK Open Source License
      *
-     * @version $Revision: 1.4 $
-     * $Id: class.test_atktextattribute.inc,v 1.4 2005/09/07 12:10:11 ivo Exp $
+     * @version $Revision: 1.5 $
+     * $Id: class.test_atktextattribute.inc,v 1.5 2007/06/04 11:35:35 titus Exp $
      */
   
     /**
@@ -32,11 +32,15 @@
      */
     class test_atktextattribute extends atkAttributeTestCase
     {    
+      var $m_node;
+      
       /**
        * Setup the testcase.
        */
       function setup()
       {              
+        $this->m_node = new atkNode();
+        $this->m_node->add(new atkTextAttribute("remark"));
       }
       
       /**
@@ -44,7 +48,7 @@
        */
       function test_textattribute()
       {           
-        $this->apiTest(new atkTextAttribute("remark"));
+        $this->apiTest($this->m_node->getAttribute("remark"));
       }              
       
       function test_encoding()

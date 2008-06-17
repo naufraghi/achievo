@@ -18,8 +18,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: welcome.php,v 5.3 2005/10/24 19:34:56 ivo Exp $
+   * @version $Revision: 5.5 $
+   * $Id: welcome.php,v 5.5 2007/04/10 20:06:16 sandy Exp $
    */
 
   /**
@@ -34,11 +34,11 @@
   $output = &atkOutput::getInstance();
 
   $page->register_style($theme->stylePath("style.css"));
-  $box = $ui->renderBox(array("title"=>text("app_shorttitle"),
-                                            "content"=>"<br><br>".text("app_description")."<br><br>"));
+  $box = $ui->renderBox(array("title"=>atktext("app_shorttitle"),
+                                            "content"=>"<br><br>".atktext("app_description")."<br><br>"));
 
   $page->addContent($box);
-  $output->output($page->render(text('app_shorttitle'), true));
+  $output->output($page->render(atktext('app_shorttitle'), true));
 
   $output->outputFlush();
 

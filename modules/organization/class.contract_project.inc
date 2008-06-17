@@ -4,9 +4,9 @@
    * Project extension with a custom action to remove the project from a contract.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   * @version $Revision: 1.8 $
+   * @version $Revision: 1.12 $
    *
-   * $Id: class.contract_project.inc,v 1.8 2006/04/17 20:50:20 sandy Exp $
+   * $Id: class.contract_project.inc,v 1.12 2007/09/17 09:33:11 guido Exp $
    */
 
   include_once(moduleDir("project")."class.project.inc"); // include original baseclass.
@@ -16,8 +16,12 @@
     function contract_project()
     {
       $this->project();
-      $this->m_flags |= NF_NO_EDIT;
+      $this->m_flags |= NF_NO_FILTER;;
       $this->m_type = "contract_project";
+      $statusattr = &$this->getAttribute("status");
+      $statusattr->addFlag(AF_FORCE_LOAD);
+      $customerattr = &$this->getAttribute("customer");
+      $customerattr->setForceInsert(true);
 
       // Anyone who may edit contracts, may remove a project from the deposit.
       $this->m_securityMap["remove"] = "contracts.edit";
@@ -46,17 +50,21 @@
     function recordActions($record, &$actions, &$mraactions)
     {
     	$actions = array(); // Remove all default actions.
-      $actions["remove"] = dispatch_url($this->atkNodeType(), "remove", array("project_id"=>$record["id"]));
-      $actions["view"] = dispatch_url("project.project", "view", array("atkselector"=>$this->primaryKey($record)));
+      if ($this->allowed("remove", $record)) $actions["remove"] = dispatch_url($this->atkNodeType(), "remove", array("project_id"=>$record["id"]));
+      if ($this->allowed("view", $record)) $actions["view"] = dispatch_url("project.project", "view", array("atkselector"=>$this->primaryKey($record)));
+      if ($this->allowed("edit", $record)) $actions["edit"] = dispatch_url("project.project", "edit", array("atkselector"=>$this->primaryKey($record)));
     }
 
     function initial_values()
     {
-    	$selector = $this->m_postvars['atkselector'];
-    	$node = &atkGetNode("organization.contracts");
-    	$rec = $node->selectDb($selector, "", "", "", array("subject"));
-
-    	return array("name" => $rec[0]['subject']);
+      $forceList = (isset($this->m_postvars['atkfilter'])) ? decodeKeyValueSet($this->m_postvars['atkfilter']) : array();
+      $node = &atkGetNode("organization.contracts");
+      $selector = sprintf("`contract`.`id`='%d'", $forceList["contract_id.id"]);
+      $rec = $node->selectDb($selector, "", "", "", array("contractname", "customer"));
+      $initial_values = parent::initial_values();
+      $initial_values["name"] = $rec[0]['contractname'];
+      $initial_values["customer"] = $rec[0]['customer'];
+      return $initial_values;
     }
   }
 

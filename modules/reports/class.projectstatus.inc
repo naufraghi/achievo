@@ -10,8 +10,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision: 1.2 $
-   * $Id: class.projectstatus.inc,v 1.2 2005/12/02 13:08:02 ivo Exp $
+   * @version $Revision: 1.10 $
+   * $Id: class.projectstatus.inc,v 1.10 2007/04/10 20:52:03 sandy Exp $
    */
 
   /**
@@ -19,6 +19,7 @@
    */
   useattrib("atkattribute");
   useattrib("atkdateattribute");
+  useattrib("atklistattribute");
 
   atkimport("module.utils.dateutil");
 
@@ -52,6 +53,7 @@
         $s_record["coordinator"] = $g_sessionManager->pageVar("coordinator");
         $s_record["from"] = $g_sessionManager->pageVar("from");
         $s_record["to"] = $g_sessionManager->pageVar("to");
+        $s_record["diff"] = $g_sessionManager->pageVar("diff");
 
         // convert attribute html values to internal values
         $attrs = &$this->getFilterAttrs();
@@ -86,6 +88,8 @@
       $attrs["from"] = &new atkDateAttribute("from");
       $attrs["to"] = &new atkDateAttribute("to");
 
+      $attrs["diff"]= &new atkListAttribute("diff", array(atktext('all'), atktext('positive'), atktext('negative')), array('all', 'pos', 'neg'),AF_OBLIGATORY);
+
       return $attrs;
     }
 
@@ -95,7 +99,7 @@
 
       $attrs = &$this->getFilterAttrs();
 
-      $output = '<form action="dispatch.php" method="get">';
+      $output = '<form action="'.getDispatchFile().'" method="get">';
       $output.= session_form();
       $output.= '<input type="hidden" name="go" value="1">'; //trigger to prevent loading the first time
 
@@ -108,6 +112,10 @@
 
       $output.= atktext("showonlyphasesfrom", "reports")." ".$attrs["from"]->edit($record)." ";
       $output.= atktext("to")." ".$attrs["to"]->edit($record);
+
+      $output.= "<br/>";
+
+      $output.= atktext('diff_planning')." ".$attrs['diff']->edit($record)." ";
 
       $output.= ' <input type="submit" value="'.atktext("refresh").'">';
       $output.= '</form>';
@@ -123,6 +131,17 @@
       // Add the given content to the page
       $page = &$this->getPage();
       $page->addContent($this->renderActionPage("admin", $content));
+    }
+
+    function diffToHtml($diff)
+    {
+       $diffStr = time_format($diff, true);
+
+       if ($diff < 0)
+       {
+         $diffStr = '<span style="color: '.COLOR_ERROR.'">'.$diffStr.'</span>';
+       }
+       return $diffStr;
     }
 
     function getProjectStatus()
@@ -171,13 +190,22 @@
                                 sum(h.time) as minutes
                               FROM
                                 project p,
-                                phase ph,
-                                hours h
+                                phase ph
+                              LEFT JOIN hours h ON (h.phaseid = ph.id)
                               WHERE
                                 p.id = ph.projectid
                                 AND h.phaseid = ph.id
-                                AND ph.startdate < '$strto'
-                                AND ph.enddate > '$strfrom'
+                                AND 
+                                (
+                                  (ph.startdate < '$strto' AND ph.enddate > '$strfrom')
+                                  OR
+                                  (ph.startdate < '$strto' AND ph.enddate IS NULL)
+                                  OR
+                                  (ph.startdate IS NULL AND ph.enddate > '$strfrom')
+                                  OR
+                                  (ph.startdate IS NULL AND ph.enddate IS NULL)
+                                )
+                                
                                 AND ph.status = 'active'
                                 AND p.status = 'active'
                                 $empfilter
@@ -189,11 +217,12 @@
                               ORDER BY
                                 p.name, ph.name");
 
-         $data[] = array(atktext("project"), atktext("phase"), atktext("initial_planning"), atktext("current_planning"), atktext("booked"));
+         $data[] = array(atktext("project"), atktext("phase"), atktext("initial_planning"), atktext("current_planning"), atktext("booked"), atktext("diff_planning"));
 
          $total_time = 0;
          $total_current = 0;
          $total_initial = 0;
+         $total_diff = 0;
 
          $previousname="";
 
@@ -219,33 +248,41 @@
 
            $booked = time_format($rows[$i]["minutes"]);
 
-           if ($rows[$i]["minutes"]>$rows[$i]["current_planning"])
+           $planning = empty($rows[$i]["current_planning"]) ? $rows[$i]["initial_planning"] : $rows[$i]["current_planning"];
+           if ($rows[$i]["minutes"]>$planning)
            {
              $booked = '<span style="color: '.COLOR_ERROR.'">'.$booked.'</span>';
            }
-           else if ($rows[$i]["minutes"]>($rows[$i]["current_planning"]*0.9))
+           else if ($rows[$i]["minutes"]>($planning*0.9))
            {
              $booked = '<span style="color: '.COLOR_WARNING.'">'.$booked.'</span>';
            }
 
            $line[] = "<b>".$booked."</b>";
 
+           $diff = $planning - $rows[$i]["minutes"];
+
+           if (($filterrecord['diff'] == 'neg' && $diff >= 0) || ($filterrecord['diff'] == 'pos' && $diff < 0))
+             continue;
+
+           $line[] = $this->diffToHtml($diff);
+
            $total_time += $rows[$i]["minutes"];
            $total_current += $rows[$i]["current_planning"];
            $total_initial += $rows[$i]["initial_planning"];
+           $total_diff += $diff;
 
            $data[] = $line;
          }
 
-         $data[] = array(atktext("total"), "", time_format($total_initial), time_format($total_current), time_format($total_time));
+         $data[] = array(atktext("total"), "", time_format($total_initial), time_format($total_current), time_format($total_time), $this->diffToHtml($total_diff));
 
          $tr = &atknew("atk.utils.atktablerenderer");
          $output.= $tr->render($data, TBL_DATA|TBL_FOOTER, "recordlist")."<br/>";
-
       }
 
       // Render a box around the generated output
-      $boxedoutput = $ui->renderBox(array("title"=>$this->actionTitle('ratereport'), "content"=>$output));
+      $boxedoutput = $ui->renderBox(array("title"=>$this->actionTitle('report'), "content"=>$output));
 
       // Return the generated boxed output
       return $boxedoutput;

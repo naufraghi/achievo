@@ -12,24 +12,26 @@
    * @copyright (c)2006 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.1 $
-   * $Id: class.test_triggers.inc,v 1.1 2006/03/13 21:44:49 ivo Exp $
+   * @version $Revision: 1.4 $
+   * $Id: class.test_triggers.inc,v 1.4 2007/08/29 22:41:32 ivo Exp $
    */
 
   /**
    * Utility node class for testing the atknode triggers
    * @access private
+   * @package atk
    */
+  atkimport("atk.atknode");
   class triggerNode extends atkNode
   {
     var $m_counter = 0;
 
-    function preAdd($record, $mode)  { $this->m_counter++; }
-    function postAdd($record, $mode) { $this->m_counter--; }
-    function preUpdate($record)      { $this->m_counter++; }
-    function postUpdate($record)     { $this->m_counter--; }
-    function preDelete($record)      { $this->m_counter++; }
-    function postDelete($record)     { $this->m_counter--; }
+    function preAdd($record, $mode)  { $this->m_counter++; return true; }
+    function postAdd($record, $mode) { $this->m_counter--; return true; }
+    function preUpdate($record)      { $this->m_counter++; return true; }
+    function postUpdate($record)     { $this->m_counter--; return true; }
+    function preDelete($record)      { $this->m_counter++; return true; }
+    function postDelete($record)     { $this->m_counter--; return true; }
 
   }
 

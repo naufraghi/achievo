@@ -11,7 +11,7 @@
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision:
-   * $Id: class.atkmail.inc,v 1.2 2006/01/30 11:03:35 boy Exp $
+   * $Id: class.atkmail.inc,v 1.3 2006/10/10 12:41:56 peter Exp $
    */
 
   /**
@@ -21,6 +21,9 @@
    *
    * @package atk
    * @subpackage utils
+   * 
+   * @deprecated 
+   * @see atkMailer
    */
   class atkMail
   {
@@ -31,6 +34,9 @@
      *
      * @return bool mail succesfully sent? 
      * @static
+     * 
+     * @deprecated 
+     * @see atkMailer
      */
     function mail()
     {

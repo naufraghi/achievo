@@ -10,8 +10,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision: 1.4 $
-   * $Id: class.mastergantt.inc,v 1.4 2006/05/25 01:52:19 guido Exp $
+   * @version $Revision: 1.9 $
+   * $Id: class.mastergantt.inc,v 1.9 2007/05/10 20:59:14 ivo Exp $
    */
 
   /**
@@ -101,23 +101,22 @@
 
       $attrs = &$this->getFilterAttrs();
 
-      $output = '<form action="dispatch.php" method="get">';
+      $output = '<form action="'.getDispatchFile().'" method="get">';
       $output.= session_form();
+      $output.= '<input type="hidden" name="atkaction" value="planning">';
       $output.= '<input type="hidden" name="go" value="1">'; //trigger to prevent loading the first time
 
       if ($this->hasAnyProjectPrivilege())
       {
-        $output.= atktext("coordinator").": ".$attrs["coordinator"]->edit($record)." ";
+        $output.= atktext("coordinator").": ".$attrs["coordinator"]->edit($record)."<br/>";
       }
 
-      $output.= atktext("display").": ".$attrs["plannedbooked"]->edit($record)." ";
-
-      $output.= "<br/>";
+      $output.= atktext("display").": ".$attrs["plannedbooked"]->edit($record)."<br/>";
 
       $output.= atktext("showonlyphasesfrom", "reports")." ".$attrs["from"]->edit($record)." ";
-      $output.= atktext("to")." ".$attrs["to"]->edit($record);
+      $output.= atktext("to")." ".$attrs["to"]->edit($record)."<br/>";
 
-      $output.= ' <input type="submit" value="'.atktext("refresh").'">';
+      $output.= '<input type="submit" value="'.atktext("refresh").'">';
       $output.= '</form>';
 
       return $output;
@@ -134,7 +133,7 @@
 
       $content = $this->getFilterBar();
 
-      if ($this->m_postvars["go"]==1)
+      if (atkArrayNvl($this->m_postvars,"go",0)==1)
       {
         if (!$this->hasAnyProjectPrivilege())
         {
@@ -145,26 +144,24 @@
         {
           $coordinator = $filter["coordinator"]["id"];
         }
-//        $imgurl = moduleDir("project")."mastergantt.php?coordinator=".$coordinator.
-//                  "&from=".dateUtil::arr2str($filter["from"])."&to=".dateUtil::arr2str($filter["to"]).
-//                  "&plannedbooked=".$filter["plannedbooked"];
         $params = array(
           "coordinator" => $coordinator,
           "from" => dateUtil::arr2str($filter["from"]),
           "to" => dateUtil::arr2str($filter["to"]),
           "plannedbooked" => $filter["plannedbooked"]
         );
-        $imgurl = dispatch_url("{$this->m_module}.{$this->m_type}", "planninggraph", $params);
+        $imgurl = session_url(dispatch_url("{$this->m_module}.{$this->m_type}", "planninggraph", $params));
 
         $content.= '<br/><br/><img src="'.$imgurl.'" border="0"/><br/><br/>';
       }
 
       $ui = &$this->getUi();
       $box = $ui->renderBox(array("title"=>"Master Gantt", "content"=>$content));
+      $actionpage = $this->renderActionPage("stats", array($box));
 
       $this->addStyle("style.css");
       $page = &$this->getPage();
-      $page->addContent($box);
+      $page->addContent($actionpage);
     }
 
     function dashDate($undasheddate)
@@ -181,8 +178,7 @@
                                   project.id,
                                   project.name,
                                   MIN(phase.startdate) as startdate,
-                                  MAX(phase.enddate) as enddate,
-                                  SUM(phase.current_planning) as planned
+                                  MAX(phase.enddate) as enddate
                                 FROM
                                   project,
                                   phase
@@ -191,7 +187,7 @@
                                   AND project.status='active'
                                   AND phase.projectid = project.id
                                   AND (phase.enddate IS NULL OR phase.enddate>='$from')
-                                  AND (phase.startdate <= '$to')
+                                  AND (phase.startdate IS NULL OR phase.startdate <= '$to')
                                   ".($coordinator!=""?"AND project.coordinator=$coordinator":"")."
                                 GROUP BY
                                   project.id,
@@ -204,8 +200,17 @@
         $gant[($projects[$i]['id'])] = $projects[$i];
 
         $gant[($projects[$i]['id'])]['booked'] = $this->getBooked($projects[$i]['id']);
+        $gant[($projects[$i]['id'])]['planned'] = $this->getPlanned($projects[$i]['id']);
       }
       return $gant;
+    }
+
+    function getPlanned($projectid)
+    {
+      $db = &atkGetDb();
+      $rows = $db->getrows("SELECT sum(current_planning) as planned FROM phase
+                              WHERE phase.projectid=".$projectid);
+      return $rows[0]["planned"];
     }
 
     function getBooked($projectid)
@@ -257,7 +262,7 @@
       return $params;
     }
 
-    function drawProject(&$graph, $index, $project, $from, $to)
+    function drawProject(&$graph, $index, $project, $from, $to, $plannedbooked)
     {
       // Projects that extent the selected period should be cut off.
       if ($project['startdate']<$from) $project['startdate']=$from;
@@ -277,7 +282,7 @@
       $graph->add($activity);
     }
 
-    function showGraph($gantt, $from, $to)
+    function showGraph($gantt, $from, $to, $plannedbooked)
     {
       // Load jpgraph gantt chart library files
       include_once(moduleDir("graph")."jpgraph/jpgraph.php");
@@ -303,7 +308,7 @@
       $projectids = array_keys($gantt);
       for($i=0,$_i=count($gantt); $i<$_i; $i++)
       {
-        $this->drawProject($graph, $i, $gantt[$projectids[$i]], $from, $to);
+        $this->drawProject($graph, $i, $gantt[$projectids[$i]], $from, $to, $plannedbooked);
       }
 
       // Set date range to prevent autoscale errors when no activities were added to the gantt chart
@@ -320,9 +325,9 @@
 
       $gant = $this->getGant($params["from"], $params["to"], $params["coordinator"]);
 
-      usort($gant, "cmp");
+      usort($gant, array("mastergantt", "cmp"));
 
-      $this->showGraph($gant, $params["from"], $params["to"]);
+      $this->showGraph($gant, $params["from"], $params["to"], $params["plannedbooked"]);
     }
 
 

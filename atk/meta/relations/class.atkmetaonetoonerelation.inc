@@ -11,8 +11,8 @@
  * @copyright (c) 2005 Peter C. Verhage <peter@achievo.org>
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  *
- * @version $Revision: 1.3 $
- * $Id: class.atkmetaonetoonerelation.inc,v 1.3 2006/01/10 09:57:57 peter Exp $
+ * @version $Revision: 1.7 $
+ * $Id: class.atkmetaonetoonerelation.inc,v 1.7 2007/10/23 10:24:34 dennis Exp $
  */
 
 /**
@@ -35,14 +35,15 @@ class atkMetaOneToOneRelation extends atkOneToOneRelation
   /**
    * Default constructor.    
    */
-  function atkMetaOneToOneRelation($name, $accessor, $template, $options, $flags)
+  function atkMetaOneToOneRelation($name, $accessor, $template, $options, $flags=0)
   {
     $this->atkOneToOneRelation($name, $accessor, "?", $flags);
     $this->m_accessor = $accessor;
     $this->m_options = $options;
     
     $this->setDescriptorTemplate($template);
-    $this->setDestinationFilter($options["filter"]);    
+    if (isset($options["filter"])) 
+      $this->setDestinationFilter($options["filter"]);   
   }
   
   /**
@@ -58,15 +59,13 @@ class atkMetaOneToOneRelation extends atkOneToOneRelation
     
     $policy = &$this->m_ownerInstance->getMetaPolicy();
     
-    $this->m_destination = $policy->findDestination($this);
+    $this->m_destination = $policy->findDestination($this->m_accessor, false);
     atkdebug("atkMetaOneToOneRelation: {$this->m_accessor} destination {$this->m_destination}");        
     if ($this->m_destination == NULL) return FALSE;
     else if (!parent::createDestination()) return FALSE;
     
     $this->m_refKey = $policy->findDestinationAttribute($this);
-    atkdebug("atkMetaOneToManyRelation: {$this->m_accessor} reference key {$this->m_refKey}");        
-    if ($this->m_refKey == NULL)
-      $this->m_destInstance = NULL;
+    atkdebug("atkMetaOneToOneRelation: {$this->m_accessor} reference key {$this->m_refKey}");        
       
     return $this->m_refKey != NULL;
   }

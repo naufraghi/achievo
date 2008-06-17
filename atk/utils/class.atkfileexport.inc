@@ -3,7 +3,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -12,10 +12,10 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: class.atkfileexport.inc,v 5.3 2005/04/05 10:27:02 boy Exp $
+   * @version $Revision: 5.5 $
+   * $Id: class.atkfileexport.inc,v 5.5 2007/06/18 12:08:43 koen Exp $
    */
-   
+
   /**
    * File download exporter.
    *
@@ -42,7 +42,7 @@
     * @param String $data  The content
     * @param String $fileName Filename for the download
     * @param String $ext Extension of the file
-    * @param String $type The type (csv / excel)
+    * @param String $type The type (csv / excel / xml)
     * @param String $compression Compression method (bzip / gzip)
     */
    function export($data, $fileName, $type, $ext, $compression="")
@@ -65,7 +65,7 @@
     elseif($type=="xml")
     {
       $mime_type='text/xml';
-      $ext = "xml"; 
+      $ext = "xml";
     }
     else
     {
@@ -77,7 +77,7 @@
 
     // Fix for downloading (Office) documents using an SSL connection in
     // combination with MSIE.
-    if ($_SERVER["SERVER_PORT"] == "443" AND eregi("msie", $_SERVER["HTTP_USER_AGENT"]))
+    if (($_SERVER["SERVER_PORT"] == "443" || $_SERVER['HTTP_X_FORWARDED_PROTO' ]==='https') && eregi("msie", $_SERVER["HTTP_USER_AGENT"]))
     {
       header('Pragma: public');
     }

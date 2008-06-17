@@ -4,7 +4,7 @@
 // Description:	Configuration file for JpGraph library
 // Created: 	2004-03-27
 // Author:	Johan Persson (johanp@aditus.nu)
-// Ver:		$Id: jpg-config.inc,v 1.1 2006/03/12 14:51:53 sandy Exp $
+// Ver:		$Id: jpg-config.inc,v 1.2 2007/02/06 14:46:33 ivo Exp $
 //
 // Copyright (c) Aditus Consulting. All rights reserved.
 //========================================================================
@@ -136,7 +136,7 @@ DEFINE("INSTALL_PHP_ERR_HANDLER",false);
 // occasions when, for example, header files cannot be found and this results
 // in the graph not being created and just a "red-cross" image would be seen.
 // This should be turned off for a production site.
-DEFINE("CATCH_PHPERRMSG",true);
+DEFINE("CATCH_PHPERRMSG",false);
 
 // If the color palette is full should JpGraph try to allocate
 // the closest match? If you plan on using background images or
@@ -151,7 +151,7 @@ DEFINE("USE_APPROX_COLORS",true);
 
 // Should usage of deprecated functions and parameters give a fatal error?
 // (Useful to check if code is future proof.)
-DEFINE("ERR_DEPRECATED",true);
+DEFINE("ERR_DEPRECATED",false);
 
 // Should the time taken to generate each picture be branded to the lower
 // left in corner in each generated image? Useful for performace measurements

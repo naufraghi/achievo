@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: class.atkmlnumberattribute.inc,v 5.2 2006/03/23 22:48:57 ivo Exp $
+   * @version $Revision: 5.3 $
+   * $Id: class.atkmlnumberattribute.inc,v 5.3 2007/09/15 18:17:10 yury Exp $
    */
 
   /**
@@ -52,7 +52,7 @@
 
       foreach ($languages as $language)
       {
-        if (!is_numeric($value[$language]))
+        if (!is_numeric($value[$language]) && $value[$language]!="")
           triggerError($record, $this->fieldName(), 'error_notnumeric');
       }
     }

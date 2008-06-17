@@ -18,8 +18,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 4.33 $
-   * $Id: top.php,v 4.33 2006/04/17 20:50:16 sandy Exp $
+   * @version $Revision: 4.41 $
+   * $Id: top.php,v 4.41 2007/04/10 20:52:02 sandy Exp $
    */
 
   /**
@@ -27,15 +27,15 @@
    */
   $config_atkroot = "./";
   include_once("atk.inc");
-  include("version.inc");
+  include_once("achievotools.inc");
 
   atksession();
   atksecure();
-  require "theme.inc";
 
+  require("theme.inc");
 
   $page = &atknew("atk.ui.atkpage");
-  $ui = &atknew("atk.ui.atkui");
+  $ui = &atkinstance("atk.ui.atkui");
   $theme = &atkTheme::getInstance();
   $output = &atkOutput::getInstance();
 
@@ -44,41 +44,37 @@
   $page->register_style($theme->stylePath("top.css"));
 
   //Backwards compatible $content, that is what will render when the box.tpl is used instead of a top.tpl
-  $loggedin = atktext("logged_in_as").": <b>".$g_user["name"]."</b>";
+  $username = getFullUsername();
+  $loggedin = atktext("logged_in_as", "atk").": <b>".$username."</b>";
   $content = '<br>'.$loggedin.' &nbsp; <a href="index.php?atklogout=1" target="_top">'.ucfirst(atktext("logout", "atk")).'</a> &nbsp;';
 
-  if ($g_user["name"]!="administrator")
-  {
-    $centerpiece = href(dispatch_url("pim.pim", "pim"), atktext("pim", "core"), SESSION_NEW, false, 'target="main"').'&nbsp; &nbsp; &nbsp;';
-    $centerpiece.= href(dispatch_url("employee.userprefs", "edit", array("atkselector" => "person.id='".$g_user["id"]."'")), atktext("userprefs", "core"), SESSION_NEW, false, 'target="main"');
-  }
-  else
-  {
-    // Administrator has a link to setup.php
-    $centerpiece = href("setup.php", atktext("setup", "core"), SESSION_NEW, false, 'target="_top"');
-  }
+  $centerpiece = "";
+  $centerpiecelinks=array();
+  getCenterPiece($centerpiece,$centerpiecelinks);
   $content.=$centerpiece;
 
-  $searchnode = &atkGetNode("search.search");
-  $searchpiece = $searchnode->simpleSearchForm("", "main", SESSION_NEW);
+  $searchpiece = getSearchPiece();
   $content.="&nbsp;&nbsp;&nbsp; ".$searchpiece;
 
-  $title = atktext("app_title")." ".$achievo_version;
-  ($achievo_state!=="stable")?$title.=" ($achievo_state)":"";
-
-  $top = $ui->renderTop(array("content"=> $content,
-                  "logintext" => atktext("logged_in_as"),
-                              "logouttext" => ucfirst(atktext("logout")),
+  $title = getAchievoTitle();
+  $top = $ui->renderBox(array("content"=> $content,
+                              "logintext" => atktext("logged_in_as"),
+                              "logouttext" => ucfirst(atktext("logout", "atk")),
                               "logoutlink" => "index.php?atklogout=1",
-                              "logouttarget"=>"_top",
-                              "centerpiece"=>$centerpiece,
-                              "searchpiece"=>$searchpiece,
+                              "logouttarget" => "_top",
+                              "centerpiece" => $centerpiece,
+                              "centerpiece_links" => $centerpiecelinks,
+                              "searchpiece" => $searchpiece,
                               "title" => $title,
-                  "user"   => $g_user["name"]));
+                              "user" => $g_user["name"],
+                              "username"=>$username,
+                        ),
+                        "top");
 
   $page->addContent($top);
 
   $output->output($page->render(atktext("app_title"), true));
 
   $output->outputFlush();
+
 ?>

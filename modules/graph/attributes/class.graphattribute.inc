@@ -15,9 +15,9 @@
    *
    * @author Ivo Jansch <ivo@achievo.org>
    *
-   * @version $Revision: 1.7 $
+   * @version $Revision: 1.9 $
    *
-   * $Id: class.graphattribute.inc,v 1.7 2006/04/17 20:50:19 sandy Exp $
+   * $Id: class.graphattribute.inc,v 1.9 2007/02/06 14:46:32 ivo Exp $
    *
    * This file is part of Achievo.
    *
@@ -114,15 +114,15 @@
 
     function edit($record, $prefix, $mode)
     {
-      return $this->showGraph($record);
+      return $this->showGraph($record, false);
     }
 
     function display($record, $mode)
     {
-      return $this->showGraph($record);
+      return $this->showGraph($record, false);
     }
 
-    function showGraph($record=array())
+    function showGraph($record=array(), $addForm=true)
     {
       $imgname = $this->fieldName();
       $res = '<img name="'.$imgname.'" src="'.$this->_graphUrl($record).'">';
@@ -145,10 +145,10 @@
                 }\n";
 
         $res.='</script>';
-        $res.='<form name="dummyform">';
+        if ($addForm) $res.='<form name="dummyform">';
         foreach ($this->m_dynparams as $paramname=>$possiblevalues)
         {
-          $res.=atktext($paramname).": ";
+          $res.= '<br />'.atktext($paramname).": ";
 
           for ($i=0, $_i=count($possiblevalues); $i<$_i; $i++)
           {
@@ -159,7 +159,7 @@
                         atktext($possiblevalues[$i]);
           }
         }
-        $res.='</form>';
+        if ($addForm) $res.='</form>';
       }
 
       return $res;
@@ -192,7 +192,17 @@
         }
         foreach($decodedparams as $key=>$value)
         {
-          $res.="&".$key."=".urlencode(stringparse($value, $record));
+          if(is_array($value))
+          {
+            foreach($value as $value_key=>$value_value)
+            {
+              $res.="&".$key."%5B".$value_key."%5D=".urlencode($value_value);
+            }
+          }
+          else
+          {
+            $res.="&".$key."=".urlencode(stringparse($value, $record));
+          }
         }
       }
       return $res;

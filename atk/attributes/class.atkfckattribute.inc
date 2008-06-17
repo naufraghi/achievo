@@ -12,8 +12,8 @@
    * @copyright (c)2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.9 $
-   * $Id: class.atkfckattribute.inc,v 5.9 2006/04/12 21:34:35 ivo Exp $
+   * @version $Revision: 5.14 $
+   * $Id: class.atkfckattribute.inc,v 5.14 2007/09/19 16:24:48 dennis Exp $
    */
 
   /**
@@ -80,6 +80,11 @@
       $this->fck_opt['ToolbarSet'] = $toolbarset;
     }
 
+    function display($record="", $mode="")
+    {
+      return atkArrayNvl($record, $this->fieldName(), "");
+    }
+
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
@@ -102,12 +107,18 @@
       $oFCKeditor = new FCKeditor($fieldprefix.$this->fieldName()) ;
       $oFCKeditor->BasePath = atkconfig("atkroot")."atk/attributes/fck/";
 
-      $oFCKeditor->Value = $record[$this->fieldName()];
+      $oFCKeditor->Value = isset($record[$this->fieldName()])?$record[$this->fieldName()]:"";
       $oFCKeditor->ToolbarSet=$this->fck_opt['ToolbarSet'];
       $oFCKeditor->Width=$this->fck_opt['Width'];
       $oFCKeditor->Height=$this->fck_opt['Height'];
       $oFCKeditor->Config["AutoDetectLanguage"]=false;
       $oFCKeditor->Config["DefaultLanguage"]=$this->fck_opt["Language"];
+
+      // Make it possible to load an additional configuration file where you can override some of the default
+      // settings. Path must be relative to atkroot.
+      if (!empty($this->fck_opt['CustomConfigurationsPath']))
+        $oFCKeditor->Config["CustomConfigurationsPath"] = "../../../../".$this->fck_opt["CustomConfigurationsPath"];
+      
       return $oFCKeditor->CreateHtml();
     }
 
@@ -115,7 +126,7 @@
     {
       if (is_array($rec)&&isset($rec[$this->fieldName()]))
       {
-        $dbval = escapeSQL(preg_replace("/\&quot;/Ui","\"",$rec[$this->fieldName()]));
+        $dbval = $this->escapeSQL(preg_replace("/\&quot;/Ui","\"",$rec[$this->fieldName()]));
         return $dbval;
       }
       return NULL;

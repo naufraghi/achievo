@@ -11,8 +11,8 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: class.atkmlwrapper.inc,v 5.2 2006/05/26 12:59:28 ivo Exp $
+   * @version $Revision: 5.6 $
+   * $Id: class.atkmlwrapper.inc,v 5.6 2007/04/10 20:06:15 sandy Exp $
    */
 
   /**
@@ -36,16 +36,17 @@
   class atkMlWrapper extends atkAttribute
   {
     var $m_childList = array();
-
+    
     function atkMlWrapper(&$attribute, $flags = 0)
     {
       // first highjack the containing attribute
       $this->atkAttribute($attribute->m_name, $flags|$attribute->m_flags);
-
+      
       foreach($this->getLanguages() as $lng)
       {
         // Clone attrs with new name
-        $attr = $attribute;
+        $attr = atkClone($attribute);
+        
         $attr->m_name = $this->m_name."_".$lng;
         $this->m_childList[$lng] = $attr;
       }
@@ -200,7 +201,7 @@
         else
         {
           // other languages
-          $attr->setLabel($this->label()." (".text('language_'.strtolower($lng)).")");
+          $attr->setLabel($this->label()." (".atktext('language_'.strtolower($lng)).")");
 
           // All but the first other attrib need to be initially hidden.
           if ($cnt>1)
@@ -218,6 +219,7 @@
 
     function getRecordForLng($masterrecord, $lng)
     {
+      if (empty($masterrecord)) return array();
       return array($this->m_childList[$lng]->m_name=>$masterrecord[$this->fieldName()][$lng]);
     }
 

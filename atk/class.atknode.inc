@@ -8,18 +8,20 @@
    *
    * @package atk
    *
-   * @copyright (c)2000-2004 Ivo Jansch
-   * @copyright (c)2000-2004 Ibuildings.nl BV
+   * @copyright (c)2000-2007 Ivo Jansch
+   * @copyright (c)2000-2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.130 $
-   * $Id: class.atknode.inc,v 5.130 2006/05/27 13:05:44 sandy Exp $
+   * @version $Revision: 5.253 $
+   * $Id: class.atknode.inc,v 5.253 2008/01/08 15:54:53 tjeerd Exp $
    */
 
   /**
    * some includes
    */
   atkimport("atk.attributes.atkattribute");
+  atkimport("atk.atkcontroller");
+  atkimport("atk.modules.atkmodule");
 
   /**
    * Define some flags for nodes. Use the constructor of the atkNode
@@ -48,7 +50,7 @@
   define("NF_EDITAFTERADD",            8);
 
   /**
-   * Reocrds may not be searched
+   * Records may not be searched
    */
   define("NF_NO_SEARCH",              16);
 
@@ -146,12 +148,25 @@
    */
   define("NF_CACHE_RECORDLIST",  1048576);
 
-
   /**
    * After adding a new record add another one instantaniously.
    */
   define("NF_ADDAFTERADD",       2097152);
 
+  /**
+   * No sorting possible.
+   */
+  define("NF_NO_SORT",           4194304);
+
+  /**
+   * Use the dialog popup box when adding a new record for this node.
+   */
+  define("NF_ADD_DIALOG",        8388608);
+
+  /**
+   * Use the dialog add-or-copy popup box when adding a new record for this node.
+   */
+  define("NF_ADDORCOPY_DIALOG", 16777216);
 
   /**
    * Specific node flag 1
@@ -177,6 +192,11 @@
    * Specific node flag 5
    */
   define("NF_SPECIFIC_5",      536870912);
+
+  /**
+   * Records may be copied and open for editing
+   */
+  define("NF_EDITAFTERCOPY",   1073741824);
 
   /**
    * Alias for NF_MULTI_RECORD_ACTIONS flag (shortcut)
@@ -230,6 +250,26 @@
   define("TRIGGER_PRE",  2);
   define("TRIGGER_POST", 4);
   define("TRIGGER_ALL", TRIGGER_PRE|TRIGGER_POST);
+
+  /**
+   * Multi-record-actions selection modes. These
+   * modes are mutually exclusive.
+   */
+
+  /**
+   * Multiple selections possible.
+   */
+  define("MRA_MULTI_SELECT", 1);
+
+  /**
+   * Only one selection possible.
+   */
+  define("MRA_SINGLE_SELECT", 2);
+
+  /**
+   * No selection possible (e.g. action is always for all (visible) records!).
+   */
+  define("MRA_NO_SELECT", 3);
 
   /**
    * The atkNode class represents a piece of information that is part of an
@@ -315,6 +355,14 @@
     var $m_tabList = array();
 
     /**
+     * List of available sections. Associative array structured like this:
+     * array($action=>$arrayOfSectionnames)
+     * @access private
+     * @var array
+     */
+    var $m_sectionList = array();
+
+    /**
      * Keep track of tabs per attribute.
      * @access private
      * @var array
@@ -395,6 +443,12 @@
     var $m_action;
 
     /**
+     * Contains the definition of what needs to rendered partially.
+     * If set to NULL not in partial rendering mode.
+     */
+    var $m_partial = NULL;
+
+    /**
      * The active action handler.
      * @access protected
      * @var atkActionHandler
@@ -438,6 +492,13 @@
      * @var String
      */
     var $m_default_tab = "default";
+
+    /**
+     * Default sections that are expanded.
+     * @access private
+     * @var String
+     */
+    var $m_default_expanded_sections = array();
 
     /**
      * Record filters, in attributename/required value pairs.
@@ -532,7 +593,7 @@
      * @access private
      * @var array
      */
-    var $m_unsecuredActions = array("select", "feedback");
+    var $m_unsecuredActions = array("select", "multiselect", "feedback");
 
     /*
      *
@@ -611,11 +672,25 @@
     var $m_descTemplate = NULL;
 
     /**
+     * Descriptor handler.
+     * @access protected
+     * @var Object
+     */
+    var $m_descHandler = NULL;
+
+    /**
      * List of action listeners
      * @access protected
      * @var Array
      */
-    var $m_listeners = array();
+    var $m_actionListeners = array();
+
+    /**
+     * List of trigger listeners
+     * @access protected
+     * @var Array
+     */
+    var $m_triggerListeners = array();
 
     /**
      * Tracker variable to see if we are currently in 'modifier mode' (running inside
@@ -636,6 +711,27 @@
     var $m_extended_search_action = NULL;
 
     /**
+     * List of editable list attributes.
+     * @access private
+     * @var Array
+     */
+    var $m_editableListAttributes = array();
+
+    /**
+     * Multi-record actions, selection mode.
+     * @access private
+     * @var int
+     */
+    var $m_mraSelectionMode = MRA_MULTI_SELECT;
+
+    /**
+     * The default edit fieldprefix to use for atk
+     * @access private
+     * @var String
+     */
+    var $m_edit_fieldprefix = '';
+
+    /**
      * Constructor.
      *
      * This initialises the node. Derived classes should always call their
@@ -649,10 +745,92 @@
      */
     function atkNode($type="", $flags=0)
     {
-      if ($type=="") $type = get_class($this);
+      if ($type=="") $type = strtolower(get_class($this));
       atkdebug("Creating a new atkNode for $type");
       $this->m_type = $type;
       $this->m_flags = $flags;
+      $this->m_module = atkModule::getModuleScope();
+      
+      $this->setEditFieldPrefix(atkconfig('edit_fieldprefix', ''));
+    }
+
+    /**
+     * Resolve section. If a section is only prefixed by
+     * a dot this means we need to add the default tab
+     * before the dot.
+     *
+     * @param string section name
+     * @return resolved section name
+     */
+    function resolveSection($section)
+    {
+      list($part1, $part2) = (strpos($section, ".") !== false) ? explode('.', $section) : array($section, "");
+      if ($part2 != NULL && strlen($part2) > 0 && strlen($part1) == 0)
+        return $this->m_default_tab.".".$part2;
+      else if (strlen($part2) == 0 && strlen($part1) == 0)
+        return $this->m_default_tab;
+      else return $section;
+    }
+
+    /**
+     * Resolve sections.
+     *
+     * @param array $sections section list
+     * @return array resolved section list
+     *
+     * @see resolveSection
+     */
+    function resolveSections($sections)
+    {
+      $result = array();
+
+      foreach ($sections as $section)
+      {
+        $result[] = $this->resolveSection($section);
+      }
+
+      return $result;
+    }
+
+    /**
+     * Resolve sections, tabs and the order based on the given
+     * argument to the attribute add method.
+     *
+     * @param mixed $sections
+     * @param mixed $tabs
+     * @param mixed $order
+     */
+    function resolveSectionsTabsOrder(&$sections, &$tabs, &$order)
+    {
+      // Because sections/tabs will probably be used more than the order override option
+      // the API for this method now favours the $sections argument. For backwards
+      // compatibility we still support the old API ($attribute,$order=0).
+      if ($sections !== NULL && is_int($sections))
+      {
+        $order = $sections;
+        $sections = array($this->m_default_tab);
+      }
+
+      // If no section/tab is specified or tabs are disabled, we use the current default tab
+      // (specified with the setDefaultTab method, or "default" otherwise)
+      elseif ($sections === NULL || strlen($sections) == 0 || !atkconfig("tabs"))
+      {
+        $sections = array($this->m_default_tab);
+      }
+
+      // Sections should be an array.
+      else if ($sections != "*" && !is_array($sections))
+      {
+        $sections = array($sections);
+      }
+
+      if (is_array($sections))
+      {
+        $sections = $this->resolveSections($sections);
+      }
+
+      // Filter tabs from section names.
+      $tabs = $this->getTabsFromSections($sections);
     }
 
     /**
@@ -666,43 +844,24 @@
      *                   If ommitted, this defaults to 100 for the first
      *                   attribute, and 100 more for each next attribute that
      *                   is added.
-     * @return mixed the attribute just added
+     * @return atkAttribute the attribute just added
      */
-    function &add($attribute,$tab=NULL,$order=0)
+    function &add($attribute,$sections=NULL,$order=0)
     {
       static $attrib_order = 100;
       static $attrib_index = 0;
+
+      $tabs = null;
+
       $attribute->m_owner = $this->m_type;
 
       // If we're running inside modifier scope, we have to tell the attribute
       // what module he originated from.
       if ($this->m_modifier!="") $attribute->m_module = $this->m_modifier;
 
-      // *** API HACK ***
-      // Because tabs will probably be used more than the order override option
-      // the API for this method now favours the $tab argument. For backwards
-      // compatibility we still support the old API ($attribute,$order=0).
       if (!atkReadOptimizer())
       {
-        if (!($tab === NULL) && is_int($tab))
-        {
-          $order = $tab;
-          $tab = $this->m_default_tab;
-        }
-        // If no tab is specified or tabs are disabled, we use the current default tab
-        // (specified with the setDefaultTab method, or "default" otherwise)
-        elseif ($tab === NULL || strlen($tab) == 0 || !atkconfig("tabs")) $tab = $this->m_default_tab;
-
-        $secMgr = &atkGetSecurityManager();
-        if (!$secMgr->attribAllowed($this->m_type, $attribute->m_name, "edit"))
-        {
-          $attribute->m_flags |= AF_READONLY;
-
-          if (!$secMgr->attribAllowed($this->m_type, $attribute->m_name, "view"))
-          {
-            $attribute->m_flags |= AF_HIDE;
-          }
-        }
+        $this->resolveSectionsTabsOrder($sections, $tabs, $order);
 
         // check for parent fieldname (treeview)
         if($attribute->hasFlag(AF_PARENT))
@@ -737,9 +896,10 @@
       {
         // when the read optimizer is enabled there is no active tab
         // we circument this by putting all attributes on all tabs
-        if (!($tab === NULL) && is_int($tab))
-          $order = $tab;
-        $tab = "*";
+        if (!($sections === NULL) && is_int($sections))
+          $order = $sections;
+        $tabs = "*";
+        $sections = "*";
       }
 
 
@@ -749,7 +909,7 @@
       // handles the constructor.
       // To work around this, we reassign the this pointer to the attributes as
       // soon as possible AFTER the constructor. (the dispatcher function)
-      $attribute->m_ownerInstance = &$this;
+      $attribute->setOwnerInstance($this);
 
       if ($attribute->hasFlag(AF_PRIMARY))
       {
@@ -775,7 +935,9 @@
         {
           $this->m_attribIndexList[$this->m_attribList[$attribute->fieldName()]->m_index]["order"]=$order;
         }
+        $attribute->m_index = $this->m_attribList[$attribute->fieldName()]->m_index;
       }
+
       if(!$exist)
       {
         if($order==0)
@@ -787,31 +949,85 @@
         if (!atkReadOptimizer())
         {
           // add new tab(s) to the tab list ("*" isn't a tab!)
-          if (!is_array($tab) && $tab != "*") $tab = array($tab);
-          if ($tab != "*")
+          if ($tabs != "*")
           {
-            if (!$attribute->hasFlag(AF_HIDE_ADD)) $this->m_tabList["add"] = isset($this->m_tabList["add"]) ? atk_array_merge($this->m_tabList["add"], $tab) : $tab;
-            if (!$attribute->hasFlag(AF_HIDE_EDIT)) $this->m_tabList["edit"] = isset($this->m_tabList["edit"]) ? atk_array_merge($this->m_tabList["edit"], $tab) : $tab;
-            if (!$attribute->hasFlag(AF_HIDE_ADD|AF_HIDE_EDIT) && !$attribute->hasFlag(AF_HIDE_VIEW)) $this->m_tabList["view"] = isset($this->m_tabList["view"]) ? atk_array_merge($this->m_tabList["view"], $tab) : $tab;
+            if (!$attribute->hasFlag(AF_HIDE_ADD)) $this->m_tabList["add"] = isset($this->m_tabList["add"]) ? atk_array_merge($this->m_tabList["add"], $tabs) : $tabs;
+            if (!$attribute->hasFlag(AF_HIDE_EDIT)) $this->m_tabList["edit"] = isset($this->m_tabList["edit"]) ? atk_array_merge($this->m_tabList["edit"], $tabs) : $tabs;
+            if (!$attribute->hasFlag(AF_HIDE_VIEW)) $this->m_tabList["view"] = isset($this->m_tabList["view"]) ? atk_array_merge($this->m_tabList["view"], $tabs) : $tabs;
+          }
+
+          if ($sections != "*")
+          {
+            if (!$attribute->hasFlag(AF_HIDE_ADD)) $this->m_sectionList["add"] = isset($this->m_sectionList["add"]) ? atk_array_merge($this->m_sectionList["add"], $sections) : $sections;
+            if (!$attribute->hasFlag(AF_HIDE_EDIT)) $this->m_sectionList["edit"] = isset($this->m_sectionList['edit']) ? atk_array_merge($this->m_sectionList["edit"], $sections) : $sections;
+            if (!$attribute->hasFlag(AF_HIDE_VIEW)) $this->m_sectionList["view"] = isset($this->m_sectionList['view']) ? atk_array_merge($this->m_sectionList["view"], $sections) : $sections;
           }
         }
 
         $attribute->m_order = $order;
-        $this->m_attribIndexList[$attrib_index]=array("name"=>$attribute->fieldName(),"tabs"=>$tab,"order"=>$attribute->m_order);
+        $this->m_attribIndexList[$attrib_index]=array("name"=>$attribute->fieldName(),"tabs"=>$tabs,"sections"=>$sections,"order"=>$attribute->m_order);
         $attribute->m_index = $attrib_index;
-        //$attribute->m_tabs = $tab;
-        $this->m_attributeTabs[$attribute->fieldname()] = $tab;
+        $attribute->setTabs($tabs);
+        $attribute->setSections($sections);
+        $this->m_attributeTabs[$attribute->fieldname()] = $tabs;
         $attrib_index++;
       }
+
+
+      // Order the tablist
       $this->m_attribList[$attribute->fieldName()]=&$attribute;
       if(is_subclass_of($attribute,"atkrelation"))
       {
         $this->m_relations[strtolower(get_class($attribute))][$attribute->fieldName()]=&$attribute;
       }
-
-
       $attribute->setTabs($this->m_attributeTabs[$attribute->fieldName()]);
+
+
       return $attribute;
+    }
+
+
+    /**
+     * Retrieve the tabnames from the sections string (tab.section).
+     *
+     * @param mixed An array with sections or a section string
+     * @param string $str A section string.
+     */
+    function getTabsFromSections($sections)
+    {
+      if($sections == "*" || $sections===NULL)
+        return $sections;
+
+      $tabs = array();
+
+      if(!isset($sections))
+        $section = array();
+      elseif(!is_array($sections))
+        $sections = array($sections);
+
+      foreach($sections as $section)
+      {
+        $tabs[] = $this->getTabFromSection($section);
+      }
+
+      //when using the tab.sections notation, we can have duplicate tabs
+      //strip them out.
+      return array_unique($tabs);
+    }
+
+    /**
+     * Strip section part from a section and return the tab.
+     *
+     * If no tab name is provided, the default tab is returned.
+     */
+    function getTabFromSection($section)
+    {
+      $tab = ($section==NULL) ? "" : $section;
+
+      if (strstr($tab,".") !== false)
+        list($tab) = explode(".", $tab);
+
+      return (($tab=="") ? $this->m_default_tab : $tab);
     }
 
     /**
@@ -827,6 +1043,8 @@
     {
       if (is_object($this->m_attribList[$attribname]))
       {
+        atkdebug("removing attribute $attribname");
+
         $listindex = $this->m_attribList[$attribname]->m_index;
 
         unset($this->m_attribList[$attribname]);
@@ -840,11 +1058,25 @@
         }
         foreach($this->m_cascadingAttribs as $i => $name)
         {
-          if ($name == $attribname) unset($this->m_cascadingAttribs[$i]);
+          if ($name == $attribname)
+          {
+            unset($this->m_cascadingAttribs[$i]);
+            $this->m_cascadingAttribs = array_values($this->m_cascadingAttribs);
+          }
         }
 
         unset($this->m_attribIndexList[$listindex]);
+        unset($this->m_attributeTabs[$attribname]);
       }
+    }
+
+    /**
+     * Returns the table name for this node.
+     * @return string table name
+     */
+    function getTable()
+    {
+      return $this->m_table;
     }
 
     /**
@@ -857,6 +1089,64 @@
       if (isset($this->m_attribList[$name]))
         return $this->m_attribList[$name];
       else return NULL;
+    }
+
+    /**
+     * Checks if the user has filled in something:
+     * return true if he has, otherwise return false
+     *
+     * @param  -
+     * @return boolean.
+     */
+    function &filledInForm()
+    {
+      if (is_null($this->getAttributes())) return false;
+
+      $postvars = atkGetPostVar();
+      foreach ($this->m_attribList AS $name => $value)
+        if (!$value->hasFlag(AF_HIDE_LIST))
+          if (!is_array($value->fetchValue($postvars)) && $value->fetchValue($postvars)!=="")
+            return true;
+
+      return false;
+    }
+
+    /**
+     * Gets all the attributes.
+     * @return array Array with the attributes.
+     */
+    function &getAttributes()
+    {
+      if (isset($this->m_attribList))
+        return $this->m_attribList;
+      else return NULL;
+    }
+
+    /**
+     * Returns a list of attribute names.
+     *
+     * @return array attribute names
+     */
+    function getAttributeNames()
+    {
+      return array_keys($this->m_attribList);
+    }
+
+    /**
+     * Gets the attribute order.
+     */
+    function getAttributeOrder($name)
+    {
+      return $this->m_attribIndexList[$this->m_attribList[$name]->m_index]["order"];
+    }
+
+    /**
+     * Sets an attributes order
+     */
+    function setAttributeOrder($name, $order)
+    {
+      $this->m_attribList[$name]->m_order = $order;
+      $this->m_attribIndexList[$this->m_attribList[$name]->m_index]["order"] = $order;
     }
 
     /**
@@ -898,6 +1188,51 @@
     }
 
     /**
+     * Is partial request?
+     *
+     * @return boolean is partial
+     */
+    function isPartial()
+    {
+      return $this->m_partial;
+    }
+
+    /**
+     * Sets the editable list attributes. If you supply this method
+     * with one or more string arguments, all arguments are collected in
+     * an array. Else the first parameter will be used.
+     *
+     * @param $attrs Array list of attribute names
+     */
+    function setEditableListAttributes($attrs)
+    {
+      if (is_array($attrs))
+        $this->m_editableListAttributes = $attrs;
+      else $this->m_editableListAttributes = func_get_args();
+    }
+
+    /**
+     * Sets the multi-record-action selection mode. Can either be
+     * MRA_MULTI_SELECT (default), MRA_SINGLE_SELECT or
+     * MRA_NO_SELECT.
+     *
+     * @param $mode selection mode
+     */
+    function setMRASelectionMode($mode)
+    {
+      $this->m_mraSelectionMode = $mode;
+    }
+
+    /**
+     * Returns the multi-record-action selection mode.
+     * @return Integer multi-record-action selection mode
+     */
+    function getMRASelectionMode()
+    {
+      return $this->m_mraSelectionMode;
+    }
+
+    /**
      * Returns the primary key sql expression of a record.
      * @param array $rec The record for which the primary key is calculated.
      * @return String the primary key of the record.
@@ -912,7 +1247,7 @@
         $primKey.=$this->m_table.".".$this->m_primaryKey[$i]."='".$p_attrib->value2db($rec)."'";
         if ($i<($nrOfElements-1)) $primKey.=" AND ";
       }
-
+      
       return $primKey;
     }
 
@@ -1030,6 +1365,33 @@
     }
 
     /**
+     * Set tab index
+     *
+     * @param string $tabname Tabname
+     * @param int $index Index number
+     * @param string $action Action name (add,edit,view)
+     */
+    function setTabIndex($tabname,$index,$action="")
+    {
+      atkdebug("atkNode::setTabIndex($tabname,$index,$action)");
+      $actionList=array("add","edit","view");
+      if($action!="") $actionList = array($action);
+      foreach($actionList as $action)
+      {
+        $new_index = $index;
+        $list = &$this->m_tabList[$action];
+        if($new_index<0) $new_index=0;
+        if($new_index>count($list)) $new_index = count($list);
+        $current_index = array_search($tabname,$list);
+        if($current_index!==NULL)
+        {
+          $tmp  = array_splice($list, $current_index, 1);
+          array_splice($list, $new_index, 0, $tmp);
+        }
+      }
+    }
+
+    /**
      * Set default tab being displayed in view/add/edit mode.
      * After calling this method, all attributes which are added after the
      * method call without specification of tab will be placed on the default
@@ -1055,9 +1417,8 @@
     {
       $list = &$this->m_tabList[$action];
 
-      $this->checkTabRights($list);
+      $disable = $this->checkTabRights($list);
 
-      $tabAttribSet = array();
       $tabCode = "";
 
       if (!is_array($list))
@@ -1067,34 +1428,36 @@
       }
 
       // Attributes can also add tabs to the tablist.
+      $this->m_filledTabs = array();
       foreach(array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
+        if ($p_attrib->hasFlag(AF_HIDE)) continue; // attributes to which we don't have access are explicitly hidden
 
         // Only display the attribute if the attribute
         // resides on at least on visible tab
         $hideme = true;
         for($i=0, $_i=sizeof($p_attrib->m_tabs); $i<$_i; $i++)
         {
-          if (is_array($list) && in_array($p_attrib->m_tabs[$i],$list))
+          if ((is_array($list) && in_array($p_attrib->m_tabs[$i],$list)) || (!is_array($disable) || !in_array($p_attrib->m_tabs[$i],$disable)))
           {
             $hideme = false;
             break;
           }
         }
-        if ($hideme)
-          $p_attrib->m_flags |= AF_HIDE_LIST;
+        //if ($hideme)
+        //  $p_attrib->m_flags |= AF_HIDE_LIST;
 
         if(is_object($p_attrib))
         {
-          $list = atk_array_merge($list, $p_attrib->getAdditionalTabs($action));
+          $additional = $p_attrib->getAdditionalTabs($action);
+          $list = atk_array_merge($list, $additional);
+
           // Keep track of the tabs that containg attribs
           // so we only display none-empty tabs
           $tabCode = $this->m_attributeTabs[$attribname][0];
-          if (!isset($this->m_filledTabs[$tabCode]))
-          {
-            $this->m_filledTabs[$tabCode] = true;
-          }
+          $this->m_filledTabs = atk_array_merge($this->m_filledTabs, array($tabCode));
+          $this->m_filledTabs = atk_array_merge($this->m_filledTabs, $additional);
         }
         else
         {
@@ -1109,21 +1472,76 @@
     }
 
     /**
+     * Retrieve the sections for the active tab.
+     *
+     * @param String $action
+     * @return array The active sections.
+     */
+    function getSections($action)
+    {
+      $sections = array();
+
+      if (is_array($this->m_sectionList[$action]))
+      {
+        foreach ($this->m_sectionList[$action] as $element)
+        {
+          list($tab,$sec) = (strpos($element, ".") !== false) ? explode(".",$element) : array($element, null);
+  
+          //if this section is on an active tab, we return it.
+          if($tab == $this->getActiveTab() && $sec!==NULL)
+            $sections[] = $sec;
+        }
+      }
+
+      //we do not want duplicate sections on the same tab.
+      return array_unique($sections);
+    }
+
+    /**
+     * Add sections that must be expanded by default.
+     *
+     */
+    function addDefaultExpandedSections()
+    {
+      $sections = func_get_args();
+      $sections = $this->resolveSections($sections);
+      $this->m_default_expanded_sections = array_unique(array_merge($sections, $this->m_default_expanded_sections));
+    }
+
+    /**
+     * Remove sections that must be expanded by default.
+     *
+     */
+    function removeDefaultExpandedSections()
+    {
+      $sections = func_get_args();
+
+      $this->m_default_expanded_sections = array_diff($this->m_default_expanded_sections, $sections);
+    }
+
+
+    /**
      * Check if the user has the rights to access existing tabs and
      * removes tabs from the list that may not be accessed
      *
      * @param array $tablist Array containing the current tablist
+     * @return array with disable tabs
      */
     function checkTabRights(&$tablist)
     {
       global $g_nodes;
+      $disable = array();
+
+      if (empty($this->m_module))
+        return $disable;
+
       for ($i=0, $_i=count($tablist); $i<$_i; $i++)
       {
         if ($tablist[$i] == "" || $tablist[$i] == "default") continue;
         $secMgr = &atkGetSecurityManager();
 
         // load the $g_nodes array to find out what tabs are required
-        if (!is_array($g_nodes[$this->m_module][$this->m_type]))
+        if (!isset($g_nodes[$this->m_module][$this->m_type]))
         {
           include_once(atkconfig("atkroot") . "atk/atknodetools.inc");
           $module = &getModule($this->m_module);
@@ -1136,11 +1554,11 @@
           // authorisation is required
           if (!$secMgr->allowed($this->m_module.".".$this->m_type,"tab_" . $tablist[$i]))
           {
-            atkdebug("Removing TAB ". $tablist[$i] . " because access to this tab was denied</b>");
+            atkdebug("Removing TAB ". $tablist[$i] . " because access to this tab was denied");
+            $disable[] = $tablist[$i];
             unset($tablist[$i]);
           }
         }
-        else atkdebug("TAB " . $tablist[$i] . " does not need authorisation",DEBUG_WARNING);
       }
 
       if (is_array($tablist))
@@ -1154,6 +1572,8 @@
           $newarray[] = $tab;
         $tablist = $newarray;
       }
+
+      return $disable;
     }
 
     /**
@@ -1170,7 +1590,7 @@
       {
         foreach ($list AS $tabEntry)
         {
-          if (isset($this->m_filledTabs[$tabEntry]))
+          if (in_array($tabEntry, $this->m_filledTabs))
           {
             $tabList[] = $tabEntry;
           }
@@ -1205,6 +1625,29 @@
     }
 
     /**
+     * Get the active sections.
+     *
+     * @param string $tab The currently active tab
+     * @param string $mode The current mode ("edit", "add", etc.)
+     */
+    function getActiveSections($tab, $mode)
+    {
+      $activeSections = array();
+      if (is_array($this->m_sectionList[$mode]))
+      {
+        foreach ($this->m_sectionList[$mode] as $section)
+        {
+          if (substr($section,0,strlen($tab))==$tab && in_array($section, $this->m_default_expanded_sections))
+          {
+            $activeSections[] = $section;
+          }
+        }
+      }
+
+      return $activeSections;
+    }
+
+    /**
      * Add a recordset filter.
      * @param String $filter The fieldname you want to filter OR a SQL where
      *                       clause expression.
@@ -1226,6 +1669,40 @@
     }
 
     /**
+     * Search and remove a recordset filter.
+     * @param String $filter The filter to search for
+     * @param String $value The value to search for in case it is not a fuzzy filter
+     * @return TRUE if the given filter was found and removed, FALSE otherwise.
+     */
+    function removeFilter($filter, $value="")
+    {
+      if ($value=="")
+      {
+        // fuzzy
+        $key = array_search($filter, $this->m_fuzzyFilters);
+        if (is_numeric($key))
+        {
+          unset($this->m_fuzzyFilters[$key]);
+          return true;
+        }
+      }
+      else
+      {
+        // not fuzzy
+        foreach (array_keys($this->m_filters) as $key)
+        {
+          if ($filter == $key && $value == $this->m_filters[$key])
+          {
+            unset($this->m_filters[$key]);
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    /**
      * Returns the form buttons for a certain page.
      *
      * Can be overridden by derived classes to define custom buttons.
@@ -1233,46 +1710,13 @@
      * @param array $record The record currently displayed/edited in the form.
      *                      This param can be used to define record specific
      *                      buttons.
+     * @return array
      */
     function getFormButtons($mode, $record)
     {
-      $result = array();
-
-      // edit mode
-      if ($mode == "edit")
-      {
-        // if atklevel is 0 or less, we are at the bottom of the session stack,
-        // which means that 'saveandclose' doesn't close anyway, so we leave out
-        // the 'saveandclose' button. Unless, a feedback screen is configured.
-        if (atkLevel() >0 || hasFlag($this->m_feedback["update"], ACTION_SUCCESS))
-        {
-          $result[] = '<input type="submit" class="btn_saveandclose" name="atksaveandclose" value="'.atktext('saveandclose', "atk").'">';
-        }
-        $result[] = '<input type="submit" class="btn_save" name="atknoclose" value="'.atktext("save", "atk").'">';
-        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
-      }
-      elseif ($mode == "add")
-      {
-        $result[] = '<input type="submit" class="btn_save" value="'.atktext("save", "atk").'">';
-        // if action is admin, we don't show the cancelbutton or the add next button
-        if ($this->hasFlag(NF_ADDAFTERADD) && !$this->hasFlag(NF_EDITAFTERADD))
-          $result[] = '<input type="submit" class="btn_saveandnext" name="atksaveandnext" value="'.atktext("saveandnext", "atk").'">';
-        $result[] = '<input type="submit" class="btn_cancel" name="atkcancel" value="'.atktext("cancel", "atk").'">';
-      }
-      elseif ($mode == "view")
-      {
-        if(atkLevel() > 0)
-          $result[] = '<input type="submit" class="btn_cancel" name="atkback" value="&lt;&lt; '.atktext('back').'">';
-        // if appropriate, display an edit button.
-        if (!$this->hasFlag(NF_NO_EDIT)&&$this->allowed("edit", $record))
-        {
-          $result[] = '<input type="hidden" name="atkaction" value="edit">'.
-                      '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">'.
-                      '&nbsp;<input type="submit" class="btn_save" value="'.atktext('edit').'">&nbsp;';
-        }
-      }
-
-      return $result;
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode($this);
+      return $controller->getFormButtons($mode, $record);
     }
 
     /**
@@ -1322,7 +1766,6 @@
     {
       global $g_sessionManager;
       $ui = &$this->getUi();
-
       $res = "";
 
       if ($record!="")
@@ -1337,15 +1780,19 @@
       {
         $nomodule=true;
         $descrtrace = "";
-        foreach ($descriptortrace as $desc)
+        // only show the last 3 elems
+        $cnt = count($descriptortrace);
+        if ($cnt>3) $descrtrace = "... - ";
+        for ($i=max(0, $cnt-3), $_i=$cnt; $i<$_i; $i++)
         {
-          $descrtrace.= htmlentities($desc, ENT_COMPAT,atktext('charset'))." - ";
+          $desc = $descriptortrace[$i];
+          $descrtrace.= atk_htmlentities($desc, ENT_COMPAT)." - ";
         }
         $res= $descrtrace . $res;
       }
       if (is_object($ui))
       {
-        $res.= $ui->title($this->m_module, $this->m_type, $action,$nomodule);
+        $res.= $ui->nodeTitle($this, $action,$nomodule);
       }
 
       return $res;
@@ -1360,9 +1807,30 @@
      */
     function tabulate($action, $content)
     {
+      $this->addStyle("sections.css");
       $this->addStyle("tabs.css");
       $list = $this->getTabs($action);
-      if (count($list) > 1)
+      $sections = $this->getSections($action);
+      $tabs = count($list);
+
+      if(count($sections) > 0 || $tabs > 1)
+      {
+        $page = &$this->getPage();
+        $page->register_script(atkconfig("atkroot")."atk/javascript/dhtml_tabs.js.php?stateful=".(atkconfig('dhtml_tabs_stateful') ? 1 : 0));
+
+        // Load default tab show script.
+        $page->register_loadscript('if ( window.showTab ) {showTab(\''.(isset($this->m_postvars['atktab'])?$this->m_postvars['atktab']:'').'\');}');
+
+        $fulltabs = $this->buildTabs($action);
+        $tabscript = "var tabs = new Array();\n";
+        foreach($fulltabs as $tab)
+        {
+          $tabscript.="tabs[tabs.length] = '".$tab['tab']."';\n";
+        }
+        $page->register_scriptcode($tabscript);
+      }
+
+      if ($tabs > 1 )
       {
         $ui = &$this->getUi();
         if (is_object($ui))
@@ -1373,6 +1841,7 @@
       }
       return $content;
     }
+
 
     /**
      * Determine the default form parameters for an action template.
@@ -1386,6 +1855,53 @@
       $params["lockstatus"] = $this->getLockStatusIcon($locked);
       $params["formend"] = '</form>';
       return $params;
+    }
+
+    /**
+     * Check attribute security.
+     *
+     * Makes some attributes read-only, or hides the attribute based
+     * on the current mode / record.
+     *
+     * @param string $mode current mode (add, edit, view etc.)
+     * @param array $record current record (optional)
+     */
+    function checkAttributeSecurity($mode, $record=NULL)
+    {
+      // check if an attribute needs to be read-only or
+      // even hidden based on the current record
+      $secMgr = &atkGetSecurityManager();
+      foreach (array_keys($this->m_attribList) as $attrName)
+      {
+        $attr = &$this->getAttribute($attrName);
+
+        if (($mode == "add" || $mode == "edit") &&
+             !$secMgr->attribAllowed($attr, $mode, $record) &&
+             $secMgr->attribAllowed($attr, "view", $record))
+        {
+          $attr->addFlag(AF_READONLY);
+        }
+        else if (!$secMgr->attribAllowed($attr, $mode, $record))
+        {
+          $attr->addFlag(AF_HIDE);
+        }
+      }
+    }
+
+    /**
+     * The preAddToEditArray method is called from within the editArray
+     * method prior to letting the attributes add themselves to the edit
+     * array, but after the edit record values have been collected (a
+     * combination of the current record, initial/edit values and the forced
+     * values). This makes it possible to do some last-minute modifications to
+     * the record data and possibily add some last-minute attributes etc.
+     *
+     * @param array $record the edit record
+     * @param string $mode edit mode (add or edit)
+     */
+    function preAddToEditArray(&$record, $mode="add")
+    {
+      // do nothing
     }
 
     /**
@@ -1404,12 +1920,14 @@
      * @param String $fieldprefix Of set, each form element is prefixed with
      *                            the specified prefix (used in embedded form
      *                            fields)
+     * @param boolean $ignoreTab  Ignore the tabs an attribute should be shown on.
      * @return array List of edit fields (per field ( name, html, obligatory,
      *               error, label })
      */
-    function editArray($mode="add", $record=NULL, $forceList="", $suppressList="", $fieldprefix="")
+    function editArray($mode="add", $record=NULL, $forceList="", $suppressList="", $fieldprefix="", $ignoreTab=false, $injectSections=true)
     {
-      global $g_sessionData;
+      // update visibility of some attributes based on the current record
+      $this->checkAttributeSecurity($mode, $record);
 
       /* read metadata */
       $this->setAttribSizes();
@@ -1418,19 +1936,11 @@
       if (!empty($record)) $defaults = $record;
       else $defaults = array();
 
-      /* formdata from session */
-      if (isset($this->m_postvars["atkformdata"])&&is_array($this->m_postvars["atkformdata"]))
-      {
-        atkdebug("Restoring formdata from session");
-        $this->modifyRecord($defaults, $this->m_postvars["atkformdata"]);
-        $this->m_postvars["atkformdata"]="";
-        $g_sessionData[$this->m_action]['stack'][atkStackID()][atkLevel()]['atkformdata']="";
-      }
-
       /* edit mode */
       if ($mode == "edit")
       {
         $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkaction" value="update">';
+        $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkprevaction" value="'.$this->m_action.'">';
 
         /* nodes can define edit_values */
         $overrides = $this->edit_values($defaults);
@@ -1444,12 +1954,19 @@
       else
       {
         $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkaction" value="save">';
+        $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkprevaction" value="'.$this->m_action.'">';
 
         /* nodes can define initial values, if they don't already have values. */
-        $overrides = $this->initial_values();
-        foreach ($overrides as $varname=>$value)
+        if (!isset($defaults['atkerror'])) // only load initial values the first time (not after an error occured)
         {
-          if (!isset($defaults[$varname]) || $defaults[$varname]=="") $defaults[$varname]=$value;
+          $overrides = $this->initial_values();
+          if (is_array($overrides) && count($overrides)>0)
+          {
+            foreach ($overrides as $varname=>$value)
+            {
+              if (!isset($defaults[$varname]) || $defaults[$varname]=="") $defaults[$varname]=$value;
+            }
+          }
         }
       }
 
@@ -1500,17 +2017,20 @@
               }
               else
               {
-                atkerror("Attribute '$attribname' doens't exist in the attributelist");
+                atkerror("Attribute '$attribname' doesn't exist in the attributelist");
               }
             }
           }
         }
       }
 
+      $this->preAddToEditArray($defaults, $mode);
+
       /* extra submission data */
       //$result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkescape">';
+      $result["hide"][] = '<input type="hidden" name="atkfieldprefix" value="'.$this->getEditFieldPrefix(false).'">';
       $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atknodetype" value="'.$this->atknodetype().'">';
-      $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkprimkey" value="'.$record["atkprimkey"].'">';
+      $result["hide"][] = '<input type="hidden" name="'.$fieldprefix.'atkprimkey" value="'.atkArrayNvl($record, "atkprimkey", "").'">';
 
       /* For all attributes we use the edit() method to get HTML code for editting the
        * attribute's data. If the attribute is hidden we use the hide() method method
@@ -1522,20 +2042,30 @@
       foreach (array_keys($this->m_attribIndexList) as $r)
       {
         $attribname = $this->m_attribIndexList[$r]["name"];
+
         $field = array("name" => $attribname);
+
         $p_attrib = &$this->m_attribList[$attribname];
         if ($p_attrib!=NULL)
         {
+          if($p_attrib->hasDisabledMode(DISABLED_EDIT)) continue;
+          $field = array("name" => $attribname);
           /* fields that have not yet been initialised may be overriden in the url */
-          if (!isset($defaults[$p_attrib->fieldName()]) && isset($this->m_postvars[$p_attrib->fieldName()]))
+          if (!array_key_exists($p_attrib->fieldName(), $defaults) && array_key_exists($p_attrib->fieldName(), $this->m_postvars))
           {
             $defaults[$p_attrib->fieldName()] = $this->m_postvars[$p_attrib->fieldName()];
           }
 
           /* sometimes a field is hidden although not specified by the field itself */
-
           $theme = &atkinstance("atk.ui.atktheme");
-          if ($theme->getAttribute("tabtype") == "dhtml") { $notOnTab = FALSE; } else { $notOnTab = !$p_attrib->showOnTab($tab); }
+          if ($theme->getAttribute("tabtype") == "dhtml" || $ignoreTab)
+          {
+            $notOnTab = FALSE;
+          }
+          else
+          {
+            $notOnTab = !$p_attrib->showOnTab($tab);
+          }
 
           if ((is_array($suppressList) && count($suppressList) > 0 && in_array($attribname,$suppressList)) || $notOnTab)
           {
@@ -1551,11 +2081,155 @@
         }
       }
 
+      if ($injectSections)
+      {
+        $this->injectSections($result['fields'], $mode);
+      }
+
       /* check for errors */
       $result["error"] = $record['atkerror'];
 
       /* return the result array */
       return $result;
+    }
+
+    /**
+     * Function outputs an array with view fields. For each field the array
+     * contains the name, view HTML code etc.
+     *
+     * @todo The viewArray method should use a set of classes to build the
+     *       form, instead of an array with an overly complex structure.
+     * @param String $mode        The edit mode ("view")
+     * @param array $record       The record currently being viewed.
+     * @return array List of edit fields (per field ( name, html, obligatory,
+     *               error, label })
+     */
+    function viewArray($mode, $record, $injectSections=true)
+    {
+      // update visibility of some attributes based on the current record
+      $this->checkAttributeSecurity($mode, $record);
+
+      $tab = $this->getActiveTab();
+
+      $result = array();
+
+      foreach (array_keys($this->m_attribIndexList) as $r)
+      {
+        $attribname = $this->m_attribIndexList[$r]["name"];
+
+        $p_attrib = &$this->m_attribList[$attribname];
+        if ($p_attrib!=NULL)
+        {
+          if($p_attrib->hasDisabledMode(DISABLED_VIEW)) continue;
+          $field = array("name" => $attribname);
+
+          /* sometimes a field is hidden although not specified by the field itself */
+          $theme = &atkinstance("atk.ui.atktheme");
+          if ($theme->getAttribute("tabtype") == "dhtml" || $ignoreTab)
+          {
+            $notOnTab = FALSE;
+          }
+          else
+          {
+            $notOnTab = !$p_attrib->showOnTab($tab);
+          }
+
+          /* we let the attribute add itself to the view array */
+          $p_attrib->addToViewArray($mode, $result, $record);
+        }
+        else
+        {
+          atkerror("Attribute $attribname not found!");
+        }
+      }
+
+      /* inject sections */
+      if ($injectSections)
+      {
+        $this->injectSections($result['fields'], $mode);
+      }
+
+      /* return the result array */
+      return $result;
+    }
+
+    /**
+     * Add sections to the edit/view fields array.
+     *
+     * @param array $fields fields array (will be modified in-place)
+     */
+    function injectSections(&$fields)
+    {
+      $this->groupFieldsBySection($fields);
+
+      $addedSections = array();
+      $result = array();
+      foreach ($fields as $field)
+      {
+        /// we add the section link before the first attribute that is in it
+        $fieldSections = $field['sections'];
+        if (!is_array($fieldSections))
+          $fieldSections = array($fieldSections);
+
+        $newSections = array_diff($fieldSections, $addedSections);
+        if (count($newSections) > 0)
+        {
+          foreach ($newSections as $section)
+          {
+            if (strpos($section, '.') !== FALSE)
+            {
+              $result[] = array("html" => "section", "name" => $section, "tabs" => $field['tabs']);
+              $addedSections[] = $section;
+            }
+          }
+        }
+
+        $result[] = $field;
+      }
+
+      $fields = $result;
+    }
+
+    /**
+     * Group fields by section.
+     *
+     * @param array $fields fields array (will be modified in-place)
+     */
+    function groupFieldsBySection(&$fields)
+    {
+      $result = array();
+      $sections = array();
+
+      // first find sectionless fields and collect all sections
+      foreach ($fields as $field)
+      {
+        if ($field["sections"] == "*" ||
+            (count($field["sections"]) == 1 && $field["sections"][0] == $this->m_default_tab))
+        {
+          $result[] = $field;
+        }
+        else if (is_array($field['sections']))
+        {
+          $sections = array_merge($sections, $field['sections']);
+        }
+      }
+
+      $sections = array_unique($sections);
+
+      // loop through each section (except the default tab/section) of the mode we are currently in.
+      while (count($sections) > 0)
+      {
+        $section = array_shift($sections);
+
+        // find fields for this section
+        foreach ($fields as $field)
+        {
+          if (is_array($field["sections"]) && in_array($section, $field["sections"]))
+            $result[] = $field;
+        }
+      }
+
+      $fields = $result;
     }
 
     /**
@@ -1571,7 +2245,17 @@
      */
     function initial_values()
     {
-      return array();
+      $record = array();
+
+      foreach (array_keys($this->m_attribList) as $attrName)
+      {
+        $attr = &$this->getAttribute($attrName);
+        $value = $attr->initialValue();
+        if ($value !== NULL)
+          $record[$attr->fieldName()] = $value;
+      }
+
+      return $record;
     }
 
     /**
@@ -1621,6 +2305,7 @@
         case "view": return "viewform.tpl";
         case "search": return "searchform.tpl";
         case "smartsearch": return "smartsearchform.tpl";
+        case "admin": return "recordlist.tpl";
       }
     }
 
@@ -1642,8 +2327,6 @@
      */
     function hideForm($mode="add",$record = NULL, $forceList="", $fieldprefix="")
     {
-      global $g_sessionData;
-
       /* suppress all */
       $suppressList = array();
       foreach (array_keys($this->m_attribIndexList) as $r)
@@ -1681,6 +2364,7 @@
       // build navigator
       $list = &$this->getTabs($action);
 
+
       if (is_array($list))
       {
         $newtab["total"] = count($list);
@@ -1688,14 +2372,14 @@
         {
           $newtab["title"] = atktext(array("tab_$t", $t),$this->m_module,$this->m_type);
           $newtab["tab"] = $t;
-          $url = $_SERVER["PHP_SELF"]."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atktab=".$t;
+          $url = atkSelf()."?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&atktab=".$t;
           if ($this->m_action == "view")
           {
-            $newtab["link"] = session_url($url, SESSION_DEFAULT);
+            $newtab["link"] = atkSessionManager::sessionUrl($url, SESSION_DEFAULT);
           }
           else
           {
-            $newtab["link"] = "javascript:atkSubmit('".atkurlencode(session_url($url, SESSION_DEFAULT))."')";
+            $newtab["link"] = "javascript:atkSubmit('".atkurlencode(atkSessionManager::sessionUrl($url, SESSION_DEFAULT))."')";
           }
           $newtab["selected"] = ($t == $tab);
           $result[] = $newtab;
@@ -1745,7 +2429,7 @@
       // Changed: it used to be that you could only view if you didn't have
       // edit right. This was changed because of Achievo bug #41
       // (http://www.achievo.org/bug/41)
-      $actionbase = $_SERVER["PHP_SELF"].'?atknodetype='.$this->atknodetype().'&atkselector=[pk]'.$postfix;
+      $actionbase = atkSelf().'?atknodetype='.$this->atknodetype().'&atkselector=[pk]'.$postfix;
       if (!$this->hasFlag(NF_NO_VIEW)&&$this->allowed("view"))
       {
         $actions["view"] = $actionbase.'&atkaction=view';
@@ -1765,6 +2449,10 @@
         if($this->hasFlag(NF_COPY)&&$this->allowed("copy"))
         {
           $actions["copy"] = $actionbase.'&atkaction=copy';
+        }
+        if($this->hasFlag(NF_EDITAFTERCOPY)&&$this->allowed("editcopy"))
+        {
+          $actions["editcopy"] = $actionbase.'&atkaction=editcopy';
         }
       }
 
@@ -1831,11 +2519,13 @@
      *                               "confirm".$action."()" (e.g.
      *                               confirmDelete() and call that method
      *                               instead.
+     * @param boolean $mergeSelectors Merge all selectors to one selector string (if more then one)?
+     *
      * @return String Complete html fragment containing a box with the
      *                confirmation page, or the output of the custom
      *                override if $checkoverride was true.
      */
-    function confirmAction($atkselector, $action, $locked=false, $checkoverride=true)
+    function confirmAction($atkselector, $action, $locked=false, $checkoverride=true, $mergeSelectors=true)
     {
       $method = 'confirm'.$action;
       if ($checkoverride && method_exists($this, $method))
@@ -1849,15 +2539,31 @@
         $atkselector_str = '(('. implode($atkselector, ') OR (').'))';
       else $atkselector_str = $atkselector;
 
-      $formstart ='<form action="'.$_SERVER["PHP_SELF"].'?"'.SID.' method="post">';
+      $formstart ='<form action="'.atkSelf().'?"'.SID.' method="post">';
       $formstart.=session_form();
       $formstart.='<input type="hidden" name="atkaction" value="'.$action.'">';
       $formstart.='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
-      $formstart.='<input type="hidden" name="atkselector" value="'.$atkselector_str.'">';
 
-      $buttons = array();
-      $buttons[] = '<input name="confirm" class="btn" type="submit" value="'.atktext('yes').'">';
-      $buttons[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.atktext('no').'">';
+      if ($mergeSelectors)
+      {
+        $formstart.='<input type="hidden" name="atkselector" value="'.$atkselector_str.'">';
+      }
+      else if (!is_array($atkselector))
+      {
+        $formstart.='<input type="hidden" name="atkselector" value="'.$atkselector.'">';
+      }
+      else
+      {
+        foreach ($atkselector as $selector)
+          $formstart.='<input type="hidden" name="atkselector[]" value="'.$selector.'">';
+      }
+
+      $buttons = $this->getFormButtons($action, array());      
+      if (count($buttons) == 0)
+      {
+        $buttons[] = '<input name="confirm" type="submit" class="btn_ok" value="'.$this->text('yes').'">';
+        $buttons[] = '<input name="cancel" type="submit" class="btn_cancel" value="'.$this->text('no').'">';
+      }
 
       $content = "";
       $recs = $this->selectDb($atkselector_str, "", "", "", $this->descriptorFields());
@@ -1941,7 +2647,7 @@
       foreach (array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
-        $p_attrib->m_ownerInstance = &$this;
+        $p_attrib->setOwnerInstance($this);
       }
 
       // See if there are modules active that modify this node, and apply the
@@ -1976,6 +2682,14 @@
       $this->m_defaultlanguage = strtoupper(atkconfig("defaultlanguage"));
 
       $this->m_initialised = true;
+
+      // Call the attributes postInit method to doe some last time
+      // initialization if necessary.
+      foreach (array_keys($this->m_attribList) as $attribname)
+      {
+        $p_attrib = &$this->m_attribList[$attribname];
+        $p_attrib->postInit();
+      }
     }
 
     /**
@@ -2045,120 +2759,58 @@
     }
 
     /**
-     * This is the wrapper method for all http requests on a node.
-     *
-     * The method looks at the atkaction from the postvars and determines what
-     * should be done. If possible, it instantiates actionHandlers for
-     * handling the actual action.
-     *
-     * @param array $postvars The request variables for the node.
-     * @param boolean $fullpage If true (default), the dispatch function
-     *                          renders a complete html page, including
-     *                          <html><head><body> etc. If you set this to
-     *                          false, plain output is generated. Warning: If
-     *                          you set this to false, you are responsible for
-     *                          loading all the required scripts, stylesheets
-     *                          etc. (When $fullpage is true, these are
-     *                          automatically included in the page header.
-     */
-    function dispatch($postvars, $fullpage=true)
-    {
-      $this->loadDispatchPage($postvars);
-
-      $ui = &$this->getUi();
-      $page = &$this->getPage();
-      if (!$page->isEmpty()) // Only output an html output if there is anything to output.
-      {
-        $screen = $page->render(atktext('app_shorttitle')." - ".$ui->title($this->m_module, $this->m_type,$this->m_postvars['atkaction']), $fullpage);
-
-        $output = &atkOutput::getInstance();
-        $output->output($screen);
-      }
-
-      // This is the end of all things for this page..
-      // so we clean up some resources..
-      $db = &$this->getDb();
-      if (is_object($db)) $db->disconnect();
-      atkdebug("disconnected from the database");
-    }
-
-    /**
-     * Does the actual loading of the dispatch page
-     * And adds it to the page for the dispatch() method to render.
-     * @param array $postvars The request variables for the node.
-     */
-    function loadDispatchPage($postvars)
-    {
-      $this->m_postvars = $postvars;
-
-      $this->m_action = $postvars['atkaction'];
-
-      /** DIRTY HACK
-          if action is something else than edit, we clear the atkformdata sessionstuff **/
-      if ($this->m_action!="edit"&&$this->m_action!="add"&&$this->m_action!="admin")
-      {
-        atkdebug("Clearing stored formdata");
-        $this->m_postvars["atkformdata"]="";
-      }
-
-      $page = &$this->getPage();
-
-      if ($this->allowed($this->m_action))
-      {
-        $secMgr = &atkGetSecurityManager();
-        $secMgr->logAction($this->m_type, $this->m_action);
-        $this->callHandler($this->m_action);
-
-        list($selector,$id) = explode("=", atkarraynvl($this->m_postvars, "atkselector", "="));
-        $page->register_hiddenvars(array("atknodetype"=>$this->m_module.".".$this->m_type, "atkselector"=>str_replace("'", "", $id)));
-      }
-      else
-      {
-        $page->addContent($this->genericPage(atktext('access_denied'), "<br><br>".atktext("error_node_action_access_denied", "", $this->m_type)."<br><br><br>"));
-      }
-    }
+      * This is the wrapper method for all http requests on a node.
+      *
+      * The method looks at the atkaction from the postvars and determines what
+      * should be done. If possible, it instantiates actionHandlers for
+      * handling the actual action.
+      *
+      * @param array $postvars The request variables for the node.
+      * @param int $flags Render flags (see class atkPage).
+      */
+     function dispatch($postvars, $flags=NULL)
+     {
+       atkdebug("atkNode::dispatch()");
+       $controller = &atkcontroller::getInstance();
+       $controller->setNode($this);
+       return $controller->handleRequest($postvars, $flags);
+     }
 
     /**
      * Render a generic page, with a box, title, stacktrace etc.
-     * @param String $title The title of the page. Appears in the box title
-     *                      and in the page header.
-     * @param String $content The content to display in the box.
+     * @param String $title The pagetitle and if $content is a string, also
+     *                      the boxtitle.
+     * @param mixed $content The content to display on the page. This can be:
+     *                       - A string which will be the content of a single
+     *                         box on the page.
+     *                       - An associative array of $boxtitle=>$boxcontent
+     *                         pairs. Each pair will be rendered as a seperate
+     *                         box.
      * @return String A complete html page with the desired content.
      */
     function genericPage($title, $content)
     {
-       $ui = &$this->getUi();
-       $this->addStyle("style.css");
-       return $this->renderActionPage($title, $ui->renderBox(array("title"=>$title,
-                                                                   "content"=>$content)));
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode($this);
+      return $controller->genericPage($title, $content);
     }
 
     /**
      * Render a generic action.
      *
-     * Renders actionpage.tpl for the desired action. This doesn't include a
-     * box. The output can be rendered in a box with atkUi's renderBox method
-     * if desired.
+     * Renders actionpage.tpl for the desired action. This includes the
+     * given block(s) and a pagetrial, but not a box.
      * @param String $action The action for which the page is rendered.
      * @param mixed $blocks Pieces of html content to be rendered. Can be a
      *                      single string with content, or an array with
      *                      multiple content blocks.
-     * @param String HTLM fragment for the action.
-     * @param String $content The content to display in the box.
-     * @return String A complete html page with the desired content.
+     * @return String Piece of HTML containing the given blocks and a pagetrail.
      */
     function renderActionPage($action, $blocks=array())
     {
-      if(!is_array($blocks))
-      {
-        $blocks = ($blocks==""?array():array($blocks));
-      }
-
-      $ui = &$this->getUi();
-
-      // todo: overridable action templates
-      return $ui->render("actionpage.tpl", array("blocks"=>$blocks,
-                                                 "title"=>$ui->title($this->m_module, $this->m_type, $action)));
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode($this);
+      return $controller->renderActionPage($action, $blocks);
     }
 
     /**
@@ -2219,21 +2871,32 @@
      *                         If ommitted, the call automatically redirects
      *                         to the previous screen of the user. (one level
      *                         back on the session stack).
-     * @param array $record If you pass a record here, the record is passed
-     *                      as 'atkpkret' to the redirected url. Usually it's
-     *                      not necessary to pass this parameter.
+     * @param array $recordOrExit If you pass a record here, the record is passed
+     *                            as 'atkpkret' to the redirected url. Usually it's
+     *                            not necessary to pass this parameter. If you pass a
+     *                            boolean here we assume it's value must be used for
+     *                            the exit parameter.
+     * @param boolean $exit      Exit script after redirect.
+     * @param int $levelskip     Number of levels to skip
      */
-    function redirect($location="", $record=array())
+    function redirect($location="", $recordOrExit=array(), $exit=false,$levelskip=1)
     {
       global $g_returnurl;
 
       atkdebug("atknode::redirect()");
 
+      $record = $recordOrExit;
+      if (is_bool($recordOrExit))
+      {
+        $record = array();
+        $exit = $recordOrExit;
+      }
+
       if ($g_returnurl!="") $location = $g_returnurl;
 
       if ($location=="")
       {
-        $location = session_url($_SERVER["PHP_SELF"],SESSION_BACK,1);
+        $location = atkSessionManager::sessionUrl(atkSelf(),SESSION_BACK,$levelskip);
       }
 
       if (count($record))
@@ -2247,7 +2910,15 @@
       // The actual redirect.
       if (atkconfig("debug")>=2)
       {
-        atkdebug('nondebug version would have redirected to <a href="'.$location.'">'.$location.'</a>');
+        $debugger = &atkinstance('atk.utils.atkdebugger');
+        $debugger->setRedirectUrl($location);
+        atkdebug('Non-debug version would have redirected to <a href="'.$location.'">'.$location.'</a>');
+        if ($exit)
+        {
+          $output = &atkOutput::getInstance();
+          $output->outputFlush();
+          exit();
+        }
       }
       else
       {
@@ -2263,6 +2934,10 @@
         }
 
         header('Location: '.$location);
+        if ($exit)
+        {
+          exit();
+        }
       }
     }
 
@@ -2274,18 +2949,32 @@
      * translate the html values into the internal values that the attributes
      * work with.
      * @param array $vars The request variables that were posted from a form.
+     * @param array $includes Only fetch the value for these attributes.
+     * @param array $excludes Don't fetch the value for these attributes.
+     * @param array $postedOnly Only fetch the value for attributes that have really been posted.
      * @return array A valid record.
      */
-    function updateRecord($vars ="")
+    function updateRecord($vars ="", $includes=NULL, $excludes=NULL, $postedOnly=false)
     {
       if ($vars=="") $vars = $this->m_postvars;
       $record = array();
+
       foreach (array_keys($this->m_attribList) as $attribname)
       {
-        $p_attrib = &$this->m_attribList[$attribname];
-        $record[$p_attrib->fieldName()]=$p_attrib->fetchValue($vars);
+        if ((!is_array($includes) || in_array($attribname, $includes)) &&
+            (!is_array($excludes) || !in_array($attribname, $excludes)))
+        {
+          $p_attrib = &$this->m_attribList[$attribname];
+          if (!$postedOnly || $p_attrib->isPosted($vars))
+          {
+            $record[$p_attrib->fieldName()]=$p_attrib->fetchValue($vars);
+          }
+        }
       }
-      $record["atkprimkey"] = $vars["atkprimkey"];
+
+      if (isset($vars['atkprimkey']))
+        $record["atkprimkey"] = $vars["atkprimkey"];
+
       return $record;
     }
 
@@ -2307,6 +2996,24 @@
         $p_attrib = &$this->m_attribList[$attribname];
         $record[$p_attrib->fieldName()]=$p_attrib->fetchValue($vars);
       }
+    }
+
+    /**
+     * Get descriptor handler.
+     * @return Object descriptor handler
+     */
+    function &getDescriptorHandler()
+    {
+      return $this->m_descHandler;
+    }
+
+    /**
+     * Set descriptor handler.
+     * @param Object $handler The descriptor handler.
+     */
+    function setDescriptorHandler(&$handler)
+    {
+      $this->m_descHandler = &$handler;
     }
 
     /**
@@ -2396,6 +3103,10 @@
      */
     function descriptor($rec="")
     {
+      // Descriptor handler is set?
+      if ($this->m_descHandler != NULL)
+        return $this->m_descHandler->descriptor($rec, $this);
+
       // Descriptor template is set?
       if ($this->m_descTemplate != NULL)
       {
@@ -2468,9 +3179,11 @@
      * fail.
      * @param array $record The record to update in the database.
      * @param bool wether to execute the pre/post update triggers
+     * @param array $excludes exclude list (these attribute will *not* be updated)
+     * @param array $includes include list (only these attributes will be updated)
      * @return boolean True if succesful, false if not.
      */
-    function updateDb(&$record,$exectrigger=true)
+	  function updateDb(&$record, $exectrigger=true, $excludes="", $includes="")
     {
       $db = &$this->getDb();
       $query = &$db->createQuery();
@@ -2492,23 +3205,30 @@
           //Need to restore the NO_FILTER bit back to its original value.
           $flags = $this->m_flags;
           $this->addFlag(NF_NO_FILTER);
-          $recordset = $this->selectDb($pk,"","","","","edit"); // we need the same record we got when editing.
+          $recordset = $this->selectDb($pk,"","",$excludes,$includes,"edit"); // we need the same record we got when editing.
           $this->m_flags = $flags;
           $record["atkorgrec"] = $recordset[0];
         }
+
+        if($exectrigger) $this->executeTrigger("preUpdate",$record);
+
         $query->addCondition($pk);
 
         $storelist = array("pre"=>array(), "post"=>array(), "query"=>array());
 
         foreach (array_keys($this->m_attribList) as $attribname)
         {
-          $p_attrib = &$this->m_attribList[$attribname];
-          if ($p_attrib->needsUpdate($record))
-          {
-            $storemode = $p_attrib->storageType("update");
-            if (hasFlag($storemode, PRESTORE)) $storelist["pre"][]=$attribname;
-            if (hasFlag($storemode, POSTSTORE)) $storelist["post"][]=$attribname;
-            if (hasFlag($storemode, ADDTOQUERY)) $storelist["query"][]=$attribname;
+	        if ((!is_array($excludes) || !in_array($attribname, $excludes)) &&
+  	          (!is_array($includes) || in_array($attribname, $includes)))
+  	      {
+  	        $p_attrib = &$this->m_attribList[$attribname];
+            if ($p_attrib->needsUpdate($record) || atk_in_array($attribname, $includes))
+            {
+              $storemode = $p_attrib->storageType("update");
+              if (hasFlag($storemode, PRESTORE)) $storelist["pre"][]=$attribname;
+              if (hasFlag($storemode, POSTSTORE)) $storelist["post"][]=$attribname;
+              if (hasFlag($storemode, ADDTOQUERY)) $storelist["query"][]=$attribname;
+            }
           }
         }
 
@@ -2519,8 +3239,6 @@
           $p_attrib = &$this->m_attribList[$storelist["query"][$i]];
           $p_attrib->addToQuery($query,$this->m_table,"",$record,1,"update"); // start at level 1
         }
-
-        if($exectrigger) $this->executeTrigger("preUpdate",$record);
 
         if (count($query->m_fields) && !$query->executeUpdate()) return false;
 
@@ -2544,6 +3262,7 @@
       else
       {
         atkdebug("NOT UPDATING! NO SELECTOR SET!");
+        return false;
       }
       return true;
     }
@@ -2584,11 +3303,12 @@
     function isAllowedQueryList($attribname,$excludeList="",$includeList="")
     {
       return (
-              ((is_array($includeList) && in_array($attribname,$includeList))
+                 in_array($attribname, $this->m_primaryKey)
+              || ((is_array($includeList) && in_array($attribname,$includeList))
               || (is_array($excludeList) && !in_array($attribname,$excludeList)))
               || (!is_array($excludeList) && !is_array($includeList))
               || ($this->m_attribList[$attribname]->hasFlag(AF_FORCE_LOAD))
-              );
+            );
     }
 
     /**
@@ -2607,13 +3327,15 @@
      * @param String $mode The action for which the selectDb is called.
      *                     This param is used to determine which attributes
      *                     to include in the query and which not to include.
+     * @param boolean $distinct Perform a distinct selection (no duplicate
+     *                          records). Defaults to true.
      * @return int Number of records
      */
-    function countDb($selector="", $excludeList="", $includeList="", $mode="")
+    function countDb($selector="", $excludeList="", $includeList="", $mode="", $distinct=false)
     {
       $searching = false;
       $loadlist = array();
-      $mltool = &atkinstance("atk.utils.atkmlsplitter");
+
       $db = &$this->getDb();
       $query = &$db->createQuery();
 
@@ -2629,9 +3351,14 @@
       if (!atkReadOptimizer())
       {
         /* there may be search criteria, which we also filter */
-        $searchArray = isset($this->m_postvars['atksearch']) ? $this->m_postvars['atksearch'] : null;
-        $smartSearchCriteria = isset($this->m_postvars['atksmartsearch']) ? $this->m_postvars['atksmartsearch'] : null;
-        if (is_array($searchArray) && count($searchArray)>0 || is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
+        $searchArray = atkArrayNvl($this->m_postvars,'atksearch');
+        $smartSearchCriteria = atkArrayNvl($this->m_postvars,'atksmartsearch');
+        $indexValue = $this->m_index != "" ? atkArrayNvl($this->m_postvars,'atkindex',"") : "";
+
+        if ( (is_array($searchArray) && count($searchArray)>0)
+              || (is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
+              || !empty($indexValue) )
+
         {
           $searching = true;
           //The searchmode of an index should be used only once, therefore it uses atksinglesearchmode instead of atksearchmode.
@@ -2652,10 +3379,16 @@
           $query->addCondition($key."='".$value."'");
         }
 
-        /* fuzzy filters may be set */
-        for ($i = 0, $_i = count($this->m_fuzzyFilters); $i < $_i; $i++)
+        if(count($this->m_fuzzyFilters))
         {
-          $query->addCondition($this->m_fuzzyFilters[$i]);
+          atkimport("atk.utils.atkstringparser");
+          /* fuzzy filters may be set */
+          for ($i = 0, $_i = count($this->m_fuzzyFilters); $i < $_i; $i++)
+          {
+            $parser = new atkStringParser($this->m_fuzzyFilters[$i]);
+            $filter = $parser->parse(array('table' => $this->m_table));
+            $query->addCondition($filter);
+          }
         }
       }
 
@@ -2675,35 +3408,50 @@
         $p_attrib->addToQuery($query,$this->m_table,"","",1,$mode); // start at level 1
       }
 
-      // there may be search criteria, which we also filter
-      if (is_array($searchArray) && count($searchArray)>0)
+      //handle index navigation
+      if($indexValue !="")
+      {
+        $p_attrib = &$this->getAttribute($this->m_index);
+        if(is_object($p_attrib))
+        {
+           $p_attrib->searchCondition($query, $this->m_table, $indexValue, "wildcard", "");
+        }
+        else
+        {
+          atkerror("Wrong_index_field");
+        }
+      }
+
+      if (is_array($searchArray) && count($searchArray) > 0)
       {
         while (list($key,$value) = each($searchArray))
         {
-          if( (($value!="") && ($mode=="admin")) || (($value!="") && in_array($key,$loadlist["query"])) )
+          if( (($value!="") && ($mode=="admin" || $mode=="export")) || (($value!="") && in_array($key,$loadlist["query"])) )
           {
             $p_attrib = &$this->getAttribute($key);
 
             if (is_object($p_attrib))
             {
-              if (is_array($value) && isset($value[$key]))
+              if (is_array($value) && isset($value[$key]) && count($value) == 1)
               {
                 $value = $value[$key];
               }
 
+              $searchmode = $this->getSearchMode();
               if(is_array($searchmode))
               {
                 $search = $searchmode[$key];
                 if ($search=="") $search = atkconfig("search_defaultmode");
-                $p_attrib->searchCondition($query, $this->m_table, $value, $search);
+                $p_attrib->searchCondition($query, $this->m_table, $value, $search, "");
               }
               else
               {
-                $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
+                $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode, "");
               }
             }
             else
             {
+              atkdebug("Using default search method for $key");
               $condition = "lower(".$this->m_table.".".$key.") LIKE lower('%".escapeSQL($value,true)."%')";
               $query->addSearchCondition($condition);
             }
@@ -2717,10 +3465,10 @@
         $this->applySmartSearchCriteria($query, $smartSearchCriteria);
       }
 
-      $mltool->addMlCondition($query,$this,$mode,$excludeList,$includeList);
+      $mltool = &atkinstance("atk.utils.atkmlsplitter");
+      $mltool->addMlCondition($query,$this,$mode,$this->m_table);
 
-      $querystring = $query->buildCount();
-      $db = &$this->getDb();
+      $querystring = $query->buildCount($distinct);
       $result = $db->getrows($querystring);
 
       // group by fix:
@@ -2743,6 +3491,9 @@
      */
     function copyDb(&$record, $mode="copy")
     {
+      //notify precopy listeners
+      $this->preNotify("precopy", $record);
+
       // remove primarykey (copied record will get a new primary key)
       unset($record["atkprimkey"]);
 
@@ -2755,6 +3506,41 @@
 
       $this->preCopy($record);
       return $this->addDb($record, true, $mode);
+    }
+
+    /**
+     * Get the current searchmode.
+     *
+     * @return mixed If there is one searchmode set for all attributes, this
+     *               method returns a string. If there are searchmodes per
+     *               attribute, an array of strings is returned.
+     */
+    function getSearchMode()
+    {
+      //The searchmode of an index should be used only once, therefore it uses
+      // atksinglesearchmode instead of atksearchmode.
+      if (isset($this->m_postvars["atksinglesearchmode"]))
+      {
+        return $this->m_postvars["atksinglesearchmode"];
+      }
+      else if (isset($this->m_postvars["atksearchmode"]))
+      {
+        return $this->m_postvars["atksearchmode"];
+      }
+      return atkconfig("search_defaultmode");
+    }
+
+    /**
+     * Retrieve records from the database using a handy helper class. PHP5 only.
+     *
+     * @param string $selector (optional) selector string (will be used in the where clause)
+     *
+     * @return atkSelector
+     */
+    function select($selector='')
+    {
+      atkimport('atk.utils.atkselector');
+      return new atkSelector($this, $selector);
     }
 
     /**
@@ -2787,18 +3573,19 @@
      *                          records). Defaults to true.
      * @return array Array containing the retrieved records
      */
-    function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="", $distinct=true)
+    function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="", $distinct=false)
     {
       $searching=false;
       $selectlist = array();
       $loadlist = array();
 
-      if($order=="" && $this->m_default_order!="") $order=$this->m_default_order;
+      if ($order === false)
+        $order = "";
+      else if($order=="" && $this->m_default_order!="")
+        $order=$this->m_default_order;
 
       $db = &$this->getDb();
       $query = &$db->createQuery();
-
-      $mltool = &atkinstance("atk.utils.atkmlsplitter");
 
       $query->addTable($this->m_table);
       $query->addCondition($selector);
@@ -2810,15 +3597,15 @@
       if (!atkReadOptimizer())
       {
         /* there may be search criteria, which we also filter */
-        $searchArray = isset($this->m_postvars['atksearch']) ? $this->m_postvars['atksearch'] : null;
-        $smartSearchCriteria = isset($this->m_postvars['atksmartsearch']) ? $this->m_postvars['atksmartsearch'] : null;
-        if (is_array($searchArray) && count($searchArray)>0 || is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
+        $searchArray = atkArrayNvl($this->m_postvars,'atksearch');
+        $smartSearchCriteria = atkArrayNvl($this->m_postvars,'atksmartsearch');
+        $indexValue = $this->m_index != "" ? atkArrayNvl($this->m_postvars,'atkindex',"") : "";
+
+        if ( (is_array($searchArray) && count($searchArray)>0)
+              || (is_array($smartSearchCriteria) && count($smartSearchCriteria) > 0)
+              || !empty($indexValue) )
         {
           $searching = true;
-          //The searchmode of an index should be used only once, therefore it uses atksinglesearchmode instead of atksearchmode.
-          $searchmode = isset($this->m_postvars["atksinglesearchmode"]) ? $this->m_postvars["atksinglesearchmode"] : (isset($this->m_postvars["atksearchmode"]) ? $this->m_postvars["atksearchmode"] : "");
-
-          if ($searchmode=="") $searchmode = atkconfig("search_defaultmode");
         }
       }
 
@@ -2830,10 +3617,16 @@
           $query->addCondition($key."='".$value."'");
         }
 
-        /* fuzzy filters may be set */
-        for ($i = 0, $_i = count($this->m_fuzzyFilters); $i < $_i; $i++)
+        if(count($this->m_fuzzyFilters))
         {
-          $query->addCondition($this->m_fuzzyFilters[$i]);
+          atkimport("atk.utils.atkstringparser");
+          /* fuzzy filters may be set */
+          for ($i = 0, $_i = count($this->m_fuzzyFilters); $i < $_i; $i++)
+          {
+            $parser = new atkStringParser($this->m_fuzzyFilters[$i]);
+            $filter = $parser->parse(array('table' => $this->m_table));
+            $query->addCondition($filter);
+          }
         }
       }
 
@@ -2869,14 +3662,13 @@
         }
       }
 
-
       $recordset = array();
       // First load PRELOAD attribs
       for ($j = 0, $_j = count($preloadlist); $j < $_j; $j++)
       {
         $p_attrib = &$this->m_attribList[$preloadlist[$j]];
 
-        $preloadedrecs = $p_attrib->load($this->getDb(), $recordset[$i], $mode);
+        $preloadedrecs = $p_attrib->load($db, $recordset[$i], $mode);
 
         // todo, dirty hack, if preload returns x records, we treat them as 1 record now.
         $recordset[0][$preloadlist[$j]] = $preloadedrecs;
@@ -2891,35 +3683,51 @@
 
       if (!atkReadOptimizer())
       {
+        //handle index navigation
+        if($indexValue !="")
+        {
+          $p_attrib = &$this->getAttribute($this->m_index);
+          if(is_object($p_attrib))
+          {
+             $p_attrib->searchCondition($query, $this->m_table, $indexValue, "wildcard", "");
+          }
+          else
+          {
+            atkerror("Wrong_index_field");
+          }
+        }
+
         // there may be search criteria, which we also filter
         if (is_array($searchArray) && count($searchArray)>0)
         {
           while (list($key,$value) = each($searchArray))
           {
-            if( (($value!="") && ($mode=="admin")) || (($value!="") && in_array($key,$querylist)) )
+            if( (($value!="") && ($mode=="admin" || $mode=="export")) || (($value!="") && in_array($key,$querylist)) )
             {
               $p_attrib = &$this->getAttribute($key);
 
               if (is_object($p_attrib))
               {
-                if (is_array($value) && isset($value[$key]))
+                if (is_array($value) && isset($value[$key]) && count($value) == 1)
                 {
                   $value = $value[$key];
                 }
 
+                $searchmode = $this->getSearchMode();
                 if(is_array($searchmode))
                 {
                   $search = $searchmode[$key];
                   if ($search=="") $search = atkconfig("search_defaultmode");
-                  $p_attrib->searchCondition($query, $this->m_table, $value, $search);
+                  $p_attrib->searchCondition($query, $this->m_table, $value, $search, "");
                 }
                 else
                 {
-                  $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
+                  $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode, "");
                 }
               }
               else
               {
+                atkdebug("Using default search method for $key");
                 $condition = "lower(".$this->m_table.".".$key.") LIKE lower('%".escapeSQL($value,true)."%')";
                 $query->addSearchCondition($condition);
               }
@@ -2934,7 +3742,8 @@
         }
       }
 
-      $mltool->addMlCondition($query,$this,$mode,$excludeList,$includeList);
+      $mltool = &atkinstance("atk.utils.atkmlsplitter");
+      $mltool->addMlCondition($query,$this,$mode,$this->m_table);
 
       if ($order!="") $query->addOrderBy($order);
 
@@ -2951,8 +3760,8 @@
       }
 
       $querystring = $query->buildSelect($distinct);
+      if (!$querystring) return array();
 
-      $db = &$this->getDb();
       $dbrecords = $db->getrows($querystring);
 
       if($mode=="copy" && $this->hasFlag(NF_ML)) // do we have mlrecords?
@@ -3026,21 +3835,63 @@
       }
 
       // also load special storage attributes. (POST)
-      for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
+      for ($j = 0, $_j = count($postloadlist); $j < $_j; $j++)
       {
-        for ($j = 0, $_j = count($postloadlist); $j < $_j; $j++)
+        $p_attrib = &$this->getAttribute($postloadlist[$j]);
+        for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
         {
-          $p_attrib = &$this->m_attribList[$postloadlist[$j]];
-
-          $recordset[$i][$postloadlist[$j]] = $p_attrib->load($this->getDb(), $recordset[$i], $mode);
+          $recordset[$i][$postloadlist[$j]] = $p_attrib->load($db, $recordset[$i], $mode);
         }
       }
       return $recordset;
     }
 
     /**
-     * Apply the given smart search criteria to the
-     * given query object.
+     * Apply the given search criteria to the given query object.
+     *
+     * @param atkQuery $query    The query object.
+     * @param array    $searchArray The search criteria.
+     */
+    function applySearchCriteria(&$query, $searchArray)
+    {
+      $searchmode = $this->getSearchMode();
+      // there may be search criteria, which we also filter
+
+      foreach ($searchArray as $key=>$value)
+      {
+        if( $value!="")
+        {
+          $p_attrib = &$this->getAttribute($key);
+
+          if (is_object($p_attrib))
+          {
+            if (is_array($value) && isset($value[$key]))
+            {
+              $value = $value[$key];
+            }
+
+            if(is_array($searchmode))
+            {
+              $search = $searchmode[$key];
+              if ($search=="") $search = atkconfig("search_defaultmode");
+              $p_attrib->searchCondition($query, $this->m_table, $value, $search);
+            }
+            else
+            {
+              $p_attrib->searchCondition($query, $this->m_table, $value, $searchmode);
+            }
+          }
+          else
+          {
+            $condition = "lower(".$this->m_table.".".$key.") LIKE lower('%".escapeSQL($value,true)."%')";
+            $query->addSearchCondition($condition);
+          }
+        }
+      }
+    }
+
+    /**
+     * Apply the given smart search criteria to the given query object.
      *
      * @param atkQuery $query    The query object.
      * @param Array    $criteria The smart search criteria.
@@ -3058,7 +3909,7 @@
 
         if (is_object($attr))
         {
-          $attr->smartSearchCondition($id, 0, $path, $query, $this->m_table, $value, $mode);
+          $attr->smartSearchCondition($id, 0, $path, $query, $this->m_table, $value, $mode, "");
         }
       }
     }
@@ -3079,8 +3930,10 @@
      *                           the primary key and fields from the desriptor
      *                           are added.
      */
-    function addToQuery(&$query, $alias="", $level=0, $allfields=false)
+    function addToQuery(&$query, $alias="", $level=0, $allfields=false, $mode="select", $includes=array())
     {
+      if ($level>=4) return;
+
       $usefieldalias = false;
 
       if ($alias=="")
@@ -3095,13 +3948,13 @@
       // If allfields is set, we load the entire record.. otherwise, we only
       // load the important fields (descriptor and primary key fields)
       // this is mainly used by onetoonerelation.
-      if ($allfields)
+      if ($allfields || $mode=="copy")
       {
         $usedFields = array_keys($this->m_attribList);
       }
       else
       {
-        $usedFields = atk_array_merge($this->descriptorFields(),$this->m_primaryKey);
+        $usedFields = atk_array_merge($this->descriptorFields(),$this->m_primaryKey,$includes);
         foreach (array_keys($this->m_attribList) as $name)
           if (is_object($this->m_attribList[$name]) && $this->m_attribList[$name]->hasFlag(AF_FORCE_LOAD)) $usedFields[] = $name;
         $usedFields = array_unique($usedFields);
@@ -3119,10 +3972,79 @@
           {
             if ($usefieldalias) $fieldaliasprefix = $alias."_AE_";
 
-            $p_attrib->addToQuery($query,$alias, $fieldaliasprefix,"",$level+1, "select");
+            $p_attrib->addToQuery($query,$alias, $fieldaliasprefix,"",$level, $mode);
           }
         }
         else atkdebug("$attribname is not an object?! Check your descriptor_def for non-existant fields");
+      }
+
+      $mltool = &atkinstance("atk.utils.atkmlsplitter");
+      $mltool->addMlCondition($query,$this,$mode,$alias);
+    }
+
+    /**
+     * Get search condition for this node.
+     *
+     * @param atkQuery $query
+     * @param unknown_type $table
+     * @param unknown_type $alias
+     * @param unknown_type $value
+     * @param unknown_type $searchmode
+     * @return unknown
+     */
+    function getSearchCondition(&$query, $table, $alias, $value, $searchmode)
+    {
+      $usefieldalias = false;
+
+      if ($alias=="")
+      {
+        $alias = $this->m_table;
+      }
+      else
+      {
+        $usefieldalias = true;
+      }
+
+      $searchConditions = array();
+
+      $attribs = $this->descriptorFields();
+      array_unique($attribs);
+
+      foreach($attribs as $field)
+      {
+        $p_attrib = &$this->getAttribute($field);
+        if (!is_object($p_attrib)) continue;
+
+        if ($usefieldalias) $fieldaliasprefix = $alias."_AE_";
+
+        // checking for the getSearchCondition for backwards compatibility
+        if (method_exists($p_attrib, "getSearchCondition"))
+        {
+          $attribsearchmode = $searchmode;
+          if (is_array($searchmode))
+          {
+            $attribsearchmode = $attribsearchmode[$p_attrib->m_name];
+          }
+          atkdebug("getSearchCondition: $table - $fieldaliasprefix");
+          $searchCondition = $p_attrib->getSearchCondition($query,$table,$value,$searchmode,$fieldaliasprefix);
+          if ($searchCondition != "")
+            $searchConditions[] = $searchCondition;
+        }
+        else
+        {
+          // if the attrib can't return it's searchcondition, we'll just add it to the query
+          // and hope for the best
+          $p_attrib->searchCondition($query,$table,$value,$searchmode,$fieldaliasprefix);
+        }
+      }
+
+      if (count($searchConditions))
+      {
+        return "(".implode(" OR ",$searchConditions).")";
+      }
+      else
+      {
+        return "";
       }
     }
 
@@ -3193,7 +4115,6 @@
         $mltool->updateMlRecords($this, $record,"add");
       }
 
-
       if (!$this->_storeAttributes($storelist["post"], $record, $mode))
       {
         atkdebug("_storeAttributes failed..");
@@ -3223,18 +4144,41 @@
     {
       if (!isset($record["__executed".$trigger]))
       {
+        $record["__executed".$trigger] = true;
+
         $return = $this->$trigger($record, $mode);
 
-        $record["__executed".$trigger]=true;
-
-        if(!isset($return))
+        if ($return === NULL)
         {
-          atkdebug("Undefined return:".$this->atkNodeType().".$trigger doesn't return anything, it should return a boolean!", DEBUG_WARNING);
+          atkdebug("Undefined return: ".$this->atkNodeType().".$trigger doesn't return anything, it should return a boolean!", DEBUG_WARNING);
           $return = true;
         }
-        if(!$return) atkdebug("$trigger failed!");
-        return $return;
+
+        if (!$return)
+        {
+          atkdebug($this->atkNodeType().".$trigger failed!");
+          return false;
+        }
+
+        for ($i = 0, $_i = count($this->m_triggerListeners); $i < $_i; $i++)
+        {
+          $listener = &$this->m_triggerListeners[$i];
+          $return = $listener->notify($trigger, $record, $mode);
+
+          if ($return === NULL)
+          {
+            atkdebug("Undefined return: ".$this->atkNodeType().", ".get_class($listener).".notify('$trigger', ...) doesn't return anything, it should return a boolean!", DEBUG_WARNING);
+            $return = true;
+          }
+
+          if (!$return)
+          {
+            atkdebug($this->atkNodeType().", ".get_class($listener).".notify('$trigger', ...) failed!");
+            return false;
+          }
+        }
       }
+
       return true;
     }
 
@@ -3251,19 +4195,23 @@
      * @param String $selector SQL expression used as where-clause that
      *                         indicates which records to delete.
      * @param bool $exectrigger wether to execute the pre/post triggers
+     * @param bool $failwhenempty determine whether to throw an error if there is nothing to delete
      * @returns boolean True if successful, false if not.
      */
-    function deleteDb($selector,$exectrigger=true)
+    function deleteDb($selector,$exectrigger=true,$failwhenempty=false)
     {
       $recordset = $this->selectDb($selector,"","","","","delete");
+
+      // nothing to delete, throw an error (determined by $failwhenempty)!
+      if (count($recordset) == 0) return !$failwhenempty;
 
       if($exectrigger)
       {
         for ($i = 0, $_i = count($recordset); $i < $_i; $i++)
-  	    {
-  	      $return = $this->executeTrigger("preDelete",$recordset[$i]);
-  	      if (!$return) return false;
-  	    }
+        {
+          $return = $this->executeTrigger("preDelete",$recordset[$i]);
+          if (!$return) return false;
+        }
       }
 
       if (count($this->m_cascadingAttribs)>0)
@@ -3273,6 +4221,7 @@
           for ($j = 0, $_j = count($this->m_cascadingAttribs); $j < $_j; $j++)
           {
             $p_attrib = &$this->m_attribList[$this->m_cascadingAttribs[$j]];
+
             if (is_array($recordset[$i][$this->m_cascadingAttribs[$j]]) && $recordset[$i][$this->m_cascadingAttribs[$j]] !== NULL && !$p_attrib->isEmpty($recordset[$i]))
             {
               if (!$p_attrib->delete($recordset[$i]))
@@ -3437,7 +4386,7 @@
      * record to 'Copy of ..', so the user can distinguish between the
      * original and the copy.
      *
-     * @param &$record A reference to the copied record. You can change the
+     * @param array $record A reference to the copied record. You can change the
      *                 contents of the record, since it is passed by
      *                 reference.
      */
@@ -3517,11 +4466,27 @@
     function allowed($action, $record="")
     {
       $secMgr = &atkGetSecurityManager();
-      if (empty($this->m_securityAlias))
-      {
-        $alias = $this->atknodetype();
-      }
-      else
+
+      $alias = $this->atkNodeType();
+      $this->resolveNodeTypeAndAction($alias, $action);
+
+      return ($this->hasFlag(NF_NO_SECURITY)
+              ||in_array($action, $this->m_unsecuredActions)
+              || $secMgr->allowed($alias,$action)
+              || (isset($this->m_securityImplied[$action]) && $secMgr->allowed($alias, $this->m_securityImplied[$action])));
+    }
+
+    /**
+     * Resolves a possible node / action alias for the given node / action.
+     * The given node alias and action are updated depending on
+     * the found mapping.
+     *
+     * @param string $alias  node type
+     * @param string $action action name
+     */
+    function resolveNodeTypeAndAction(&$alias, &$action)
+    {
+      if (!empty($this->m_securityAlias))
       {
         $alias = $this->m_securityAlias;
       }
@@ -3529,19 +4494,23 @@
       // Resolve action
       $action = $this->securityKey($action);
 
-      // If action contains a dot, it's a complete nodename.action alias.
+      // If action contains a dot, it's a complete nodename.action or modulename.nodename.action alias.
       // Else, it's only an action alias, and we use the default node.
-      // (TODO: make it possible to use modulename.nodename.action aliases)
+
       if (strpos($action, ".")!==false)
       {
-        list($node, $action) = explode(".", $action);
-        $alias = $this->m_module.".".$node;
+        $complete = explode(".", $action);
+        if(count($complete) == 3)
+        {
+          $alias = $complete[0].".".$complete[1];
+          $action = $complete[2];
+        }
+        else
+        {
+          $alias = $this->m_module.".".$complete[0];
+          $action = $complete[1];
+        }
       }
-
-      return ($this->hasFlag(NF_NO_SECURITY)
-              ||in_array($action, $this->m_unsecuredActions)
-              || $secMgr->allowed($alias,$action)
-              || (isset($this->m_securityImplied[$action]) && $secMgr->allowed($alias, $this->m_securityImplied[$action])));
     }
 
     /**
@@ -3560,6 +4529,16 @@
     function setSecurityAlias($alias)
     {
       $this->m_securityAlias = $alias;
+    }
+
+    /**
+     * Returns the node's security alias (if set).
+     *
+     * @return string security alias
+     */
+    function getSecurityAlias()
+    {
+      return $this->m_securityAlias;
     }
 
     /**
@@ -3656,18 +4635,27 @@
     function helpUrl()
     {
       $language = atkconfig("language");
-      $file   = "help/".$language."/help.".$this->m_type.".inc";
-      if (!file_exists($file))
+      $node = $this->m_type;
+
+      $file   = moduleDir($this->m_module)."help/".$language."/help.".$node.".inc";
+      $helpmodule = "";
+      if (file_exists($file))
       {
-        // no help available..
-        return "";
+        $helpmodule = $this->m_module;
       }
       else
       {
-       $name = atktext("help");
-       $node = $this->m_type;
-       return atkPopup('atk/popups/help.inc','node='.$node,$name,650,650,'yes','no');
+        // bwc
+        $file   = "help/".$language."/help.".$node.".inc";
+        if (!file_exists($file))
+        {
+          // no help available..
+          return "";
+        }
       }
+
+      $name = atktext("help");
+      return atkPopup('atk/popups/help.inc','node='.$node.($helpmodule!=""?"&module=".$helpmodule:""),$name,650,650,'yes','no');
     }
 
     /**
@@ -3681,18 +4669,27 @@
      */
     function callHandler($action)
     {
-      $handler = &getNodeHandler($this->m_type, $action);
+      atkdebug("atkNode::callHandler(); action: ".$action);
+      $handler = &atkGetNodeHandler($this->m_type, $action);
 
       // handler function
-      if ($handler != NULL && function_exists($handler))
+      if ($handler != NULL && is_string($handler) && function_exists($handler))
       {
-        atkdebug("Calling external handler function for '".$action."'");
+        atkdebug("atkNode::callHandler: Calling external handler function for '".$action."'");
         $handler($this, $action);
+      }
+
+      // handler object
+      elseif ($handler != NULL && is_subclass_of($handler, "atkActionHandler"))
+      {
+        atkdebug("atkNode::callHandler:Using override/existing atkActionHandler ".get_class($handler). " class for '".$action."'");
+        $handler->handle($this, $action, $this->m_postvars);
       }
 
       // no (valid) handler
       else
       {
+        atkdebug("Calling default handler function for '".$action."'");
         $this->m_handler = &$this->getHandler($action);
         $this->m_handler->handle($this, $action, $this->m_postvars);
       }
@@ -3708,9 +4705,51 @@
      */
     function &getHandler($action)
     {
+      atkdebug("atkNode::getHandler(); action: ".$action);
       atkimport("atk.handlers.atkactionhandler");
-      $handler = &atkActionHandler::getDefaultHandler($action);
-      $handler->setNode($this);
+
+      // for backwards compatibility we first check if a handler exists without using the module name
+      $handler = &atkGetNodeHandler($this->m_type, $action);
+
+      // then check if a handler exists registered including the module name
+      if ($handler == NULL)
+      {
+        $handler = &atkGetNodeHandler($this->atkNodeType(), $action);
+      }
+
+      // The node handler might return a class, then we need to instantiate the handler
+      if (is_string($handler) && !function_exists($handler) && atkimport($handler))
+      {
+        $handler = &atknew($handler);
+      }
+
+      // The node handler might return a function as nodehandler. We cannot
+      // return a function so we ignore this option.
+
+      // @todo why not implement a base atkfunctionactionhandler which just calls the given function?
+      //       this would probably only work fine when using PHP5, but's better then nothing?
+      //       or why support functions at all?!
+
+      // handler object
+      if ($handler != NULL && is_subclass_of($handler, "atkActionHandler"))
+      {
+        atkdebug("atkNode::getHandler: Using existing atkActionHandler ".get_class($handler)." class for '".$action."'");
+        $handler->setNode($this);
+        $handler->setAction($action);
+      }
+      else
+      {
+        $handler = &atkActionHandler::getDefaultHandler($action);
+        $handler->setNode($this);
+        $handler->setPostvars($this->m_postvars);
+        $handler->setAction($action);
+
+        //If we use a default handler we need to register it to this node
+        //because we might call it a second time.
+        atkdebug("atkNode::getHandler: Register default atkActionHandler for ".$this->m_type." action: '".$action."'");
+        atkRegisterNodeHandler($this->m_type, $action, $handler);
+      }
+
       return $handler;
     }
 
@@ -3742,6 +4781,13 @@
     function attribSort()
     {
       usort($this->m_attribIndexList,array("atknode","attrib_cmp"));
+
+      // after sorting we need to update the attribute indices
+      foreach ($this->m_attribIndexList as $index => $info)
+      {
+        $attr = &$this->getAttribute($info['name']);
+        $attr->m_index = $index;
+      }
     }
 
     /**
@@ -3767,21 +4813,21 @@
       // To perform the search, we fill atksearch, so selectDb automatically
       // searches. Because an atksearch variable may have already been set,
       // we save it to restore it after the query.
-      $orgsearch = $this->m_postvars['atksearch'];
+      $orgsearch = atkArrayNvl($this->m_postvars, "atksearch");
 
       // Built whereclause.
       foreach (array_keys($this->m_attribList) as $attribname)
       {
         $p_attrib = &$this->m_attribList[$attribname];
         // Only search in fields that aren't explicitly hidden from search
-        if (!$p_attrib->hasFlag(AF_HIDE_SEARCH) && in_array($p_attrib->dbFieldType(), array("string", "text")))
+        if (!$p_attrib->hasFlag(AF_HIDE_SEARCH) && (in_array($p_attrib->dbFieldType(), array("string", "text"))||$p_attrib->hasFlag(AF_SEARCHABLE)))
         {
            $this->m_postvars['atksearch'][$attribname]=$expression;
         }
       }
 
       // We load records in admin mode, se we are certain that all fields are added.
-      $recs = $this->selectDb("", $this->m_defaultOrder, "", $this->m_listExcludes, "", "admin");
+      $recs = $this->selectDb("", "", "", $this->m_listExcludes, "", "admin");
 
       // Restore original atksearch
       $this->m_postvars['atksearch'] = $orgsearch;
@@ -3808,10 +4854,11 @@
      *                        failed.
      * @return String The feedback url.
      */
-    function feedbackUrl($action, $status, $record="", $message="")
+    function feedbackUrl($action, $status, $record="", $message="", $levelskip=1)
     {
-      return ((isset($this->m_feedback[$action])&&hasFlag($this->m_feedback[$action], $status))
-                      ||$status==ACTION_FAILED?session_url(dispatch_url($this->atkNodeType(),"feedback", array("atkfbaction"=>$action, "atkactionstatus"=>$status,"atkfbmessage"=>$message)),SESSION_REPLACE):"");
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode($this);
+      return $controller->feedbackUrl($action, $status, $record, $message, $levelskip);
     }
 
     /**
@@ -3843,7 +4890,7 @@
       }
 
       // All standard SQL operators
-      $sqloperators = array('=','<>','>','<','>=','<=','BETWEEN','LIKE','IN', 'IS');
+      $sqloperators = array('=','<>','>','<','>=','<=','BETWEEN','LIKE','IN', 'IS', 'NOT IN','&');
 
       // Check the filter for every operator
       foreach ($sqloperators as $sqloperator)
@@ -3945,7 +4992,19 @@
     function addListener(&$listener)
     {
       $listener->setNode($this);
-      $this->m_listeners[] = $listener;
+
+      if (is_a($listener, 'atkActionListener'))
+      {
+        $this->m_actionListeners[] = &$listener;
+      }
+      else if (is_a($listener, 'atkTriggerListener'))
+      {
+        $this->m_triggerListeners[] = &$listener;
+      }
+      else
+      {
+        atkdebug('atkNode::addListener: Unknown listener base class '.get_class($listener));
+      }
     }
 
     /**
@@ -3956,9 +5015,23 @@
      */
     function notify($action, $record)
     {
-      for($i=0, $_i=count($this->m_listeners); $i<$_i; $i++)
+      for($i=0, $_i=count($this->m_actionListeners); $i<$_i; $i++)
       {
-        $this->m_listeners[$i]->notify($action, $record);
+        $this->m_actionListeners[$i]->notify($action, $record);
+      }
+    }
+
+    /**
+     * Notify all listeners in advance of the occurance of a certain action.
+     *
+     * @param String $action The action that will occur
+     * @param array $record The record on which the action will be performed
+     */
+    function preNotify($action, &$record)
+    {
+      for($i=0, $_i=count($this->m_actionListeners); $i<$_i; $i++)
+      {
+        $this->m_actionListeners[$i]->preNotify($action, $record);
       }
     }
 
@@ -3983,5 +5056,36 @@
       return atktext($string, $module, $this->m_type, $lng, $firstfallback, $nodefaulttext);
     }
 
+    /**
+     * String representation for this node (PHP5 only).
+     *
+     * @return string ATK node type
+     */
+    function __toString()
+    {
+      return $this->atkNodeType();
+    }
+    
+    /**
+     * Set the edit fieldprefix to use in atk
+     *
+     * @param string $prefix
+     */
+    function setEditFieldPrefix($prefix)
+    {
+      $this->m_edit_fieldprefix = $prefix;
+    }
+    
+    /**
+     * Get the edit fieldprefix to use
+     *
+     * @param boolean $atk_layout do we want the prefix in atkstyle (with _AE_) or not
+     * @return string with edit fieldprefix
+     */
+    function getEditFieldPrefix($atk_layout=true)
+    {
+      if ($this->m_edit_fieldprefix == '') return '';
+      else return $this->m_edit_fieldprefix.($atk_layout ? '_AE_' : '');
+    }
   }
 ?>

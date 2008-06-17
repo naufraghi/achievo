@@ -72,6 +72,8 @@
    */
     function getAppointments($user, $begindate, $enddate)
     {
+      atkimport("module.utils.dateutil");
+      
       // crosscomparison to match all appointments in range.
       $db = &atkGetDb();
 
@@ -112,28 +114,69 @@
       $recs = $db->getrows($querystring);
 
       // now add them to a nice array
-      for ($i=0;$i<count($recs);$i++)
+      for ($i=0,$_i=count($recs); $i<$_i; $i++)
       {
         $query->deAlias($recs[$i]);
         atkDataDecode($recs[$i]);
-
-        $year = substr($recs[$i]["startdate"],0,4);
-        $month = substr($recs[$i]["startdate"],5,2);
-        $day = substr($recs[$i]["startdate"],8,2);
-        $date = $year."-".$month."-".$day;
-
-        if ($recs[$i]["allday"] != 1)
-        {
-          $daypart = $this->daypart($recs[$i]["starttime"]);
-          $appointments[$date][$daypart][] = $recs[$i];
+                
+        $days = array();
+        //If the startdate is before the enddate, we have multiple days. We add the appointment
+        //for each day. If the startdate en enddate are the same, or startdate > enddate, we only
+        //add the appointment on the startdate.
+        $startdate = $this->_formatDate($recs[$i]["startdate"]);
+        $enddate = $this->_formatDate($recs[$i]["enddate"]);
+        
+        //If start is beyond end, the difference is negative.        
+        if(dateutil::date_diff($startdate,$enddate) > 0)        
+        { 
+          //returns dates in the format yyyymmdd, we want them to be in the format yyyy-mm-dd.         
+          $daysbetween = dateutil::daysBetween($startdate,$enddate);
+          
+          foreach($daysbetween as $date)          
+            $days[] = $this->_unformatDate($date['date']);          
         }
         else
         {
-          $appointments[$date]["allday"][] = $recs[$i];
+          $days[] = $recs[$i]["startdate"];
         }
+
+        
+        foreach($days as $date)
+        {        
+          if ($recs[$i]["allday"] != 1)
+          {
+            $daypart = $this->daypart($recs[$i]["starttime"]);
+            $appointments[$date][$daypart][] = $recs[$i];
+          }
+          else
+          {
+            $appointments[$date]["allday"][] = $recs[$i];
+          }
+        }        
       }
 
       return $appointments;
+    }
+    
+    /**
+     * Reformat a date in the format yyyy-mm-dd to the format yyyymmdd.     
+     *
+     * @param date In the format yyyy-mm-dd
+     * @return date in the format yyyymmdd 
+     */
+    function _formatDate($yyyy_mm_dd)
+    {
+      return str_replace("-","",$yyyy_mm_dd);
+    }
+    /**
+     * Reformat a date in the format yyyymmdd to the format yyyy-mm-dd.
+     *
+     * @param date In the format yyyymmdd 
+     * @return date in the format yyyy-mm-dd 
+     */
+    function _unformatDate($yyyymmdd)
+    {
+      return substr($yyyymmdd,0,4)."-".substr($yyyymmdd,4,2)."-".substr($yyyymmdd,6,2);      
     }
 
   /**
@@ -166,16 +209,14 @@
    */
    function weekNav()
    {
-    global $PHP_SELF;
-
     $prevTime = $this->weekdates[0]['date'];
-    $prevUrl  = $PHP_SELF."?view=weekview&viewdate=$prevTime&user=".$this->showGlobal;
+    $prevUrl  = atkSelf()."?view=weekview&viewdate=$prevTime&user=".$this->showGlobal;
 
     $thisTime = date("Y-m-d");
-    $thisUrl  = $_SERVER["PHP_SELF"]."?view=weekview&viewdate=$thisTime&user=".$this->showGlobal;
+    $thisUrl  = atkSelf()."?view=weekview&viewdate=$thisTime&user=".$this->showGlobal;
 
     $nextTime = $this->weekdates[8]['date'];
-    $nextUrl  = $PHP_SELF."?view=weekview&viewdate=$nextTime&user=".$this->showGlobal;
+    $nextUrl  = atkSelf()."?view=weekview&viewdate=$nextTime&user=".$this->showGlobal;
 
     $date     = $this->year."-".$this->month."-".$this->day;
     $this->title = "<font size='-1'><b>".atktext("week")."&nbsp;".strftime("%V", adodb_mktime(0,0,0,substr($date,5,2), substr($date,8,2), substr($date,0,4)))."</b></font>";
@@ -198,7 +239,7 @@
       for ($i=1;$i<=7;$i++)
       {
         $text  = atktext($this->weekdates[$i]["day"])."<br>(".substr($this->weekdates[$i]["date"],8,2)."-".substr($this->weekdates[$i]["date"],5,2).")";
-        $href  = $_SERVER["PHP_SELF"]."?view=dayview&viewdate=".$this->weekdates[$i]["date"]."&dayview=".$this->m_showGlobal;
+        $href  = atkSelf()."?view=dayview&viewdate=".$this->weekdates[$i]["date"]."&dayview=".$this->m_showGlobal;
         $cells[0][$i] = href($href, $text);
         $matrix->setColAlignment($i, TBL_CENTER);
       }
@@ -227,14 +268,14 @@
             if ($g_user["id"]==$dayappointments[$j]["owner"] || (is_allowed("calendar.schedule", "edit_attendee") && $found == 1))
             {
               // This is your own record, you may edit it.
-              $link = href($_SERVER["PHP_SELF"]."?atkaction=edit&atkselector=".rawurlencode("schedule.id=".$dayappointments[$j]["id"]), $dayappointments[$j]['title'], SESSION_NESTED);
+              $link = href(atkSelf()."?atkaction=edit&atkselector=".rawurlencode("schedule.id=".$dayappointments[$j]["id"]), $dayappointments[$j]['title'], SESSION_NESTED);
             }
             else
             {
               // this is somebody elses appointment. you may only view it if it is a public item.
               if ($dayappointments[$j]["publicitem"]==1)
               {
-                $link = href($_SERVER["PHP_SELF"]."?atkaction=view&atkselector=".rawurlencode("schedule.id=".$dayappointments[$j]["id"]), $dayappointments[$j]['title'], SESSION_NESTED);
+                $link = href(atkSelf()."?atkaction=view&atkselector=".rawurlencode("schedule.id=".$dayappointments[$j]["id"]), $dayappointments[$j]['title'], SESSION_NESTED);
               }
               else
               {
@@ -264,7 +305,7 @@
       for ($i=1;$i<=7;$i++)
       {
         $text  = atktext("add");
-        $href  = $_SERVER["PHP_SELF"]."?atkaction=add&viewdate=".$this->weekdates[$i]["date"];
+        $href  = atkSelf()."?atkaction=add&viewdate=".$this->weekdates[$i]["date"];
         $row[$i] = href($href, $text, SESSION_NESTED);
       }
       $cells[] = $row;

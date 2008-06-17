@@ -6,9 +6,9 @@
  *
  * This class makes it possible to schedule a appointment.
  *
- * $Id: class.schedule.inc,v 1.38 2006/04/17 20:50:17 sandy Exp $
+ * $Id: class.schedule.inc,v 1.42 2007/08/29 19:35:38 sandy Exp $
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision: 1.38 $
+ * @version $Revision: 1.42 $
  *
  */
 
@@ -74,8 +74,8 @@
       $this->atkNode("schedule", NF_ADD_LINK|NF_EDITAFTERADD);
 
       $this->add(new atkNumberAttribute("id"              , AF_AUTOKEY));
-      $this->add(new atkDateAttribute("startdate"  , "F d Y","d F Y", 0, 0 ,AF_OBLIGATORY));
-      $this->add(new atkDateAttribute("enddate"    , "F d Y","d F Y", 0, 0 ,AF_OBLIGATORY));
+      $this->add(new atkDateAttribute("startdate"  , "","", 0, 0 ,AF_OBLIGATORY));
+      $this->add(new atkDateAttribute("enddate"    , "","", 0, 0 ,AF_OBLIGATORY));
       $this->add(new atkTimeAttribute("starttime"  , 8, 24, array("00","30"), $default_start_time, 0));
       $this->add(new atkTimeAttribute("endtime"    , 8, 24, array("00","30"), $default_end_time, 0));
       $this->add(new atkBoolAttribute("allday"));
@@ -125,6 +125,8 @@
       {
         $this->setOrder("startdate DESC, starttime");
       }
+      
+      $this->setDescriptorTemplate("[title]");
     }
 
 
@@ -229,20 +231,18 @@
 
     function adminPage(&$handler)
     {
-      atkimport("atk.layout");
-      $layout = &layout::getInstance();
-
       if (method_exists($this, $this->m_view))
       {
         $funcname = $this->m_view;
               // link to weekview and monthview and employeeview
-        $result = href($_SERVER["PHP_SELF"]."?view=dayview&viewdate=$this->m_viewdate",atktext("dayview")) ."&nbsp;";
-        $result.= href($_SERVER["PHP_SELF"]."?view=weekview&viewdate=$this->m_viewdate",atktext("weekview")) ."&nbsp;";
-        $result.= href($_SERVER["PHP_SELF"]."?view=monthview&viewdate=$this->m_viewdate", atktext("monthview"))."&nbsp;";
+        $result = href(atkSelf()."?view=dayview&viewdate=$this->m_viewdate",atktext("dayview")) ."&nbsp;";
+        $result.= href(atkSelf()."?view=weekview&viewdate=$this->m_viewdate",atktext("weekview")) ."&nbsp;";
+        $result.= href(atkSelf()."?view=monthview&viewdate=$this->m_viewdate", atktext("monthview"))."&nbsp;";
         // Employee view doens't work in postgresql cause this calendar uses 24:00 as time (which is invalid)
         $dbconfig = atkconfig("db");
         if($dbconfig["default"]["driver"]!="pgsql")
-          $result.= href($_SERVER["PHP_SELF"]."?view=employeeview&viewdate=$viewdate", atktext("employeeview"));
+          $result.= href(atkSelf()."?view=employeeview&viewdate=$viewdate", atktext("employeeview"))."&nbsp;";
+        $result.= atkArrayNvl($this->getHelp(), "helplink", "");
 
         $result.= $this->$funcname($this->m_viewdate);
       }
@@ -254,8 +254,7 @@
       $ui = &$this->getUi();
       $page = &$this->getPage();
       $this->addStyle("style.css");
-
-      $schedulerView = $ui->renderBox(array("title"=>atktext($this->m_type)." - ".atktext($this->m_view),"content"=>$this->statusbar().$result));
+      $schedulerView = $ui->renderBox(array("title"=>atktext($this->m_type)." - ".atktext($this->m_view),"content"=>$result));
       $page->addContent($schedulerView);
     }
 
@@ -334,7 +333,7 @@
       }
 
       // get all users we can view
-      $form  = "<FORM name='frmemployeeview' method='post' action='".$_SERVER["PHP_SELF"]."'>\n";
+      $form  = "<FORM name='frmemployeeview' method='post' action='".atkSelf()."'>\n";
       $form .= session_form();
       $form .= "<input type='hidden' name='viewdate' value='$viewdate'>\n";
       $form .= $this->get_employees2($selemployee);
@@ -343,7 +342,7 @@
       $recs["viewdate"]["day"] = $day;
       $recs["viewdate"]["month"] = $month;
       $recs["viewdate"]["year"] = $year;
-      $dateattrib = new atkDateAttribute("viewdate"  , "F d Y","d F Y", 0, 0);
+      $dateattrib = new atkDateAttribute("viewdate"  , "","", 0, 0);
       $form .= $dateattrib->edit($recs,"","");
       $form .= "<br>";
       $form .= "&nbsp;<br><input type='submit' value='".atktext("refresh")."'>\n";
@@ -352,8 +351,7 @@
       $dummy = new employeeView($day, $month, $year);
       $dummy->viewerWidth = "600";
 
-      $buff  = href($_SERVER["PHP_SELF"]."?view=dayview&viewdate=$viewdate",atktext("dayview"))."<br><br>";
-      $buff .= "<font size='-1'>".atktext("seluserdate")."</font><br><br>";
+      $buff  = "<br><br><font size='-1'>".atktext("seluserdate")."</font><br><br>";
 
       // assign our output buffer
       $buff .= "<table width='".$dummy->viewerWidth."'><tr>";
@@ -383,9 +381,6 @@
 
       // get the legend
       $legend .= $dummy->legend;
-
-      // link to weekview and monthview and employeeview
-      //$buff = href($_SERVER["PHP_SELF"]."?view=weekview&viewdate=$viewdate",atktext("weekview")) ."&nbsp;". href($_SERVER["PHP_SELF"]."?view=monthview&viewdate=$viewdate", atktext("monthview"))."&nbsp;".href($_SERVER["PHP_SELF"]."?view=employeeview&viewdate=$viewdate", atktext("employeeview"));
 
       // assign our output buffer
       $buff= "<br><br><table width='".$dummy->viewerWidth."'><tr>";

@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.11 $
-   * $Id: class.atkoutput.inc,v 5.11 2006/04/04 20:21:52 ivo Exp $
+   * @version $Revision: 5.17 $
+   * $Id: class.atkoutput.inc,v 5.17 2008/01/15 12:55:42 boy Exp $
    */
 
   /**
@@ -64,7 +64,31 @@
       }
       return $s_instance;
     }
-
+    
+    function sendCachingHeaders($lastmodificationstamp='',$nocache=true)
+    {
+      // Since atk pages are always dynamic, we have to prevent that some browsers cache
+      // the pages, unless $nocache was set to true.
+      if ($nocache)
+      {
+        atkOutput::sendNoCacheHeaders();
+      }
+      else if ($lastmodificationstamp!=0)
+      {
+        $_last_modified_date = @substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 0, strpos($_SERVER['HTTP_IF_MODIFIED_SINCE'], 'GMT') + 3);
+        $_gmt_mtime = gmdate('D, d M Y H:i:s', $lastmodificationstamp).' GMT';
+        if($_last_modified_date == $_gmt_mtime)
+        {
+          header("HTTP/1.0 304 Not Modified");
+          return;
+        }
+        else
+        {
+          header ("Last-Modified: " . gmdate("D, d M Y H:i:s", $lastmodificationstamp) . " GMT");
+        }
+      }
+    }
+    
     /**
      * Send no cache headers to the browser.
      * @static
@@ -92,7 +116,7 @@
      */
     function outputFlush($nocache=true, $lastmodificationstamp="", $charset="")
     {
-      global $g_debug_msg, $g_error_msg;
+      global $g_error_msg;
       $res = "";
       if (strlen($this->m_raw)>0)
       {
@@ -100,51 +124,23 @@
       }
       else
       {
-        // echo some headers first..
-
-        // Since atk pages are always dynamic, we have to prevent that some browsers cache
-        // the pages, unless $nocache was set to true.
-        if ($nocache)
-        {
-	        atkOutput::sendNoCacheHeaders();
-        }
-        else if ($lastmodificationstamp!=0)
-        {
-          $_last_modified_date = @substr($_SERVER['HTTP_IF_MODIFIED_SINCE'], 0, strpos($_SERVER['HTTP_IF_MODIFIED_SINCE'], 'GMT') + 3);
-          $_gmt_mtime = gmdate('D, d M Y H:i:s', $lastmodificationstamp).' GMT';
-          if($_last_modified_date == $_gmt_mtime)
-          {
-            header("HTTP/1.0 304 Not Modified");
-            return;
-          }
-          else
-          {
-            header ("Last-Modified: " . gmdate("D, d M Y H:i:s", $lastmodificationstamp) . " GMT");
-          }
-        }
-
-        // Set the content type.
-        header ("Content-Type: text/html; charset=".($charset==""?atktext("charset","atk"):$charset)); // The character set (defined
-                                                                      // in the language files
+        // send some headers first..
+        $this->sendCachingHeaders($lastmodificationstamp,$nocache);
+        
+        // Set the content type and the character set (as defined in the language files)
+        header ("Content-Type: text/html; charset=".($charset==""?atktext("charset","atk"):$charset)); 
 
         $res = $this->m_content;
 
         if (count($g_error_msg)>0)
         {
-          if (atkconfig("display_errors")||atkconfig("debug")>0)
-          {
-            // only show errors in debugmode, or when display_errors is
-            // true.
-            $res.='<br><font color="#FF0000">error: '.implode("<br>\nerror: ",$g_error_msg).'</font>';
-          }
-          // also send a mail report with errormessages..
+          // send an mail report with errormessages..
           // (even when display of errors is turned off)
           mailreport();
         }
-        if (atkconfig("debug")>0)
-        {
-          $res.='<br><div style="font-family: monospace; font-size: 11px;" align="left">'.implode("<br>\n ",$g_debug_msg).'</div>';
-        }
+        
+        $debugger = &atkinstance('atk.utils.atkdebugger');
+        $res .= $debugger->renderDebugAndErrorMessages();
       }
 
       if (atkconfig("output_gzip") &&
@@ -160,6 +156,17 @@
       {
         echo $res;
       }
+    }
+    
+    function getDebugging()
+    {
+      global $g_debug_msg;
+      if (atkconfig("debug")>0)
+      {
+        $output = '<br><div style="font-family: monospace; font-size: 11px;" align="left" id="atk_debugging_div">'.implode("<br>\n ",$g_debug_msg).'</div>';
+      return $output;
+      }
+      return "";
     }
 
     /**

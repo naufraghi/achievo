@@ -6,16 +6,15 @@
    * included in the distribution.
    *
    * @package atk
-   * @subpackage handlers
    *
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.40 $
-   * $Id: class.atklanguage.inc,v 5.40 2006/05/12 12:55:36 boy Exp $
+   * @version $Revision: 5.48 $
+   * $Id: class.atklanguage.inc,v 5.48 2007/07/31 11:08:05 ivo Exp $
    */
 
-  /**
+ /**
    * Class that handles userinterface internationalization.
    *
    * This class is used to retrieve the proper translations for any string
@@ -166,6 +165,8 @@
      */
     function text($string, $module, $node="", $lng="", $firstfallback="", $nodefaulttext=false,$modulefallback=false)
     {
+      // We don't translate nothing
+      if ($string=='') return '';
       if ($lng=="") $lng = atkLanguage::getLanguage();
       $lng = strtolower($lng);
       $atklanguage =& atkLanguage::getInstance();
@@ -199,6 +200,19 @@
       else { $lng = atkLanguage::getUserLanguage(); }
       return strtolower($lng);
     }
+    
+    /**
+     * Change the current language.
+     * Note that his only remains set for the current request, it's not 
+     * session based.
+     * @static
+     * @param String $lng The language to set
+     */
+    function setLanguage($lng)
+    {
+      global $ATK_VARS;
+      $ATK_VARS["atklng"] = $lng;
+    }
 
     /**
      * Get the selected language of the current user if he/she set one,
@@ -224,8 +238,11 @@
       }
 
       // Otherwise we check the headers
-      $headerlng = atkLanguage::getLanguageFromHeaders();
-      if ($headerlng && in_array($headerlng,$supported)) return $headerlng;
+      if (atkconfig('use_browser_language', false))
+      {
+        $headerlng = atkLanguage::getLanguageFromHeaders();
+        if ($headerlng && in_array($headerlng,$supported)) return $headerlng;
+      }
 
       // We give up and just return the default language
       return atkconfig('language');
@@ -348,7 +365,9 @@
 
       if (!$nodefaulttext)
       {
-        atkdebug("atkLanguage: translation for '$key' with module: '$module' and node: '$node' and language: '$lng' not found, returning default text");
+        if (atkconfig("debug_translations", false))
+          atkdebug("atkLanguage: translation for '$key' with module: '$module' and node: '$node' and language: '$lng' not found, returning default text");
+          
         // Still nothing found. return default string
         return $this->defaultText($key);
       }
@@ -404,15 +423,15 @@
     {
       if ($module=="atk")
       {
-        $path = atkconfig("atkroot")."atk/".($this?$this->LANGDIR:'languages/');
+        $path = atkconfig("atkroot")."atk/".(isset($this)?$this->LANGDIR:'languages/');
       }
       else if ($module=="langoverrides")
       {
-        $path = atkconfig("language_basedir",($this?$this->LANGDIR:'languages/'));
+        $path = atkconfig("language_basedir",(isset($this)?$this->LANGDIR:'languages/'));
       }
       else
       {
-        $path = moduleDir($module).($this?$this->LANGDIR:'languages/');
+        $path = moduleDir($module).(isset($this)?$this->LANGDIR:'languages/');
       }
       return $path;
     }
@@ -470,6 +489,8 @@
 
   /**
    * A collector for supported languages
+   * @author Boy Baukema <boy@ibuildings.nl>
+   * @package atk
    */
   class getSupportedLanguagesCollector
   {

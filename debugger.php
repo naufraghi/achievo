@@ -3,7 +3,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * This file is the skeleton dispatcher file, which you can copy
@@ -19,10 +19,10 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.1 $
-   * $Id: debugger.php,v 1.1 2005/11/04 11:22:05 ivo Exp $
+   * @version $Revision: 1.3 $
+   * $Id: debugger.php,v 1.3 2007/03/22 15:45:58 guido Exp $
    */
-   
+
   /**
    * @internal Setup the system
    */
@@ -33,8 +33,7 @@
   atksession();
   atksecure();
 
-  atkimport("atk.utils.atkdebugger");
-  $debugger = &atkDebugger::getInstance();    
+  $debugger = &atkinstance("atk.utils.atkdebugger");
 
   $output = &atkOutput::getInstance();
 

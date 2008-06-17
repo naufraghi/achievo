@@ -42,13 +42,13 @@
     if (strlen($this->day) == 1) $day = "0".$this->day; else $day = $this->day;
     $date = $this->year."-".$month."-".$day;
 
-    $buff .= "<table width='".$this->viewerWidth."' cellpadding='1' cellspacing='1'>\n";
+    $buff = "<table width='".$this->viewerWidth."' cellpadding='1' cellspacing='1'>\n";
     $buff .= "<tr>\n";
     $buff .= "<td bgcolor='#D0D0D0' valign='top' align='left'><font size='-1'>".atktext("employee")."</font></td>";
     for ($i=0;$i<count($this->workHours);$i++)
     {
       $time = $this->workHours[$i];
-      $addurl  = $_SERVER["PHP_SELF"]."?atkaction=add&atknodetype=calendar.schedule&viewdate=$date&time=$time";
+      $addurl  = atkSelf()."?atkaction=add&atknodetype=calendar.schedule&viewdate=$date&time=$time";
       $buff .= "<td bgcolor='#D0D0D0' valign='top' align='left'><font size='-1'>".href($addurl, "<font size='-1'>".$this->workHours[$i]."</font>",SESSION_NESTED)."</font></td>";
     }
     $buff .= "</tr>\n";
@@ -84,7 +84,7 @@
 
       // get all items for this workhour
       //if there are items then change the background color to yellow
-      $allItems = $this->getItems($this->workHours[$j], $date, $employees[$i]["userid"]);
+      $allItems = $this->getItems($this->workHours[$j], $date, $employees[$i]["userid"], false);
       if (count($allItems) > 0) { $bgcolor = "#FFFF00"; }
 
       $buff .= "<td bgcolor='$bgcolor' valign='top' align='left'></td>";
@@ -100,7 +100,7 @@
   * get the items for the specified date
   * fills an array with the items
   */
-   function getItems($time, $date, $employee)
+   function getItems($time, $date, $employee, $showself=true)
    {
      $db = &atkGetDb();
 
@@ -127,7 +127,9 @@
      $query->addCondition("schedule.startdate <='$date' AND schedule.enddate >= '$date'");
      $query->addCondition("schedule.starttime <='$time' AND schedule.endtime > '$time'");
      $user = getUser();
-     $query->addCondition("(schedule.owner='".$user["id"]."' OR (person.userid='".$employee."' AND person.role='employee') OR schedule.all_users = 1)");
+     
+     ($showself==true) ? $query->addCondition("(schedule.owner='".$user["id"]."' OR (person.userid='".$employee."' AND person.role='employee') OR schedule.all_users = 1)")
+                       : $query->addCondition("((person.userid='".$employee."' AND person.role='employee') OR schedule.all_users = 1)");
 
      $query->addOrderBy('starttime');
      $querystring = $query->buildSelect(TRUE);

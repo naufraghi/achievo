@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.18 $
-   * $Id: class.atkmlsplitter.inc,v 5.18 2006/04/04 09:15:47 boy Exp $
+   * @version $Revision: 5.25 $
+   * $Id: class.atkmlsplitter.inc,v 5.25 2007/12/14 15:47:30 jvansluijs Exp $
    */
 
   /**
@@ -90,8 +90,8 @@
           // assume all onetomanyrelations are stored in the PRESTORE so we MUST NOT use addDb()
           // on this node if its contains relations to others
           // but for 1:n and n:1 we need to save the refkey
-          if(is_a($node->m_attribList[$attribname],"atkManyToOneRelation")
-             || is_a($node->m_attribList[$attribname],"atkOneToOneRelation"))
+          if((is_a($node->m_attribList[$attribname],"atkManyToOneRelation")
+	               || is_a($node->m_attribList[$attribname],"atkOneToOneRelation")) && hasFlag($node->m_attribList[$attribname]->storageType(), ADDTOQUERY))
           {
           	$relations[$attribname] = $node->m_attribList[$attribname];
 
@@ -100,6 +100,8 @@
             $attribvalue=$p_attrib->m_destInstance->m_attribList[$p_attrib->m_destInstance->primaryKeyField()]->value2db($record[$attribname]);
             $record[$p_attrib->fieldName()]=$attribvalue;
             $p_attrib=new atkAttribute($attribname);
+            $p_attrib->m_ownerInstance = &$node;
+            $p_attrib->init();
           }
           else  $excludelist[] = $attribname;
         }
@@ -136,6 +138,7 @@
         $record["atkprimkey"] = $node->primaryKey($record)." AND ".$node->m_table.".".$node->m_lngfield."='$language' ";
 
         if($atklngrecordmodes[$language]["mode"]=="add") $mode="add"; // override the mode in case of missing lngrecords
+
         switch($mode)
         {
           case "update":
@@ -174,7 +177,7 @@
     /**
     * Adds language condition
     */
-    function addMlCondition(&$query,&$node,$mode,$excludeList=NULL,$includeList=NULL)
+    function addMlCondition(&$query,&$node,$mode,$joinalias)
     {
       global $ATK_VARS;
       $lng = (isset($ATK_VARS["atklng"])?$ATK_VARS["atklng"]:"");
@@ -183,75 +186,9 @@
 
       if($node->hasFlag(NF_ML) && $mode!="edit" && $mode!="copy")
       {
-        $fieldname = $node->m_table.".".$node->m_lngfield;
-        $joinalias = $node->m_module."_".$node->m_type."*".$node->primaryKeyField();
-        if($query->m_joinaliases[$joinalias])
-        {
-          $fieldname = $query->m_joinaliases[$joinalias].".".$node->m_lngfield;
-        }
-        $query->addCondition("UPPER({$fieldname})='{$lng}'");
+        $fieldname = $joinalias.".".$node->m_lngfield;
+        $query->addCondition("({$fieldname} IS NULL OR UPPER({$fieldname})='".strtoupper($lng)."')");
       }
-
-      $relations=&$node->m_relations["atkmanytoonerelation"];
-      if(is_array($relations) && count($relations)>0)
-      {
-        foreach ($relations as $attribname=>$attribute)
-        {
-          $p_attrib = &$relations[$attribname];
-          if($p_attrib->createDestination()
-              && $p_attrib->m_destInstance->hasFlag(NF_ML)
-              && (!$p_attrib->hasFlag(AF_HIDE_LIST) || $p_attrib->hasFlag(AF_FORCE_LOAD))
-              && $this->needsMlCondition($node,$query,$attribname,$excludeList,$includeList, $mode))
-          {
-            $dest = $p_attrib->m_destInstance;
-            $fieldname = $attribname.".".$dest->m_lngfield;
-            atkdebug("FIELDNAME: $fieldname");
-            $joinalias = $dest->m_module."_".$dest->m_type."*".$dest->primaryKeyField();
-            if($query->m_joinaliases[$joinalias])
-            {
-              $fieldname = $query->m_joinaliases[$joinalias].".".$dest->m_lngfield;
-            }
-            $query->addCondition("({$fieldname} IS NULL OR UPPER({$fieldname})='{$lng}')");
-
-            $destrelations = &$p_attrib->m_destInstance->m_relations["atkmanytoonerelation"];
-            if(is_array($destrelations) && count($destrelations)>=1)
-            {
-              foreach (array_keys($destrelations) as $destattributename)
-              {
-                $destattribute = &$destrelations[$destattributename];
-                if(in_array($destattributename,atk_array_merge($destattribute->m_ownerInstance->descriptorFields(),
-                                                               $destattribute->m_ownerInstance->m_primaryKey))
-                   && $destattribute->m_destInstance->hasFlag(NF_ML))
-                {
-                  $this->addMlCondition($query,$p_attrib->m_destInstance,$mode);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    /**
-     * checks if the attribute is included in de selectDb
-     *
-     * checks if the attribute is included in de selectdb
-     *
-     * @param object node current atknode
-     * @param string attribname name of the attribute
-     * @return bool true in case the attribute is loaded in the selectdb
-     */
-    function needsMlCondition(&$node,&$query,$attribname,$excludeList=NULL,$includeList=NULL, $mode="")
-    {
-      $p_attrib =& $node->m_attribList[$attribname];
-      if(is_object($p_attrib)
-          && $p_attrib->createDestination()
-          && $node->isAllowedQueryList($attribname,$excludeList,$includeList))
-      {
-        $loadType = $node->m_attribList[$attribname]->loadType($mode);
-        return hasFlag($loadType, ADDTOQUERY);
-      }
-      return false;
     }
 
     /**

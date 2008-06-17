@@ -89,7 +89,7 @@
     $ui = &atkinstance("atk.ui.atkui");
     $page = &atkinstance("atk.ui.atkpage");
 
-    $output='<form action="dispatch.php" method="get">';
+    $output='<form action="'.getDispatchFile().'" method="get">';
     $output.='<input type="hidden" name="atknodetype" value="project.activity">';
     $output.='<input type="hidden" name="atkaction" value="'.$action.'">';
 
@@ -106,8 +106,8 @@
 
     $data[] = array(atktext("activity","project"),'<SELECT name="activityid">'.get_activities($activityid, $activityname).'</SELECT>');
 
-    $startdateatt = new atkDateAttribute("startdate","F d Y","d F Y", 0, date("Ymd"));
-    $enddateatt = new atkDateAttribute("enddate","F d Y","d F Y", 0, date("Ymd"));
+    $startdateatt = new atkDateAttribute("startdate","","", 0, date("Ymd"));
+    $enddateatt = new atkDateAttribute("enddate","","", 0, date("Ymd"));
 
     $data[] = array(atktext("timespan","project").': ',$startdateatt->edit($dummyrec).' &nbsp;'.
                     atktext("until","project").
@@ -117,8 +117,7 @@
     //$tbl->setColSpan(0,0,2);
     $output.=$tbl->render($data);
     $output.='<input type="submit" value="'.atktext("refresh","project").'"></form><br>';
-    $searchbar = $ui->renderBox(array("title"=>atktext("title_activitystats","project"),"content"=>$output));
-    $page->addContent($searchbar);
+    return $ui->renderBox(array("title"=>atktext("title_activitystats","project"),"content"=>$output));
   }
 
 
@@ -173,7 +172,10 @@
 
     while (list($empname, $time) = each ($hoursperemp))
     {
-      $percentage = round($time/$total*100);
+      $percentage=0; 
+      if($total>0)
+        $percentage = round($time/$total*100);
+    
       $imgwidth = max(1,($percentage*3));
 
       $data[] = array($empname,time_format($time),'<img src="images/stats_red50.gif" width="'.$imgwidth.'" height="20"> &nbsp;('.$percentage.'%)');
@@ -190,7 +192,9 @@
 
     while (list($projname, $time) = each ($hoursperproj))
     {
-      $percentage = round($time/$total*100);
+      $percentage=0; 
+      if($total>0)
+        $percentage = round($time/$total*100);
       $imgwidth = max(1,($percentage*3));
       $data[] = array($projname,time_format($time),'<img src="images/stats_red50.gif" width="'.$imgwidth.'" height="20">&nbsp; ('.$percentage.'%)');
     }
@@ -200,11 +204,16 @@
     $output.=$tbl->render($data,TBL_HEADER|TBL_FOOTER,"recordlist");
 
     $output.="<br><br>";
-    $stats = $ui->renderBox(array("title"=>atktext("title_activitystats","project")." - ".$activityname,"content"=>$output));
-    $page->addContent($stats);
+    return $ui->renderBox(array("title"=>atktext("title_activitystats","project")." - ".$activityname,"content"=>$output));
   }
 
   // Main program
-  getSearchBar($activityid,$activityname,$startdate,$enddate,$this->m_action);
-  if($activityid) getStats($activityid,$activityname,$startdate,$enddate);
+  $boxes = array(getSearchBar($activityid,$activityname,$startdate,$enddate,$this->m_action));
+  if($activityid)
+    $boxes[] = getStats($activityid,$activityname,$startdate,$enddate);
+  $actionpage = $this->renderActionPage("stats", $boxes);
+
+  // Add the boxed content to the page
+  $page->addContent($actionpage);
+
 ?>

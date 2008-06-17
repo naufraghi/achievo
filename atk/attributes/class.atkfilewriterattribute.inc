@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: class.atkfilewriterattribute.inc,v 5.3 2005/08/17 12:30:25 ivo Exp $
+   * @version $Revision: 5.6 $
+   * $Id: class.atkfilewriterattribute.inc,v 5.6 2006/07/14 12:06:28 boy Exp $
    */
    
   /** 
@@ -89,13 +89,15 @@
         fclose($fp);
         atkdebug("[".$this->fieldName()."] succesfully wrote $filename..");
       }      
-      return escapeSQL($contents);
+
+      return $this->escapeSQL($contents);
     }
     
     function db2value($record)
     {
       // determine filename.
-      $filename = stringparse($this->m_filename, $record);
+      $parser = new atkStringParser($this->m_filename);
+      $filename = $parser->parse($record);
         
       if (!file_exists($filename))
       {

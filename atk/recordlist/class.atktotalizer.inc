@@ -1,5 +1,4 @@
 <?php
-
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
@@ -12,8 +11,8 @@
    * @copyright (c)2003-2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.4 $
-   * $Id: class.atktotalizer.inc,v 1.4 2006/01/22 16:22:29 ivo Exp $
+   * @version $Revision: 1.7 $
+   * $Id: class.atktotalizer.inc,v 1.7 2007/04/10 20:06:16 sandy Exp $
    */
 
   /**
@@ -70,11 +69,14 @@
         $result[] = $rowset[$i];
 
       }
-
       // leftovers, subtotals of last rows
       if (count($rowset))
       {
-        $result[] = $this->_subTotalRow($rowset[count($rowset)-1], $totals, $fieldname, $totalizers);
+        for ($j=count($subtotalfields)-1; $j>=0; $j--) // reverse loop, to ensure right-to-left subtotalling
+        {
+          $fieldname = $subtotalfields[$j];
+          $result[] = $this->_subTotalRow($rowset[count($rowset)-1], $totals, $fieldname, $totalizers);
+        }
       }
       // end of leftovers
 
@@ -107,7 +109,7 @@
       {
         if ($col==$fieldname)
         {
-          $row["data"][$col] = text("subtotal");
+          $row["data"][$col] = atktext("subtotal");
         }
         else if (isset($subtotalcolumns[$col]))
         {

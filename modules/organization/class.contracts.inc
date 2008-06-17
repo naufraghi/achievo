@@ -10,60 +10,35 @@ useattrib("atkdummyattribute");
 useattrib("atkboolattribute");
 useattrib("atkcurrencyattribute");
 
-//Hack
-//The is some bug in class.contracts.inc. No time to fix that now.
-//Use project.project instead.
-class projectRelation extends atkOneToManyRelation
-{
-	function _addAddLink($myrecords, $record,$saveform=true)
-	{
-		$dest = $this->m_destination;
-		$this->m_destination = "project.project";
-		$url = parent::_addAddLink($myrecords, $record, $saveform);
-		$this->m_destination = $dest;
-		return $url;
-	}
-}
-
 class contracts extends atkNode
 {
   var $m_archive;
 
-  function contracts()
+  function contracts($name="contracts", $flags=0)
   {
-    $this->atkNode("contracts",NF_ADD_LINK | NF_EDITAFTERADD);
+    $this->atkNode($name, $flags | NF_ADD_LINK | NF_EDITAFTERADD | NF_EXPORT);
 
     $this->add(new atkNumberAttribute("id",AF_AUTOKEY));
-    $this->add(new atkAttribute("contractnumber",AF_SEARCHABLE, 20));
+    $this->add(new atkAttribute("contractnumber",AF_SEARCHABLE|AF_FORCE_LOAD, 20));
+    $this->add(new atkAttribute("contractname",AF_SEARCHABLE|AF_OBLIGATORY|AF_FORCE_LOAD));
     $this->add(new atkManyToOneRelation("contracttype","organization.contracttype",AF_SEARCHABLE|AF_OBLIGATORY|AF_RELATION_AUTOLINK));
-    $this->add(new atkManyToOneRelation("customer","organization.organization",AF_SEARCHABLE|AF_OBLIGATORY|AF_RELATION_AUTOLINK));
-
+    $this->add(new atkManyToOneRelation("customer","organization.organization",AF_SEARCHABLE|AF_OBLIGATORY|AF_RELATION_AUTOLINK|AF_LARGE));
     $this->add(new atkListAttribute("billing_type", array("by_period","on_delivery"), array("period","delivery"),AF_LIST_NO_NULL_ITEM | AF_HIDE_LIST));
-
-	  //create sourceattrib
-	  $attr = new atkListAttribute("billing_period",array("no_billing_period","monthly","quarterly","yearly", "per_incident"),"",AF_OBLIGATORY|AF_HIDE_LIST);
-
-	  //add listener
-	  $attr->addOnChangeHandler("check_billing_period('billing_period', 'ar_period_price', 'period_price');");
-
-    //Add billing_period
-    $this->add($attr);
-
+    $attr = $this->add(new atkListAttribute("billing_period",array("no_billing_period","monthly","quarterly","yearly", "per_incident"),"",AF_OBLIGATORY|AF_HIDE_LIST));
+    $attr->addOnChangeHandler("check_billing_period('billing_period', 'ar_period_price', 'period_price');");
     $this->add(new atkCurrencyAttribute("period_price", AF_HIDE_LIST,13,"",2));
-    $this->add(new atkDateAttribute("startdate","F d Y","d F Y", 0, 0, AF_OBLIGATORY|AF_HIDE_LIST));
+    $this->add(new atkDateAttribute("startdate","","", 0, 0, AF_OBLIGATORY|AF_HIDE_LIST));
     $this->add(new atkDummyAttribute("enddate_expire_warning",atktext("enddate_expire_warning","organization","contracts"),AF_HIDE_LIST));
-    $this->add(new atkDateAttribute("enddate","F d Y","d F Y", 0, 0, AF_OBLIGATORY));
+    $this->add(new atkDateAttribute("enddate","","", 0, 0, AF_OBLIGATORY));
     $this->add(new atkListAttribute("aftercalculation", array("no","yes"), array(0,1),AF_HIDE_LIST | AF_LIST_NO_NULL_ITEM));
     $this->add(new atkNumberAttribute("priceperhour",AF_HIDE_LIST,10,2));
-
     $this->add(new atkDummyAttribute("status_change_warning", atktext("status_change_warning","organization","contracts"),AF_HIDE_LIST));
     $this->add(new atkListAttribute("status", array("active", "archived"), "", AF_OBLIGATORY|AF_HIDE_LIST));
     $this->add(new atkTextAttribute("description", TEXT_SMALL, AF_OBLIGATORY));
-    $this->add(new projectRelation("projects", "organization.contract_project", "contract_id", AF_HIDE_LIST));
+    $this->add(new atkOneToManyRelation("projects", "organization.contract_project", "contract_id", AF_HIDE_LIST));
 
-    //The linkproject action is allowed by all
     $this->addAllowedAction("linkproject");
-
+    $this->addSecurityMap("export", "admin");
     $this->setTable("contract","contract");
     $this->setOrder("contract.startdate");
   }
@@ -86,9 +61,9 @@ class contracts extends atkNode
   	$result = $attr->edit($record, $prefix, $mode )	;
   	$result = substr($result, 0, -6);										//Remove the '<br />' from the end
 
-  	$return_url = dispatch_url("organization.contracts", "linkproject", array("projectid"=>"[id]"));
- 		$target_url = dispatch_url("organization.contract_projectselector", "select", array("atkfilter"=>"projectid=[id]","atktarget"=>atkurlencode($return_url)));
- 		$select = session_url($target_url,SESSION_NESTED);
+  	$target_url = dispatch_url("organization.contracts", "linkproject", array("projectid"=>"[id]", "contractid"=>$record["id"]));
+ 		$select_url = dispatch_url("organization.contract_projectselector", "select", array("atkfilter"=>"projectid=[id]","atktarget"=>atkurlencode($target_url)));
+ 		$select = session_url($select_url,SESSION_NESTED);
 
  		//Add link to result
     return $result."&nbsp;&nbsp;&nbsp;".href($select,atktext("selectandaddnewproject","organization","contracts"))."<br />";
@@ -180,15 +155,12 @@ class contracts extends atkNode
 
   function action_linkproject(&$handler)
  	{
- 		global $g_sessionManager;			//post values will be stored in this variable until overwritten with another value.
-
-    if ($g_sessionManager->pageVar("projectid")!="" && $this->m_postvars["atkselector"] != "")
+ 	  $db = &atkGetDb();
+ 	  $contractid = $db->escapeSQL($this->m_postvars["contractid"]);
+ 	  $projectid = $db->escapeSQL($this->m_postvars["projectid"]);
+    if ($projectid!="" && $contractid != "")
     {
-      $record = $this->selectDb($this->m_postvars["atkselector"], "", "", "", array("id"));
-      $contractid = $record[0]["id"];
-
-    	$db = &atkGetDb();
-      $db->query("UPDATE project SET contract_id = $contractid WHERE project.id = ".$this->m_postvars["projectid"]);
+      $db->query("UPDATE project SET contract_id = $contractid WHERE project.id = ".$projectid);
     }
     $this->redirect(session_url("", SESSION_BACK, 2));
  	}
@@ -256,13 +228,13 @@ class contracts extends atkNode
 	  $res = "" ;
 	  if ($this->m_archive!=1)
 	  {
-	    return atktext("onlyactiverecordsareshown")." ".href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
-	                '&archive=1', atktext('clicktoviewarchive', $this->m_type, $this->m_module))."<br>";
+	    return atktext("onlyactiverecordsareshown")." ".href(dispatch_url($this->atknodetype(),$this->m_action,array("archive"=>1)),
+	                                                    atktext('clicktoviewarchive', $this->m_type, $this->m_module))."<br>";
 	  }
 	  else
 	  {
-	    return atktext("youareinthearchive")." ".href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
-	                '&archive=0', atktext('clicktoviewactiverecords', $this->m_type, $this->m_module))."<br>";
+	    return atktext("youareinthearchive")." ".href(dispatch_url($this->atknodetype(),$this->m_action,array("archive"=>0)),
+	                                             atktext('clicktoviewactiverecords', $this->m_type, $this->m_module))."<br>";
 	  }
 	  return $res."<br>";
 	}
@@ -272,10 +244,24 @@ class contracts extends atkNode
     return $this->m_attribList["period_price"]->edit($rec)." ".atkconfig("currency_symbol");
   }
 
-  function descriptor_def()
+  function descriptor_commit()
   {
     return "[description]";
   }
+
+  function descriptor($rec)
+  {
+    $ret = "";
+    if(isset($rec["contractnumber"]) && $rec["contractnumber"]!="") $ret.=$rec["contractnumber"];
+    if(isset($rec["contractname"]) && $rec["contractname"]!="")
+    {
+      if($ret!="") $ret.=" - ";
+      $ret.=$rec["contractname"];
+    }
+    return $ret;
+  }
+
+
 
   function initial_values()
   {
@@ -332,6 +318,54 @@ class contracts extends atkNode
   	}
   	return true;
   }
+
+  function getFormButtons($mode, $record)
+  {
+    $buttons = array();
+    if ($mode == 'edit')
+    {
+      if($record['status'] == "active")
+      {
+        $buttons[] = '<input type="submit" class="btn_save" name="deactivate_contract" value="'.$this->text("deactivate_contract").'">';
+      }
+      else
+      {
+        $buttons[] = '<input type="submit" class="btn_save" name="activate_contract" value="'.$this->text("activate_contract").'">';
+      }
+    }
+    return array_merge($buttons, parent::getFormButtons($mode,$record));
+  }
+
+  function action_update(&$handler)
+  {
+    if (isset($this->m_postvars["activate_contract"]) || isset($this->m_postvars["deactivate_contract"]))
+    {
+      $this->m_postvars["atknoclose"] = 1;
+    }
+    // call original behaviour
+    return $handler->action_update();
+  }
+
+  function preUpdate(&$record)
+  {
+    if (isset($this->m_postvars["activate_contract"]))
+    {
+      $db = &$this->getDb();
+      $db->query("UPDATE project SET status='active' WHERE project.contract_id={$record['id']}");
+
+      $record['status'] = "active";
+    }
+    elseif (isset($this->m_postvars["deactivate_contract"]))
+    {
+      $db = &$this->getDb();
+      $db->query("UPDATE project SET status='archived' WHERE project.contract_id={$record['id']}");
+
+      $record['status'] = "archived";
+    }
+
+    return true;
+  }
+
 }
 
 ?>

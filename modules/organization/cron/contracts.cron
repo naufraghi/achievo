@@ -15,8 +15,8 @@
  * @license http://www.achievo.org/atk/licensing/ ATK open source license
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
  *
- * @version $Revision: 1.8 $
- * $Id: contracts.cron,v 1.8 2006/04/25 11:58:14 dennis Exp $
+ * @version $Revision: 1.9 $
+ * $Id: contracts.cron,v 1.9 2007/11/09 10:52:24 guido Exp $
  */
 
   /**
@@ -135,27 +135,41 @@
      
 	  //send coordiantor emails 	  
 	  foreach($coordinatormails as $mail)
-  	{ 
-  	  if($debug_mode==0) 	 	
-  	  {
-  	 	 usermail($mail, $subject, $body, "");  	 	
-  	 	 echo "mail sent to $mail.\n";
-  	  }
-  	  else 
-  	   echo " debug modus: Would have sent mail to $mail (if debug mode was set to 0)\n";
-  	}      	
+	  {
+	  	if($debug_mode==0)
+	  	{
+	  		$duplicate = atkConfig::get("organization", "organization_contracts_duplicatemail", array());
+	  		if(is_array($duplicate) && count($duplicate) > 0)
+	  		{
+	  			foreach($duplicate as $coordinator => $substitutor)
+	  			{
+	  				if($mail == $coordinator)
+	  				{
+	  					$temp = $mail;
+	  					$mail = array();
+	  					$mail[] = $temp;
+	  					$mail[] = $substitutor;
+	  				}
+	  			}
+	  		}
+	  		usermail($mail, $subject, $body, "");
+	  		echo "mail sent to $mail.\n";
+	  	}
+	  	else
+	  	  echo " debug modus: Would have sent mail to $mail (if debug mode was set to 0)\n";
+	  }
   	
 	  foreach($mailto as $mail)
-  	{ 
-  	  if($debug_mode==0)
-  	  {
-  	 	 usermail($mail, $subject, $body, "");
-  	 	 echo "mail sent to $mail.\n";
-  	  }
-  	  else 
-  	   echo " debug modus: Would have sent mail to $mail (if debug mode was set to 0)\n";
-  	}
-  	ob_flush();    flush();
+	  {
+	  	if($debug_mode==0)
+	  	{
+	  		usermail($mail, $subject, $body, "");
+	  		echo "mail sent to $mail.\n";
+	  	}
+	  	else
+	  	  echo " debug modus: Would have sent mail to $mail (if debug mode was set to 0)\n";
+	  }
+	  ob_flush();    flush();
 	}
 
 	/**

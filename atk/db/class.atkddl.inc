@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.8 $
-   * $Id: class.atkddl.inc,v 5.8 2006/01/30 11:03:31 boy Exp $
+   * @version $Revision: 5.12 $
+   * $Id: class.atkddl.inc,v 5.12 2007/04/10 20:06:15 sandy Exp $
    */
 
   /**
@@ -22,7 +22,7 @@
   define("DDL_PRIMARY"       , 1);
   define("DDL_UNIQUE"        , 2);
   define("DDL_NOTNULL"       , 4);
-  //define("DDL_AUTO_INCREMENT", 8); not yet implemented..
+  //define("DDL_AUTO_INCREMENT", 8); //not yet implemented..
   //define("DDL_AUTOINCREMENT" , 8);
 
   /**
@@ -56,6 +56,7 @@
      * Static factory method for creating a new atkDDL instance. This static
      * method will determine the database type (mysql, oci, etc) and
      * instantiate the correct DDL class.
+     *
      * @return atkDDL instance of db specific DDL driver
      */
     function &create($database=NULL)
@@ -68,13 +69,26 @@
       {
         include_once($filename);
         $classname = "atk".$database."DDL";
-        return new $classname;
+        $ddlobject = new $classname;
+        return $ddlobject;
       }
       else
       {
         atkerror("atkddl::create: No support for $database!");
       }
       return NULL;
+    }
+
+    /**
+     * Set all table data at once using the given table meta data,
+     * retrieved using the metadata function of the db instance.
+     *
+     * @param $tablemeta table meta data array
+     */
+    function loadMetaData($tablemeta)
+    {
+      $this->setTable($tablemeta[0]["table"]);
+      $this->addFields($tablemeta);
     }
 
     /**
@@ -95,12 +109,41 @@
         $this->m_primarykey[] = $name;
         $flags|=DDL_NOTNULL; // primary keys may never be null.
       }
+
+      // Fix the size if the type is decimal
+      if($generictype=="decimal")
+      {
+        $size = $this->calculateDecimalFieldSize($size);
+      }
+
       $this->m_fields[$name] = array("type"=>$generictype,
                                      "size"=>$size,
                                      "flags"=>$flags,
                                      "default"=>$default);
     }
-    
+
+    /**
+     * Calculate the correct field size for decimal fields
+     * We should add the decimals to the size, since
+     * size is specified including the decimals.
+     *
+     * @param string $size Current size
+     * @return string New size
+     */
+    function calculateDecimalFieldSize($size)
+    {
+      list($tmp_size, $decimals) = split(",", $size);
+      $tmp_size+=intval($decimals); // we should add the decimals to the size, since
+                            // size is specified including the decimals.
+      $size = $tmp_size.",".$decimals;
+      return $size;
+    }
+
+    /**
+     * Drop a field from the table definition.
+     *
+     * @param $name        The name of the field
+     */
     function dropField($name)
     {
       $this->m_remove_field=$name;
@@ -126,7 +169,7 @@
       }
     }
 
-   /**
+    /**
      * Convert an ATK generic datatype to a database specific type.
      *
      * This function will be overrided by the database specific subclasses of
@@ -138,6 +181,7 @@
      * a varchar or number to store the value.
      *
      * @param $generictype  The datatype to convert.
+     * @abstract
      */
     function getType($generictype)
     {
@@ -151,6 +195,7 @@
      * atkDb.
      *
      * @param $type  The database specific datatype to convert.
+     * @abstract
      */
     function getGenericType($type)
     {
@@ -220,12 +265,12 @@
         if ($fields!="" || $this->m_remove_field)
         {
           $q = "ALTER TABLE ".$this->m_table;
-          
+
           if ($this->m_remove_field)
           {
             $q.=" DROP\n {$query->m_fieldquote}$this->m_remove_field{$query->m_fieldquote}";
           }
-          else 
+          else
           {
             $q.=" ADD\n (";
 
@@ -243,6 +288,21 @@
           }
           return array($q);
         }
+      }
+      return "";
+    }
+
+    /**
+     * Build a DROP TABLE query and return it as a string.
+     *
+     * @return The DROP TABLE query.
+     */
+    function buildDrop()
+    {
+      if ($this->m_table!="")
+      {
+        $q = "DROP TABLE `".$this->m_table."`";
+        return $q;
       }
       return "";
     }
@@ -348,6 +408,8 @@
     /**
      * Convert all fields to string that can be used in a CREATE or ALTER
      * TABLE statement. Fields will be returned in an array. (INTERNAL USE ONLY)
+     *
+     * @access private
      */
     function _buildFieldsArray()
     {
@@ -367,6 +429,8 @@
     /**
      * Convert all fields to a string that can be used in a CREATE or ALTER
      * TABLE statement.
+     *
+     * @return String containing fields to be used in a CREATE or ALTER TABLE statement
      */
     function buildFields()
     {
@@ -377,8 +441,11 @@
     }
 
     /**
-     * Convert all constraints to a string that can be used in a CREATE or
-     * ALTER TABLE statement. Returns an array of constraints. (INTERNAL USE ONLY)
+     * Convert all constraints to an array that can be used in a CREATE or
+     * ALTER TABLE statement.
+     *
+     * @return An array of constraints
+     * @access private
      */
     function _buildConstraintsArray()
     {
@@ -388,10 +455,11 @@
       return $constraints;
     }
 
-
     /**
      * Convert all constraints to a string that can be used in a CREATE TABLE
      * statement.
+     *
+     * @return String containing constraints to be used in a CREATE or ALTER TABLE statement
      */
     function buildConstraints()
     {
@@ -458,6 +526,27 @@
       return false;
     }
 
+    /**
+     * Build and execute the DROP TABLE query.
+     *
+     * @return true  if the table was dropped successfully
+     *         false if anything went wrong, or if no table could be dropped.
+     */
+    function executeDrop()
+    {
+      if (!isset($this->m_db)) $this->m_db = &atkGetDb();
+
+      $query = $this->buildDrop();
+      if ($query!="")
+      {
+        return $this->m_db->query($query);
+      }
+      else
+      {
+        atkdebug("atkddl::executeDrop: nothing to do!");
+      }
+      return false;
+    }
   }
 
 ?>
