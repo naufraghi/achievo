@@ -295,9 +295,9 @@
     {
       $res = "<head>\n  <title>$title</title>\n";
 
-      // $Name: achievo_1_3_2 $ is the CVS tag.
+      // $Name: achievo_1_3_4 $ is the CVS tag.
       $version = atkversion();
-      if ("\$Name: achievo_1_3_2 $"!="\$"."Name:  $") $version.=" ($Name: achievo_1_3_2 $)";
+      if ("\$Name: achievo_1_3_4 $"!="\$"."Name:  $") $version.=" ($Name: achievo_1_3_4 $)";
       $res.= '  <meta name="atkversion" content="'.$version.'" />'."\n";
 
       $res.= '  <meta http-equiv="Content-Type" content="text/html; charset='.atktext("charset","atk").'" />'."\n";

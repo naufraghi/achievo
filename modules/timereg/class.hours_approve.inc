@@ -12,8 +12,8 @@
 	 * @copyright (c) 2005 Ibuildings.nl BV
 	 * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
 	 *
-	 * @version $Revision: 1.20 $
-	 * $Id: class.hours_approve.inc,v 1.20 2008/02/14 13:59:49 guido Exp $
+	 * @version $Revision: 1.21 $
+	 * $Id: class.hours_approve.inc,v 1.21 2008/05/21 13:05:45 guido Exp $
 	 */
 
   /**
@@ -708,7 +708,7 @@
       atkimport("atk.ui.atktheme");
       $theme = &atkTheme::getInstance();
 
-      if (!isset($this->m_postvars["reason"]))
+      if (!isset($this->m_postvars["reason"]) || empty($this->m_postvars["reason"]))
       {
 
         $reqimg = '<img align="top" onMouseOver="javascript:window.status=\''.
