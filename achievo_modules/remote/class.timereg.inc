@@ -100,7 +100,8 @@ class timereg extends atkNode
 
         if ($error)
         {
-            echo make_xml("timereg", "Err", array(array("Err"=>print_r($record, True))));
+            echo make_xml("timereg", "Err",
+                          array(array("Err"=>print_r($record, True))), $bodykey="Err");
         }
         else
         {
