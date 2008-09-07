@@ -80,12 +80,17 @@ class timesummary extends atkNode
                 WHERE
                     activitydate >= '$date_start' AND
                     activitydate <= '$date_end'";
+        $filter_nopay = "
+                AND NOT (
+                    project.name = '__dipendenti' AND
+                    phase.name IN ('ferie', 'malattia')
+                )";
         if (!$this->allowed("any_user")) $filter.= " AND hours.userid ='$userid' ";
         $groupby = "
                 GROUP BY lower(person.userid), lower(prj)
                 ORDER BY lower(person.userid), lower(prj)";
 
-        $sql = $select . $filter . $groupby;
+        $sql = $select . $filter . $filter_nopay . $groupby;
 
         return array("date_start" => $date_start,
                      "date_end" => $date_end,
