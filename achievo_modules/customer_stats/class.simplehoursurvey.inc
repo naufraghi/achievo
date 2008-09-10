@@ -237,8 +237,7 @@
         $data[] = array('<hr>'.atktext('searchbyprojectorphase','project').':');
 
         // we have to pass a 'dummy' record to the attributes to set their default value.
-        $dummyrec = array(
-        "projectid"=>$projectid,
+        $dummyrec = array("projectid"=>$projectid,
         "organizationid"=>array("id"=>$organizationid), // manytoonerelation needs subarray
         "phaseid"=>Array("phaseid"=>$phaseid), // is implemented as an array in projphaseattrib.
         "startdate"=>array("year"=>substr($startdate,0,4),
@@ -248,8 +247,7 @@
         "month"=>substr($enddate,5,2),
         "day"=>substr($enddate,8,2)),
         "aggregate"=>$aggregate,
-        "remark"=>$remark
-		);
+        "remark"=>$remark);
 
         foreach ($externalHourSurveyColumns as $module => $attr)
         {
@@ -268,6 +266,7 @@
           $dummyrec["subtotal[$i]"]=($columnConfig->hasSubTotalByOrder($i+1)?1:0);
         }
         $data[] = array(atktext('project','project').':',$projectatt->edit($dummyrec));
+
 
         $this->_addOr($data);
 
@@ -289,6 +288,7 @@
 
         $data[] = array("<hr>");
 
+
         if($view_all)
         {
           $tmp = '<SELECT name="nameswitch"><OPTION VALUE="name">'.atktext("name").': <OPTION VALUE="supervisor" '.($nameswitch=="supervisor"?"selected":"").'>'.atktext("supervisor").': </SELECT>'.
@@ -302,11 +302,13 @@
         $data[] = array(atktext('employee','project').':',$tmp);
         $this->_addOr($data);
 
+
         // selecting functionlevel:
         $data[] = array(atktext('functionlevel','project').':','<SELECT name="functionlevelswitch">' . $this->get_functionlevels($functionlevelswitch).'</SELECT>');
         $data[] = array('<hr>');
         $data[] = array(atktext('activity').': ','<SELECT name="activity_id">'.$this->get_activities($activity_id).'</SELECT>');
         $data[] = array('<hr>');
+
 
         $startdateatt = new atkDateAttribute("startdate","F d Y","d F Y", 0, date("Ymd"),AF_OBLIGATORY);
         $enddateatt = new atkDateAttribute("enddate","F d Y","d F Y", 0, date("Ymd"),AF_OBLIGATORY);
@@ -348,8 +350,7 @@
         $remarkattr = new atkAttribute("remark", 0, 80);
         $data[] = array(atktext("remark","project"),$remarkattr->edit($dummyrec));
 
-
-       foreach ($externalHourSurveyColumns as $module => $attr)
+        foreach ($externalHourSurveyColumns as $module => $attr)
         {
           $currentattr = &$hoursnode->getAttribute($attr);
           $data[] = array("<hr>");
@@ -378,7 +379,6 @@
           }
         }
 
-        
        $data[] = array('<b>'.atktext("report_output_options","project").'</b>');
        $data[] = array(atktext("report_output_type","project").":",'<select name="outputType">
                          <option VALUE="0" selected>'.atktext("report_output_standard","project").'
@@ -386,7 +386,7 @@
                         <option value="2">'.atktext("report_output_export","project").'
                          </select>');
 
-               $cell="";
+        $cell="";
         for($i=0,$_i=count($arr_col);$i<$_i;$i++)
         {
           $checked = (in_array($arr_col[$i],$col) ? "checked" : "");
@@ -394,6 +394,7 @@
           $cell.='<input type="checkbox" name="col[]" value="'.$arr_col[$i].'" '.$checked.'>'.atktext($arr_col[$i], $translatewithmodule).'&nbsp;';
         }
         $data[] = array(atktext('report_output_showcollumns','project').':',$cell);
+
 
 
         $orderattrs = array();
@@ -417,7 +418,7 @@
         $boolattrib = new atkListAttribute("aggregate", array("do_not_aggregate", "aggregate_by_order"), array(0,1), AF_OBLIGATORY);
         $data[] = array(atktext('aggregate','project').':',$boolattrib->edit($dummyrec));
 
-        
+
         $tbl->setColSpan(0,0,2);
         $tbl->setColSpan(1,0,2);
         $tbl->setColSpan(3,0,2);
@@ -434,7 +435,7 @@
         $content.='<input type="submit" value="'.atktext("refresh").'"></form><br>';
         $page->addContent($ui->renderBox(array("title"=>$title,"content"=>$content)));
       }
-	
+
       // Create Filter
       $filter="activitydate>='".$startdate."' AND activitydate<='".$enddate."'";
       if(!empty($activity_id)&&$activity_id!="") $filter.=" AND hours.activityid=".$activity_id;
@@ -451,11 +452,11 @@
         $projectsnode = &atkGetNode("project.project");
         $projectsnode->m_postvars = $this->m_postvars; // Share postvars.
         $pids = implode(",", $projectsnode->get_user_projects());
-		$filter.= " AND A.projectid IN (".$pids.")";
+        $filter.= " AND A.projectid IN (".$pids.")";
       }
 /*naufraghi: 2006-11-07 ******************************************************/
 
-    foreach ($externalHourSurveyColumns as $module => $attr)
+      foreach ($externalHourSurveyColumns as $module => $attr)
       {
         $var = "external$attr";
         $value = $$var;
@@ -585,7 +586,7 @@
 
     function get_employees($user_id)
     {
-	  $user_id = '';
+      $user_id = '';
       $db = &atkGetDb();
 
       $sql = "SELECT person.id,person.lastname,person.userid, person.firstname
