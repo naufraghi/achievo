@@ -241,7 +241,7 @@
   
   module("customer_stats","achievo_modules/customer_stats/");
   module("remote","achievo_modules/remote/");
-
+  module("internal","achievo_modules/internal/");
 
   // -------------------------------------------
   //            END OF CONFIGURATION
