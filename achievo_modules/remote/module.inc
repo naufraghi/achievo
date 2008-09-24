@@ -13,7 +13,7 @@
         function getNodes()
         {
             registerNode("remote.timereg",
-                         array("admin", "add", "edit", "delete",
+                         array("admin", "add", "edit", "delete", "search",
                                "lock", "unlock", "any_user", "any_project"));
 
         }
