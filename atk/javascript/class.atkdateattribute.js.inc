@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.6 $
-   * $Id: class.atkdateattribute.js.inc,v 5.6 2006/01/30 11:03:32 boy Exp $
+   * @version $Revision: 5.11 $
+   * $Id: class.atkdateattribute.js.inc,v 5.11 2007/12/18 16:23:44 boy Exp $
    */
 
   /**
@@ -29,11 +29,9 @@
    * behaviour!
    *
    * @author Peter Verhage <peter@ibuildings.nl>
-
-   * @version $Revision: 5.6 $
+   * @version $Revision: 5.11 $
    *
-   * $Id: class.atkdateattribute.js.inc,v 5.6 2006/01/30 11:03:32 boy Exp $
-   *
+   * $Id: class.atkdateattribute.js.inc,v 5.11 2007/12/18 16:23:44 boy Exp $
    */
 
   /* change dir for includes */
@@ -51,7 +49,8 @@
 /* javascript month names and weekdays */
 var m_months_long  = Array(<?php for ($i = 1; $i <= 12; $i++) echo "'".atktext($m_months_long[$i],"atk")."'".($i < 12 ? "," : ""); ?>);
 var m_months_short = Array(<?php for ($i = 1; $i <= 12; $i++) echo "'".atktext($m_months_short[$i],"atk")."'".($i < 12 ? "," : ""); ?>);
-var m_weekdays     = Array(<?php for ($i = 0; $i <= 6; $i++) echo "'".atktext($m_weekdays[$i],"atk")."'".($i < 6 ? "," : ""); ?>);
+var m_weekdays_long = Array(<?php for ($i = 0; $i <= 6; $i++) echo "'".atktext($m_weekdays[$i],"atk")."'".($i < 6 ? "," : ""); ?>);
+var m_weekdays_short = Array(<?php for ($i = 0; $i <= 6; $i++) echo "'".atktext(substr($m_weekdays[$i], 0, 3),"atk")."'".($i < 6 ? "," : ""); ?>);
 
 /**
  * Returns the number of days in the month/year of the supplied date object
@@ -69,9 +68,14 @@ function getDays(date)
 /**
  * Wrapper function for ReadAdjustDate, since it's crashing in some IE 6.0 browsers
  */
-function AdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday)
+function AdjustDate(el, arr, newDate)
 {
-  setTimeout(function() { RealAdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday) }, 1);
+  if (arguments.length == 2) {
+    newDate = false;
+  }
+
+  var info = eval('atkdateattribute_' + arr);
+  setTimeout(function() { RealAdjustDate(el, arr, info.format, info.min, info.max, info.emptyfield, info.weekday, newDate) }, 1);
 }
 
 /**
@@ -83,11 +87,10 @@ function AdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday)
  * @param str_max the maximum valid date
  * @param obligatory is the date field obligatory
  */
-function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday)
+function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday, newDate)
 {
-  var format_month, format_day, array_months;
+  var format_month, format_day, array_months, format_weekday;
   var frm = el.form;
-
 
   /* current date attribute inputs */
   input = Array();
@@ -100,9 +103,9 @@ function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday)
 
   /* currently selected date */
   current = Array();
-  current["d"] = parseInt(input["d"].options[input["d"].selectedIndex].value, 10);
-  current["m"] = parseInt(input["m"].options[input["m"].selectedIndex].value, 10);
-  current["y"] = parseInt(input["y"].type == "select-one" ? input["y"].options[input["y"].selectedIndex].value : input["y"].value, 10);
+  current["d"] = typeof(newDate) == 'object' ? newDate.day   : parseInt(input["d"].options[input["d"].selectedIndex].value, 10);
+  current["m"] = typeof(newDate) == 'object' ? newDate.month : parseInt(input["m"].options[input["m"].selectedIndex].value, 10);
+  current["y"] = typeof(newDate) == 'object' ? newDate.year  : parseInt(input["y"].type == "select-one" ? input["y"].options[input["y"].selectedIndex].value : input["y"].value, 10);
   if (current["y"].toString() == "NaN") current["y"] = 0;
 
   /* check month format */
@@ -115,10 +118,12 @@ function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday)
   if (format.indexOf("d") >= 0) format_day = "d";
   else format_day = "j";
 
-
+  /* check weekday format */
+  if (format.indexOf("D") >= 0) format_weekday = "D";
+  else format_weekday = "l";
 
   /* we just changed one of the fields to null */
-  if (emptyfield && ((el.type == "select-one" && el.selectedIndex == 0) || (el.type != "select-one" && el.value == "")))
+  if (emptyfield && (newDate == null || (typeof(newDate) != 'object' && ((el.type == "select-one" && el.selectedIndex == 0) || (el.type != "select-one" && el.value == "")))))
   {
     for (i = input["d"].options.length; i >= 0; i--) input["d"].options[i] = null;
     input["d"].options[0] = new Option("", 0);
@@ -222,12 +227,10 @@ function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday)
 
   if (current["y"] == 0) current["y"] = "";
 
-
-//alert(current["d"] + " " + current["y"] + " " + current["m"] + " " + current["d_min"] + " " + current["d_max"]);
   /* clean day input, and build new one */
   for(i = input["d"].options.length; i >= 0; i--) input["d"].options[i] = null;
   if (emptyfield) input["d"].options[0] = new Option("", 0);
-  //if (current["y"] == "" || current["m"] == 0)  alert('heee');
+
   for(i = current["d_min"]; i <= current["d_max"]; i++)
   {
     if (current["y"] == "" || current["m"] == 0)
@@ -237,7 +240,8 @@ function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday)
     else
     {
       date = new Date(current["y"], current["m"]-1, i);
-      value = (weekday ? m_weekdays[date.getDay()] + " " : "") + (("d" == format_day) ? (i < 10 ? "0" : "") + i : i);
+      var weekdays = format_weekday == 'D' ? m_weekdays_short : m_weekdays_long;
+      value = (weekday ? weekdays[date.getDay()] + " " : "") + (("d" == format_day) ? (i < 10 ? "0" : "") + i : i);
     }
     input["d"].options[input["d"].options.length] = new Option(value, i);
     if (i == current["d"])
@@ -277,57 +281,139 @@ function RealAdjustDate(el, arr, format, str_min, str_max, emptyfield, weekday)
     }
   }
   else input["y"].value = current["y"];
+
+  ATK.DateAttribute.notifyListeners(arr);
 }
 
-function dateAttribute_getValue(id)
-{
-  var dayel = document.getElementById(id+"[day]");
-  var monthel = document.getElementById(id+"[month]");
-  var yearel = document.getElementById(id+"[year]");
-  var result = yearel.value+'-'+monthel.options[monthel.selectedIndex].value+'-'+dayel.options[dayel.selectedIndex].value;
-  return result;
+if (!window.ATK) {
+  var ATK = new Object();
 }
 
-function dateAttribute_setValue(id, year, month, day)
-{
+ATK.DateAttribute = {
+  listeners: {},
 
-  month = parseInt(month, 10); // remove leading '0'
-  day = parseInt(day, 10);
-
-  format = eval(id+'_fmt');
-
-  var dayel = document.getElementById(id+"[day]");
-  var monthel = document.getElementById(id+"[month]");
-  var yearel = document.getElementById(id+"[year]");
-
-  // set year
-  yearel.value = year;
-
-  // I need to call this to calculate the correct months and days
-  // after setting the year.
-  // TODO FIXME: I don't have the arr ('enddate') and format parameters here!!
-  AdjustDate(yearel, id, format, 0, 0, false);
-
-  // set month
-  for (i=0; i<monthel.options.length;  i++)
-  {
-    if (monthel.options[i].value==month)
-    {
-      monthel.selectedIndex = i;
+  /**
+   * Notify listeners of refresh / new value.
+   */
+  notifyListeners: function(name) {
+    if (!ATK.DateAttribute.listeners[name]) return;
+    var listeners = ATK.DateAttribute.listeners[name];
+    for (var i = 0; i < listeners.length; i++) {
+      listeners[i]({ name: name, value: ATK.DateAttribute.getValue(name)});
     }
-  }
+  },
 
-  // I need to call this to calculate the correct days
-  // after setting the month.
-  // TODO FIXME: I don't have the arr ('enddate') and format parameters here!!
-  AdjustDate(monthel, id, format, 0, 0, false);
-
-  // set day
-  for (i=0; i<dayel.options.length;  i++)
-  {
-    if (dayel.options[i].value==day)
-    {
-      dayel.selectedIndex = i;
+  /**
+   * Register listener for the attribute with the given name.
+   */
+  registerListener: function(name, callback) {
+    if (!ATK.DateAttribute.listeners[name]) {
+      ATK.DateAttribute.listeners[name] = [];
     }
+
+    ATK.DateAttribute.listeners[name].push(callback);
+  },
+
+  /**
+   * Get value of attribute with the given name.
+   */
+  getValue: function(name) {
+    var dayEl = document.getElementById(name + "[day]");
+    var monthEl = document.getElementById(name + "[month]");
+    var yearEl = document.getElementById(name + "[year]");
+
+    var value = {
+      year: yearEl.value,
+      month: monthEl.options[monthEl.selectedIndex].value,
+      day: dayEl.options[dayEl.selectedIndex].value
+    };
+
+    return value;
+  },
+
+  /**
+   * Set value of attribute with the given name.
+   */
+  setValue: function(name, value) {
+    var dayEl = document.getElementById(name + "[day]");
+    var monthEl = document.getElementById(name + "[month]");
+    var yearEl = document.getElementById(name + "[year]");
+
+    AdjustDate(yearEl, name, value);
+    AdjustDate(monthEl, name, value);
+    AdjustDate(dayEl, name, value);
+  },
+
+  /**
+   * Refresh.
+   */
+  refresh: function(name) {
+    ATK.DateAttribute.setValue(name, ATK.DateAttribute.getValue(name));
+  },
+
+  /**
+   * Set minimum.
+   */
+  setMinimum: function(name, min) {
+    try {
+      min = min == null ? null : '' + min.year + (min.month < 10 ? '0' + min.month : min.month) + (min.day < 10 ? '0' + min.day : min.day);
+      eval('atkdateattribute_' + name + '.min = min;');
+      ATK.DateAttribute.refresh(name);
+    } catch(e) {}
+  },
+
+  /**
+   * Set maximum.
+   */
+  setMaximum: function(name, max) {
+    try {
+      max = max == null ? null : '' + max.year + (max.month < 10 ? '0' + max.month : max.month) + (max.day < 10 ? '0' + max.day : max.day);
+      eval('atkdateattribute_' + name + '.max = max;');
+      ATK.DateAttribute.refresh(name);
+    } catch(e) {}
+  },
+
+  getMaximum: function(name) {
+    try { eval('var data = atkdateattribute_' + name); } catch(e) {}
+    if (!data) return false;
+    else var val = data.max;
+
+    val = ATK.DateAttribute.stringToDate(val);
+    return val;
+  },
+
+  getMinimum: function(name) {
+    try { eval('var data = atkdateattribute_' + name); } catch(e) {}
+    if (!data) return false;
+    else var val = data.min;
+
+    val = ATK.DateAttribute.stringToDate(val);
+    return val;
+  },
+
+  checkDisabled: function(date) {
+    var name = this.dateattrId;
+    var max = ATK.DateAttribute.getMaximum(name);
+    var min = ATK.DateAttribute.getMinimum(name);
+    date.setHours(0);
+    date.setMinutes(0);
+    date.setSeconds(0);
+
+    if ((min && date<min) || (max && date>max)) return true;
+    return false;
+  },
+
+  stringToDate: function(str) {
+    var str = new String(str);
+
+    if (str.length == 8)
+    {
+      var obj=new Date();
+      obj.setFullYear(parseInt(str.substr(0, 4), 10),parseInt(str.substr(4, 2), 10)-1,parseInt(str.substr(6, 2), 10));
+      obj.setHours(0);
+      obj.setMinutes(0);
+      obj.setSeconds(0);
+    }
+    return obj;
   }
 }

@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.11 $
-   * $Id: class.atkdummyattribute.inc,v 5.11 2006/05/03 13:05:55 sandy Exp $
+   * @version $Revision: 5.12 $
+   * $Id: class.atkdummyattribute.inc,v 5.12 2007/12/31 13:12:20 sandy Exp $
    */
 
    atkimport("atk.attributes.atkattribute");
@@ -87,6 +87,11 @@
     function display($record)
     {
       return $this->m_text;
+    }
+    
+    function setText($text)
+    {
+      $this->m_text = $text;
     }
 
     /**

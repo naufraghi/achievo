@@ -8,10 +8,12 @@
   $config_identifier = "achievo";
   $config_top_frame = 1;
   $config_authorization = "db";
+  $config_auth_usernode = "employee.employee";
   $config_auth_usertable = "person";
   $config_auth_userfield = "userid";
-  $config_auth_accesstable = "accessright";
   $config_auth_passwordfield = "password";
+  $config_auth_emailfield = "email";
+  $config_auth_accesstable = "accessright";
   $config_auth_leveltable  = "employeerole";
   $config_auth_levelfield  = "role_id";
   $config_auth_userpk = "id";
@@ -29,7 +31,8 @@
   $config_durationformat = 0;
   $config_defaultfavico = "images/achievo.ico";
   $config_corporate_module_base = "modules.achievomodule";
-  $config_menu_layout = "achievo";
+  $config_supported_languages_module = 'langoverrides';
+  $config_autoload_classes = true;
 
 
   // -------------------------------------------
@@ -101,5 +104,30 @@
   // by a time-out when requesting a page.
   //
   $config_test_connectiontimeout = 60;
+
+  // ---------------------------------------
+  //          AJAX CONFIG
+  // ---------------------------------------
+  // This variable configures the visibility of the parameters in printed
+  // reports such as the hoursurvey.
+  $config_report_hide_parameters = false;
+
+  // This variable determines how many characters a user must enter
+  // before an autocompletion search is performed.
+  //
+  $config_manytoone_autocomplete_minchars = 2;
+
+  //The search mode of the autocomplete fields.
+  //Can be 'startswith', 'exact' or 'contains'.
+  $config_manytoone_autocomplete_searchmode = "contains";
+
+  // Value determines wether the search of the autocompletion is case-sensitive.
+  $config_manytoone_autocomplete_search_case_sensitive = false;
+
+
+  // Should all many-to-one relations that have the AF_LARGE flag set also
+  // have the AF_RELATION_AUTOCOMPLETE flag set?
+  //
+  $config_manytoone_autocomplete_large = true;
 
 ?>

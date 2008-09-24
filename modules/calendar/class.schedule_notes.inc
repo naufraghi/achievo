@@ -6,9 +6,9 @@
  *
  * This class makes it possible to add notes to a schedule.
  *
- * $Id: class.schedule_notes.inc,v 1.7 2006/04/11 20:43:12 sandy Exp $
+ * $Id: class.schedule_notes.inc,v 1.8 2006/07/11 09:20:54 ivo Exp $
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  *
  */
 
@@ -26,7 +26,7 @@ class schedule_notes extends atkNode
     $this->add(new atkNumberAttribute("id", AF_AUTOKEY));
     $this->add(new atkManyToOneRelation("owner", "employee.employee", AF_HIDE_ADD|AF_READONLY|AF_OBLIGATORY));
     $this->add(new atkManyToOneRelation("schedule_id", "calendar.schedule", AF_HIDE|AF_OBLIGATORY));
-    $this->add(new atkDateAttribute("entrydate", "F d Y","d F Y", date("Ymd"), 0, AF_HIDE_EDIT|AF_HIDE_ADD|AF_OBLIGATORY));
+    $this->add(new atkDateAttribute("entrydate", "","", date("Ymd"), 0, AF_HIDE_EDIT|AF_HIDE_ADD|AF_OBLIGATORY));
     $this->add(new atkAttribute("title", AF_OBLIGATORY|AF_SEARCHABLE));
     $this->add(new atkTextAttribute("description", TEXT_LARGE, AF_OBLIGATORY));
 

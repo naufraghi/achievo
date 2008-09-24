@@ -19,8 +19,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 4.14 $
-   * $Id: dispatch.php,v 4.14 2006/04/17 20:50:16 sandy Exp $
+   * @version $Revision: 4.20 $
+   * $Id: dispatch.php,v 4.20 2007/03/22 15:49:51 guido Exp $
    */
 
   /**
@@ -32,39 +32,37 @@
   atksession();
 
   $session = &atkSessionManager::getSession();
+  $output = &atkOutput::getInstance();
 
   if($ATK_VARS["atknodetype"]=="" || $session["login"]!=1)
   {
     // no nodetype passed, or session expired
 
     $page = &atknew("atk.ui.atkpage");
-    atkimport("atk.ui.atkui");
-    $ui = &atkUI::getInstance();
+    $ui = &atkinstance("atk.ui.atkui");
     $theme = &atkTheme::getInstance();
-    $output = &atkOutput::getInstance();
 
     $page->register_style($theme->stylePath("style.css"));
 
-    $destination = "";
+    $destination = "index.php?atklogout=true";
     if(isset($ATK_VARS["atknodetype"]) && isset($ATK_VARS["atkaction"]))
     {
-      $destination = "&atknodetype=".$ATK_VARS["atknodetype"]."&atkaction=".$ATK_VARS["atkaction"];
+      $destination .= "&atknodetype=".$ATK_VARS["atknodetype"]."&atkaction=".$ATK_VARS["atkaction"];
       if (isset($ATK_VARS["atkselector"])) $destination.="&atkselector=".$ATK_VARS["atkselector"];
     }
 
-    $box = $ui->renderBox(array("title"=>atktext("title_session_expired"),
-                                "content"=>'<br><br>'.atktext("explain_session_expired").'<br><br><br><br>
-                                           <a href="index.php?atklogout=true'.$destination.'" target="_top">'.atktext("relogin").'</a><br><br>'));
+    $title = atktext("title_session_expired");
+    $contenttpl = '<br>%s<br><br><input type="button" onclick="top.location=\'%s\';" value="%s"><br><br>';
+    $content = sprintf($contenttpl, atktext("explain_session_expired"), str_replace("'", "\\'", $destination), atktext("relogin"));
+    $box = $ui->renderBox(array("title" => $title, "content" => $content));
 
     $page->addContent($box);
-
     $output->output($page->render(atktext("title_session_expired"), true));
   }
   else
   {
     atksecure();
-    require "theme.inc";
-
+    include "theme.inc";
 
     $lockType = atkconfig("lock_type");
     if (!empty($lockType)) atklock();
@@ -72,15 +70,11 @@
     // Create node
     $obj = &atkGetNode($ATK_VARS["atknodetype"]);
 
-    if (is_object($obj))
-    {
-      $obj->dispatch($ATK_VARS);
-    }
-    else
-    {
-      atkdebug("No object created!!?!");
-    }
+    $flags = array_key_exists("atkpartial", $ATK_VARS) ? HTML_PARTIAL : HTML_STRICT;
+
+    //Handle http request   
+    $controller = &atkinstance("atk.atkcontroller");
+    $controller->dispatch($ATK_VARS, $flags);
   }
-  $output = &atkOutput::getInstance();
   $output->outputFlush();
 ?>

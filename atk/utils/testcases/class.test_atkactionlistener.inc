@@ -13,8 +13,8 @@
    * @copyright (c)2005 Ibuildings
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.3 $
-   * $Id: class.test_atkactionlistener.inc,v 1.3 2006/01/22 16:22:29 ivo Exp $
+   * @version $Revision: 1.4 $
+   * $Id: class.test_atkactionlistener.inc,v 1.4 2006/10/19 14:40:27 sandy Exp $
    */
 
 
@@ -69,7 +69,7 @@
      */
     function test_setNode()
     {
-      $this->assertReference($this->m_node, $this->m_node->m_listeners[0]->m_node);
+      $this->assertReference($this->m_node, $this->m_node->m_actionListeners[0]->m_node);
     }
   }
 ?>

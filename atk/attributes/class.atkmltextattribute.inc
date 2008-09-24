@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: class.atkmltextattribute.inc,v 5.2 2006/03/15 08:49:32 boy Exp $
+   * @version $Revision: 5.4 $
+   * $Id: class.atkmltextattribute.inc,v 5.4 2008/01/15 10:38:16 harrie Exp $
    */
    
   /** @internal Include base class */
@@ -88,9 +88,10 @@
         $entry = array("name" => $this->m_name."_ml", "obligatory" => $this->hasFlag(AF_OBLIGATORY), "attribute" => &$this);
 
         /* label? */
-        $entry["label"] = $this->label($defaults).' (<label id="'.$fieldprefix.$this->formName().'_label">'.text("language_".strtolower($curlng)).'</label>)';
+        $entry["label"] = $this->label($defaults).' (<label id="'.$fieldprefix.$this->formName().'_label">'.atktext("language_".strtolower($curlng)).'</label>)';
         $entry["id"] = $this->getHtmlId($fieldprefix);
         $entry["tabs"] = $this->m_tabs;     
+        $entry["sections"] = $this->m_sections;
 
         /* first language of other languages */
         $entry["html"] = '<textarea name="'.$fieldprefix.$this->formName().'['.(count($this->m_languages)==2 ? $curlng: "multilanguage").']"'.

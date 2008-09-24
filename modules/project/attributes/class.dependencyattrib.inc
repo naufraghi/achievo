@@ -67,7 +67,7 @@ class dependencyAttribute extends atkAttribute
       for ($i=0;$i<count($deps);$i++)
       {
         $label = atktext("phase")." '".$deps[$i]["firstname"]."' ".atktext("mustbecompletedbeforephase")." '".$deps[$i]["lastname"]."'";
-        $delete = '&nbsp;&nbsp;<input type="checkbox" name="'.$this->formName()."[del_".$deps[$i]["first"]."_".$deps[$i]["last"].']" value="1">';
+        $delete = '&nbsp;&nbsp;<input type="checkbox" '.$this->getCSSClassAttribute("atkcheckbox").' name="'.$this->formName()."[del_".$deps[$i]["first"]."_".$deps[$i]["last"].']" value="1">';
         $data[] = array($label,$delete);
       }
       $tbl = &atknew("atk.utils.atktablerenderer");
@@ -99,6 +99,12 @@ class dependencyAttribute extends atkAttribute
 
   function getPhases($projectid)
   {
+    if (is_null($projectid))
+    {
+      atkerror("dependancyattrib->getPhases: Empty projectid given");
+      return array();
+    }
+
     $db = &atkGetDb();
 
     $query = "SELECT
@@ -106,7 +112,7 @@ class dependencyAttribute extends atkAttribute
               FROM
                 phase
               WHERE
-                projectid = ".$projectid." ORDER BY name";
+                projectid = '".$projectid."' ORDER BY name";
 
     $recs = $db->getrows($query);
     return $recs;
@@ -141,7 +147,7 @@ class dependencyAttribute extends atkAttribute
                 WHERE
                   ROW1.id = phaseid_row
                   AND COL1.id = phaseid_col
-                  AND (ROW1.projectid = ".$rec["id"]." OR COL1.projectid = ".$rec["id"].")
+                  AND (ROW1.projectid = '".$rec["id"]."' OR COL1.projectid = '".$rec["id"]."')
                   ORDER BY phaseid_row";
 
       $db = &atkGetDb();
@@ -169,8 +175,8 @@ class dependencyAttribute extends atkAttribute
                      FROM
                        dependency
                      WHERE
-                       phaseid_row = ".$delarr[$i]["first"]."
-                       AND phaseid_col = ".$delarr[$i]["last"];
+                       phaseid_row = '".$delarr[$i]["first"]."'
+                       AND phaseid_col = '".$delarr[$i]["last"]."'";
 
         $db->query($delquery);
       }
@@ -181,7 +187,7 @@ class dependencyAttribute extends atkAttribute
     {
       $query = "INSERT
                   INTO dependency (phaseid_row,phaseid_col)
-                  VALUES (".$values["first"].",".$values["last"].")";
+                  VALUES ('".$values["first"]."','".$values["last"]."')";
 
       $db->query($query);
     }

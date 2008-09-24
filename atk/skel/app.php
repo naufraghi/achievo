@@ -18,8 +18,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.6 $
-   * $Id: app.php,v 5.6 2005/10/23 09:04:43 ivo Exp $
+   * @version $Revision: 5.8 $
+   * $Id: app.php,v 5.8 2007/04/10 20:06:16 sandy Exp $
    */
 
   /**
@@ -32,15 +32,15 @@
   atksecure();
   $output='<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">';
   $output.="\n<html>\n <head>\n";
-  $output.='  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset='.text("charset","","atk").'">';
-  $output.="\n  <title>".text('app_title')."</title>\n </head>\n";
+  $output.='  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset='.atktext("charset","","atk").'">';
+  $output.="\n  <title>".atktext('app_title')."</title>\n </head>\n";
 
   atkimport("atk.menu.atkmenu");
   atkimport("atk.utils.atkframeset");
+  
   $menu = &atkMenu::getMenu();
-
-  /* @var $menu atkmenuinterface */
-
+  $theme = &atkinstance('atk.ui.atktheme');
+  
   $position = $menu->getPosition();
   $scrolling = ($menu->getScrollable()==MENU_SCROLLABLE?FRAME_SCROLL_AUTO:FRAME_SCROLL_NO);
   if(isset($ATK_VARS["atknodetype"]) && isset($ATK_VARS["atkaction"]))
@@ -53,10 +53,12 @@
     $destination = "welcome.php";
   }
 
-  $topframe = &new atkFrame("75", "top", "top.php", FRAME_SCROLL_NO, true);
+  $frame_top_height = $theme->getAttribute('frame_top_height');
+  $frame_menu_width = $theme->getAttribute('frame_menu_width');
+  $topframe = &new atkFrame($frame_top_height?$frame_top_height:"75", "top", "top.php", FRAME_SCROLL_NO, true);
   $mainframe = &new atkFrame("*", "main", $destination, FRAME_SCROLL_AUTO, true);
-  $menuframe = &new atkFrame(($position==MENU_LEFT||$position==MENU_RIGHT?190:$menu->getHeight()), "menu", "menu.php", $scrolling);
-  $noframes = '<p>Your browser doesnt support frames, but this is required to run '.text('app_title')."</p>\n";
+  $menuframe = &new atkFrame(($position==MENU_LEFT||$position==MENU_RIGHT?($frame_menu_width?$frame_menu_width:190):$menu->getHeight()), "menu", "menu.php", $scrolling);
+  $noframes = '<p>Your browser doesnt support frames, but this is required to run '.atktext('app_title')."</p>\n";
 
   $root = &new atkRootFrameset();
   if (atkconfig("top_frame"))

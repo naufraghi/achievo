@@ -74,13 +74,14 @@
 
       // We don't want the db class to display error messages, because
       // we handle the error ourselves.
+      $curhaltval = $db->m_haltonerror;
       $db->m_haltonerror = false;
 
       $res = $db->connect();
 
       $dbconfig = atkconfig("db");
 
-      if ($res==DB_SUCCESS && $dbconfig["default"]["driver"] == "mysql")
+      if ($res==DB_SUCCESS && (strpos($dbconfig["default"]["driver"], "mysql") === 0))
       {
         // This can't be trusted. Mysql returns DB_SUCCESS even
         // if the user doesn't have access to the database. We only get an
@@ -88,6 +89,8 @@
         $db->table_names();  // this triggers a query
         $res = $db->_translateError($db->m_errno);
       }
+
+      $db->m_haltonerror = $curhaltval;
 
       return $res;
     }
@@ -337,14 +340,7 @@
 
     function action_installdb(&$handler)
     {
-      global $g_modules, $g_modifiers;
-
-      // We must clear the modifiers. Modifiers will cause extra fields to be
-      // installed, but this should be done by the extension modules
-      // themselves. Not clearing the modifiers will lead to 'column already
-      // exists' errors.
-      $old_modifiers = $g_modifiers;
-      $g_modifiers = array();
+      global $g_modules;
 
       // We loop through the modules to install them.
       // The setup module contains essential table needed for the installation process,
@@ -380,9 +376,6 @@
       {
         $ok = false;
       }
-
-      // Restore modifiers.
-      $g_modifiers = $old_modifiers;
 
       if ($ok)
       {
@@ -661,8 +654,7 @@
       }
 
       // Get an atkDDL instance
-      atkimport("atk.db.atkddl");
-      $ddl = atkDDL::create();
+      $ddl = &$db->createDDL();
 
       // If the instance isn't created, show the user his database is probably not supported by this script
       if (!is_object($ddl))
@@ -766,7 +758,6 @@
     {
       $db = &atkGetDb();
       $meta = $db->metadata($table, true);
-      atk_var_dump($meta,"META VAN $table");
       for ($i=0, $_i=count($meta); $i<$_i; $i++)
       {
         if (strtolower($meta[$i]["name"]) == strtolower($column))
@@ -839,7 +830,12 @@
       {
         $this->m_cancontinue=false;
       }
-
+    }
+    
+    function executeSQL($sql)
+    {
+      $db = &atkGetDb();
+      return $db->query($sql);
     }
 
     // TODO FIXME: functions that follow are *NOT* yet database
@@ -850,7 +846,7 @@
       $db = &atkGetDb();
       $sql = "UPDATE db_sequence SET seq_name='".$new_name."'
                 WHERE seq_name='".$seq_name."'";
-      $res = $db->query($sql);
+      return $db->query($sql);
     }
 
     function renameTable($old, $new)
@@ -860,17 +856,24 @@
       $res = $db->query($sql);
 
       //change db_sequence name
-      $this->renameSequence($old, $new);
+      return $this->renameSequence($old, $new);
     }
+
 
     function addColumn($table, $col, $type, $nullable=true, $default="")
     {
       $db = &atkGetDb();
-
-      $sql = "ALTER TABLE $table ADD $col $type";
-      if (!$nullable) $sql.=" NOT NULL";
-      if ($default!="") $sql.= " DEFAULT '$default'";
-      $db->query($sql);
+      if($this->columnExists($table,$col))
+      {
+        return $this->alterColumn($table,$col,$col,$type,$nullable,$default);
+      }
+      else
+      {
+        $sql = "ALTER TABLE $table ADD $col $type";
+        if (!$nullable) $sql.=" NOT NULL";
+        if ($default!="") $sql.= " DEFAULT '$default'";
+        return $db->query($sql);
+      }
     }
 
     function alterColumn($table, $col, $newname, $type, $nullable=true, $default="")
@@ -879,29 +882,39 @@
       $sql = "ALTER TABLE $table CHANGE $col $newname $type";
       if (!$nullable) $sql.=" NOT NULL";
       if ($default!="") $sql.= " DEFAULT '$default'";
-      $db->query($sql);
+      return $db->query($sql);
     }
 
     function dropColumn($table, $col)
     {
-      $db = &atkGetDb();
-
-      $sql = "ALTER TABLE $table DROP $col";
-      $res = $db->query($sql);
+      if($this->columnExists($table,$col))
+      {
+        $db = &atkGetDb();
+        $ddl = &$db->createDDL();
+        $ddl->setTable($table);
+        $ddl->dropField($col);
+        return $ddl->executeAlter();
+      }
+      return true;
     }
 
     function dropTable($table)
     {
       $db = &atkGetDb();
-      $db->query("DROP TABLE $table");
+      $ddl = &$db->createDDL();
+      $ddl->setTable($table);
+      return $ddl->executeDrop();
     }
 
     function dropSequence($sequence)
     {
       $db = &atkGetDb();
-      // Only delete sequence with mysql, since postgress and oracle use they own sequences
-      if($db->m_type=="mysql" || $db->m_type=="mysql41")
-        $db->query("DELETE FROM ".$db->m_seq_table." WHERE ".$db->m_seq_namefield." = '$sequence'");
+      // Only delete sequence with mysql, since postgress and oracle use their own sequences
+      if (strpos($db->m_type, "mysql") === 0)
+        return $db->query("DELETE FROM ".$db->m_seq_table." WHERE ".$db->m_seq_namefield." = '$sequence'");
+      else 
+        return true; 
+     
     }
 
      /**
@@ -912,10 +925,11 @@
     {
       $node = &atkGetNode($node);
       $table = $node->m_table;
-      $seg = $node->m_seg;
+      $seq = $node->m_seq;
 
       $this->dropTable($table);
-      if($seg>"") $this->dropSequence($seg);
+      if($seq>"") $this->dropSequence($seq);
+      return true;
     }
 
     function action_legacyupgrade(&$handler)
@@ -1210,7 +1224,6 @@
       // clean compiled template file
       unlink($file);
     }
-
   }
 
 ?>

@@ -11,8 +11,8 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: class.atkmockdb.inc,v 5.3 2006/03/31 11:00:43 ivo Exp $
+   * @version $Revision: 5.5 $
+   * $Id: class.atkmockdb.inc,v 5.5 2008/01/07 10:55:31 dennis Exp $
    */
 
   /**
@@ -59,14 +59,15 @@
      */
     function query($query, $offset=-1, $limit=-1)
     {
+      atk_var_dump($query,'inatkmockdb teh query');
       $this->m_query_history[] = $query;
-
+      
       if (isset($this->m_results[$offset][$limit][$query])) return $this->m_results[$offset][$limit][$query];
       if (!empty($this->m_regex_results))
       {
         foreach ($this->m_regex_results[$offset][$limit] as $regex => $result)
-        {
-          if (preg_match($regex, $query)) return $result;
+        {         
+          if (preg_match($regex, $query)) return $result;        
         }
       }
       return true;
@@ -101,6 +102,24 @@
     function setRegexResult($result, $regex, $offset=-1, $limit=-1)
     {
       $this->m_regex_results[$offset][$limit][$regex] = $result;
+    }
+    
+    /**
+     * Retrieve the query history.
+     *
+     * @return Array
+     */
+    function getQueryHistory()
+    {
+      return $this->m_query_history;
+    }
+    
+    /**
+     * Clear the query history.
+     */
+    function clearQueryHistory()
+    {
+      $this->m_query_history = array();
     }
   }
 

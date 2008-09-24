@@ -2,7 +2,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -11,13 +11,13 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.1 $
-   * $Id: class.atkparserattribute.inc,v 5.1 2004/05/31 22:11:10 ivo Exp $
+   * @version $Revision: 5.4 $
+   * $Id: class.atkparserattribute.inc,v 5.4 2006/10/10 12:41:55 peter Exp $
    */
-   
+
   /**
-   * The atkParserAttribute can be used to create links or texts that 
-   * contain values, by supplying a template as parameter.   
+   * The atkParserAttribute can be used to create links or texts that
+   * contain values, by supplying a template as parameter.
    *
    * @author Ivo Jansch <ivo@achievo.org>
    * @package atk
@@ -36,7 +36,7 @@
      */
     function atkParserAttribute($name, $text, $flags=0)
     {
-      $this->atkAttribute($name,$flags|AF_HIDE_SEARCH); // base class constructor
+      $this->atkAttribute($name,$flags|AF_HIDE_SEARCH|AF_NO_SORT); // base class constructor
       $this->m_text = $text;
     }
 
@@ -47,7 +47,7 @@
      */
     function edit($record="", $fieldprefix="")
     {
-      return stringparse($this->m_text,$record);
+      return $this->display($record);
     }
 
     /**
@@ -66,7 +66,9 @@
      */
     function display($record)
     {
-      return stringparse($this->m_text,$record);
+      atkimport("atk.utils.atkstringparser");
+      $stringparser = new atkStringParser($this->m_text);
+      return $stringparser->parse($record);
     }
 
     /**
@@ -83,7 +85,7 @@
     function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec, $level, $mode)
     {
     }
-    
+
     /**
      * Dummy imp
      */

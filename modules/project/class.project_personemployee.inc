@@ -6,9 +6,9 @@
  *
  * This class makes it possible to relate employees to a project in a certain role(s).
  *
- * $Id: class.project_personemployee.inc,v 1.8 2006/04/26 10:34:39 guido Exp $
+ * $Id: class.project_personemployee.inc,v 1.9 2006/07/31 13:01:10 guido Exp $
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  *
  */
 
@@ -25,9 +25,10 @@ class project_personemployee extends atkNode
     $this->add(new atkManyToOneRelation("role", "project.role", AF_PRIMARY|AF_RELATION_AUTOLINK));
     $this->addFilter("personid.role = 'employee'");
 
-    // if you may edit the project, you may also add contactpersons to it.
+    // If you may edit the project, you may also add contactpersons to it.
     $this->setSecurityAlias("project.project");
-    $this->m_securityMap["add"] = "edit";
+    foreach(array("add", "save", "update", "delete") as $action)
+      $this->m_securityMap[$action] = "edit";
 
     $this->setTable("project_person", "project_person");
   }

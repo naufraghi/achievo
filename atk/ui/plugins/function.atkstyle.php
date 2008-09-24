@@ -1,5 +1,4 @@
 <?php
-
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
@@ -12,8 +11,8 @@
    * @copyright (c)2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.2 $
-   * $Id: function.atkstyle.php,v 1.2 2006/04/20 19:30:58 ivo Exp $
+   * @version $Revision: 1.3 $
+   * $Id: function.atkstyle.php,v 1.3 2006/06/15 14:55:22 peter Exp $
    */
    
   /**
@@ -40,5 +39,4 @@
     $page->register_style($params["file"], $params["media"]);        
     return "";
   }
-  
 ?>

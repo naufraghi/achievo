@@ -8,9 +8,9 @@
    * specially for some Achievo functions.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   * @version $Revision: 1.6 $
+   * @version $Revision: 1.8 $
    *
-   * $Id: class.achievomodule.inc,v 1.6 2006/04/17 20:50:18 sandy Exp $
+   * $Id: class.achievomodule.inc,v 1.8 2006/10/11 18:35:20 guido Exp $
    */
   class achievoModule extends atkModule
   {
@@ -92,11 +92,16 @@
 
       $res = array();
 
-      for($i=0, $_i=count($recordset); $i<$_i; $i++)
+      $node = &atkGetNode($nodetype);
+      $allowedaction = $node->allowed("edit") ? "edit" : ($node->allowed("view") ? "view" : "");
+      if (!empty($allowedaction))
       {
-        $item["title"] = $node->descriptor($recordset[$i]);
-        $item["url"] = dispatch_url($nodetype, "view", array("atkselector"=>$node->primaryKey($recordset[$i])));
-        $res[] = $item;
+        for($i=0, $_i=count($recordset); $i<$_i; $i++)
+        {
+          $item["title"] = $node->descriptor($recordset[$i]);
+          $item["url"] = dispatch_url($nodetype, $allowedaction, array("atkselector"=>$node->primaryKey($recordset[$i])));
+          $res[] = $item;
+        }
       }
 
       return $res;

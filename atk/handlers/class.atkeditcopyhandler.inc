@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.4 $
-   * $Id: class.atkeditcopyhandler.inc,v 5.4 2005/09/07 12:10:11 ivo Exp $
+   * @version $Revision: 5.5 $
+   * $Id: class.atkeditcopyhandler.inc,v 5.5 2007/02/13 14:11:35 peter Exp $
    */
    
   /**
@@ -37,6 +37,13 @@
 
       if(count($recordset) > 0)
       {
+        // allowed to editcopy record?
+        if (!$this->allowed($recordset[0]))
+        {
+          $this->renderAccessDeniedPage();
+          return;
+        }
+        
         $db = &$this->m_node->getDb();
         if(!$this->m_node->copyDb($recordset[0]))
         {

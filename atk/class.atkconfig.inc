@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.12 $
-   * $Id: class.atkconfig.inc,v 5.12 2006/01/30 21:15:20 ivo Exp $
+   * @version $Revision: 5.15 $
+   * $Id: class.atkconfig.inc,v 5.15 2007/07/05 07:35:25 jvansluijs Exp $
    */       
 
   /**
@@ -31,7 +31,7 @@
       static $s_configs = array();
       $fn = 'config_'.$section.'_'.$tag;
       if (function_exists($fn)) return $fn();
-      if (!is_array($s_configs[$section]))
+      if (!isset($s_configs[$section]))
       {
         $s_configs[$section] = array();
         atkdebug("Loading config file for section $section");
@@ -51,14 +51,7 @@
      */
     function ipDebugEnabled($params)
     {
-      $ip = "unknown";
-      if (getenv("HTTP_CLIENT_IP"))
-        $ip = getenv("HTTP_CLIENT_IP");
-      elseif (getenv("HTTP_X_FORWARDED_FOR"))
-        $ip = getenv("HTTP_X_FORWARDED_FOR");
-      elseif (getenv("REMOTE_ADDR"))
-        $ip = getenv("REMOTE_ADDR");
-      
+      $ip = atkGetClientIp();
       return in_array($ip, $params["list"]);
     }
     
@@ -106,7 +99,7 @@
         else return max($default, 1);
       }
 
-      return 0;
+      return $default;
     }
     
     /**

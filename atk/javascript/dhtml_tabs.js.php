@@ -11,19 +11,68 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.12 $
-   * $Id: dhtml_tabs.js.php,v 5.12 2006/02/08 18:09:35 boy Exp $
+   * @version $Revision: 5.23 $
+   * $Id: dhtml_tabs.js.php,v 5.23 2007/05/09 10:45:10 marc Exp $
    */
 ?>
 
+var closedSections = [];
+
 /**
- * Sets the current tab 
+ * Register an initially closed section.
+ *
+ * NOTE: this method does *not* close the section!
+ */
+function addClosedSection(section)
+{
+  closedSections.push(section);
+}
+
+/**
+ * Toggle section visibility.
+ */
+function handleSectionToggle(element, expand, url)
+{
+  element = $(element);
+
+  // automatically determine if we need to expand or collapse
+  if (expand == null) {
+    expand = closedSections.indexOf(element.id) >= 0;
+  }
+
+  $A(document.getElementsByTagName('TR')).select(function(tr) {
+    return $(tr).hasClassName(element.id);
+  }).each(function(tr) {
+    if (expand) {
+      Element.show(tr);
+      element.removeClassName('closedSection');
+      element.addClassName('openedSection');
+      closedSections = closedSections.without(element.id);
+    } else {
+      Element.hide(tr);
+      element.removeClassName('openedSection');
+      element.addClassName('closedSection');
+      closedSections.push(element.id);
+    }
+  });
+  
+  if(expand)
+   var param = 'opened'
+  else
+   var param = 'closed'
+   
+  new Ajax.Request(url, { method: 'get', parameters: 'atksectionstate='+param });        
+}
+
+function isAttributeTr(tr) {
+  return tr.id.substring(0, 3) == 'ar_';
+}
+
+/**
+ * Sets the current tab
  */
 function showTab(tab)
 {
-	// First, get the class names of all elements
-	var tags = document.getElementsByTagName("tr");
-
 	// If we are called without a name, we check if the parent has a stored tab for our page
 	// If so, then we go there, else we go to the first tab (most of the time the 'default' tab)
 	if (!tab)
@@ -43,33 +92,28 @@ function showTab(tab)
   // Then we store what tab we are going to visit in the parent
 	setCurrentTab(tab);
 
-	// Every element that does not have the current tab as class or 'alltabs'
-	// is set to display: none
-	for (i = 0; i < tags.length; i++)
-	{
-		var tabclass = tags.item(i).className;
-		var id = tags.item(i).id;
+  var tabSectionName = 'section_' + tab;
 
-		if (id.substring(0,3)=="ar_")
-		{
-		  if (tabclass==tab||tabclass=="alltabs")
-		  {
-  		  tags.item(i).style.display="";
-		  }
-		  else
-		  {
-  		  tags.item(i).style.display="none";
-		  }
-		}
-		else
-		{
-		  // Don't touch any element that is not an attribute row
-		}
-	}
+  $A(document.getElementsByTagName('TR')).select(isAttributeTr).each(function(tr) {
+    var visible =
+      $(tr).classNames().find(function(sectionName) {
+          return sectionName.substring(0, tabSectionName.length) == tabSectionName &&
+                 closedSections.indexOf(sectionName) < 0;
+      }) != null;
+
+    if (visible) {
+      Element.show(tr);
+    }
+    else {
+      Element.hide(tr);
+    }
+  });
 
 	// Then when set the colors or the tabs, the active tab gets a different color
 	for(j = 0; j < tabs.length; j++)
 	{
+	  if(document.getElementById('tab_'+tabs[j]))
+      {
 		if(tabs[j] == tab)
 		{
 			document.getElementById('tab_'+tabs[j]).className = 'activetab';
@@ -78,12 +122,41 @@ function showTab(tab)
 		{
 		  document.getElementById('tab_'+tabs[j]).className = 'passivetab';
 		}
+	 }
+	}
+
+	makeFCKEditable();
+
+	// make tabs visible (to avoid reload quirks, they load invisible from the html
+	wrapper = document.getElementById('tabtable');
+	if (wrapper)
+	{
+	  wrapper.style.display='';
+	}
+}
+
+
+/**
+ * Because the FCK editor does not always agree with
+ * tabbing and no longer becomes editable if you switch
+ */
+function makeFCKEditable()
+{
+  iframes = document.getElementsByTagName("iframe");
+	for (i = 0; i < iframes.length; i++)
+	{
+	  obj = frames[iframes[i].id];
+	  if (obj && obj.FCK && obj.FCK.MakeEditable) 
+	  {
+	    obj.FCK.StartEditor();
+	    obj.FCK.MakeEditable();
+	  }
 	}
 }
 
 function getCurrentTab()
 {
-  return getTab(getCurrentNodetype(), getCurrentSelector());
+  return <?php echo $_REQUEST['stateful'] ? 'getTab(getCurrentNodetype(), getCurrentSelector())' : ''; ?>;
 }
 
 function getTab(nodetype, selector)
@@ -94,7 +167,27 @@ function getTab(nodetype, selector)
 
 function setCurrentTab(value)
 {
-  return setTab(getCurrentNodetype(), getCurrentSelector(), value);
+  setTab(getCurrentNodetype(), getCurrentSelector(), value);
+
+  for (var i = 0; i < document.forms.length; i++)
+  {
+    var form = document.forms[i];
+    if (form.atktab != null)
+    {
+      form.atktab.value = value;
+      form.atktab.defaultValue = value;
+    }
+    else
+    {
+      var input = document.createElement('input');
+      input.setAttribute('type', 'hidden');
+      input.setAttribute('name', 'atktab');
+      input.setAttribute('value', value);
+      input.defaultValue = value;
+      form.appendChild(input);
+      form.atktab = input;
+    }
+  }
 }
 
 function setTab(nodetype, selector, value)

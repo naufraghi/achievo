@@ -12,8 +12,8 @@
    * @copyright (c)2004-2006 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.22 $
-   * $Id: class.atkthemecompiler.inc,v 5.22 2006/05/25 12:13:33 ivo Exp $
+   * @version $Revision: 5.27 $
+   * $Id: class.atkthemecompiler.inc,v 5.27 2007/03/29 10:18:30 guido Exp $
    */
   atkimport('atk.ui.atktheme');
 
@@ -45,7 +45,6 @@
     {
       // Process theme directory structure into data array.
       $data = $this->readStructure($name);
-
       // Write it to the compiled theme file
       if (count($data))
       {
@@ -85,15 +84,33 @@
       $data = array();
 
       $path = $this->findTheme($name, $location);
+      if ($path=="")
+      {
+        // theme not found.
+        $defaulttheme = atkconfig("defaulttheme");
+        if ($name!=$defaulttheme)
+        {
+          // this is not the default theme, let's load that instead.
+          return $this->readStructure($defaulttheme, "auto");
+        }
+        else
+        {
+          // this is the default theme, set in the config. If this doesn't exist, fallback to default.
+          return $this->readStructure("default", "atk");
+        }
+      }
+
+      $abspath = atkTheme::absPath($path);
 
       // First parse the themedef file for attributes
-      if ($path!="" && file_exists(atkconfig("atkroot").$path."themedef.inc"))
+      if ($path!="" && file_exists($abspath."themedef.inc"))
       {
-        include(atkconfig("atkroot").$path."themedef.inc");
+        include($abspath."themedef.inc");
 
         if (isset($theme["basetheme"])) // If theme is derived from another theme, use that other theme as basis
         {
-          $data = $this->readStructure($theme["basetheme"]);
+          $basethemelocation = isset($theme["basethemelocation"]) ? $theme["basethemelocation"] : "auto";
+          $data = $this->readStructure($theme["basetheme"], $basethemelocation);
         }
         else if ($name!="default") // If basetheme is not explicitly defined, use default as base theme
         {
@@ -129,21 +146,31 @@
      * @param String $location The location of the theme ("atk", "app" or "auto")
      *                         If set to auto, the method changes the $location
      *                         value to the actual location.
-     * @return String The path, relative to $config_atkroot, where the theme is located
+     * @return String The path relative to atk root, where the theme is located
      */
     function findTheme($name, &$location)
     {
-      if ($location!="atk"&&file_exists(atkconfig("atkroot")."themes/$name/themedef.inc"))
+      if (strpos($name, ".")!==false)
+      {
+        list ($module, $name) = explode(".", $name);
+        $path = moduleDir($module)."themes/".$name."/";
+        if (file_exists($path."themedef.inc"))
+        {
+          $location = "module";
+          return "module/$module/themes/$name/";
+        }
+      }
+      else if ($location!="atk"&&file_exists(atkconfig("atkroot")."themes/$name/themedef.inc"))
       {
         $location = "app";
         return "themes/$name/";
       }
-      else if ($location!="app"&&file_exists(atkconfig("atkroot")."atk/themes/$name"))
+      else if ($location!="app"&&file_exists(atkconfig("atkroot")."atk/themes/$name/themedef.inc"))
       {
         $location = "atk";
         return "atk/themes/$name/";
       }
-      atkerror("Thene $name not found");
+      atkerror("Theme $name not found");
       $location = "";
       return "";
     }
@@ -159,7 +186,7 @@
     function scanThemePath($path, &$data)
     {
       $traverser = &atknew("atk.utils.atkdirectorytraverser");
-      $abspath = atkconfig("atkroot").$path;
+      $abspath = atkTheme::absPath($path);
       $subitems = $traverser->getDirContents($abspath);
       foreach($subitems as $name)
       {
@@ -200,10 +227,8 @@
       global $g_modules;
 
       $traverser = &atknew("atk.utils.atkdirectorytraverser");
-atkdebug("scanModulePath for theme $theme");
       foreach ($g_modules as $module=>$modpath)
       {
-        atkdebug("Now traversing module $module");
         $abspath = $modpath."themes/".$theme."/";
 
         if (is_dir($abspath))

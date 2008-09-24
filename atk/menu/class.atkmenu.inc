@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.11 $
-   * $Id: class.atkmenu.inc,v 5.11 2005/12/07 20:30:32 boy Exp $
+   * @version $Revision: 5.17 $
+   * $Id: class.atkmenu.inc,v 5.17 2007/08/29 07:45:53 ivo Exp $
    */
 
   /**
@@ -29,7 +29,7 @@
 	define("MENU_NOMULTILEVEL", 2);
 
   atkimport("atk.menu.atkmenuinterface");
-  
+
   include_once(atkconfig("atkroot")."atk/atkmenutools.inc");
 
   /**
@@ -39,39 +39,98 @@
    * class, as defined in the configuration file.
    *
    * @author Ber Dohmen <ber@ibuildings.nl>
-   * @author Sandy Pleyte <sandy@ibuildings.nl> 
+   * @author Sandy Pleyte <sandy@ibuildings.nl>
    * @package atk
    * @subpackage menu
    */
   class atkMenu
-  {   
+  {
+
+    function layoutToClass($layout)
+    {
+      // Check if the menu config is one of the default atk menus (deprecated)
+      if (in_array($layout, array("plain","frames","outlook","dhtml","modern","cook")))
+      {
+        $classname = "atk.menu.atk".$layout."menu";
+      }
+
+      // Application root menu directory (deprecated)
+      elseif (strpos($layout, '.') === FALSE)
+      {
+        $classname = "menu.".$layout;
+      }
+
+      // Full class name with packages.
+      else
+      {
+        $classname = $layout;
+      }
+      return $classname;
+    }
+
+    function getMenuClass()
+    {
+      // Get the configured layout class
+      $classname =  atkMenu::layoutToClass(atkconfig("menu_layout"));
+      atkdebug("Configured menu layout class: $classname");
+
+      // Check if the class is compatible with the current theme, if not use a compatible menu.
+      $theme = &atkinstance("atk.ui.atktheme");
+      $compatiblemenus = $theme->getAttribute('compatible_menus');
+      // If this attribute exists then retreive them
+      if(is_array($compatiblemenus))
+      {
+        for($i=0,$_i=count($compatiblemenus); $i<$_i; $i++)
+          $compatiblemenus[$i] = atkMenu::layoutToClass($compatiblemenus[$i]);
+      }
+
+      if (!empty($compatiblemenus) && is_array($compatiblemenus) && !in_array($classname, $compatiblemenus))
+      {
+        $classname = $compatiblemenus[0];
+        atkdebug("Falling back to menu layout class: $classname");
+      }
+
+      // Return the layout class name
+      return $classname;
+    }
+
     /**
      * Get new menu object
-     * 
+     *
      * @return object Menu class object
      */
     function &getMenu()
-    { 
+    {
       static $s_instance = NULL;
       if ($s_instance==NULL)
-      {     
-        atkdebug("Creating a new menu instance");                
-        // Check if the menu config is one of the detail atk menus
-        if(!in_array(atkconfig("menu_layout"),array("plain","frames","outlook","dhtml")))
-        { 
-          // Check the application menu dir for a class.[menu_layout].inc file
-          $classname = "menu.".atkconfig("menu_layout");          
-        }
+      {
+        atkdebug("Creating a new menu instance");
+        $classname = atkMenu::getMenuClass();
+
+
+        $filename = getClassPath($classname);
+        if (file_exists($filename)) $s_instance = atknew($classname);
         else
         {
-          $classname = "atk.menu.atk".atkconfig("menu_layout")."menu";
+          atkerror('Failed to get menu object ('.$filename.' / '.$classname.')!');
+          atkwarning('Please check your compatible_menus in themedef.inc and config_menu_layout in config.inc.php.');
+          $s_instance = atknew('atk.menu.atkplainmenu');
         }
-        $s_instance = atknew($classname);
-        atkHarvestModules("getMenuItems");        
+
+        // Set the dispatchfile for this menu based on the theme setting, or to the default if not set.
+        // This makes sure that all calls to dispatch_url will generate a url for the main frame and not
+        // within the menu itself.
+        $theme = &atkinstance("atk.ui.atktheme");
+        $dispatcher = $theme->getAttribute('dispatcher', atkconfig("dispatcher", "dispatch.php")); // do not use atkSelf here!
+        $c = &atkinstance("atk.atkcontroller");
+        $c->setPhpFile($dispatcher);
+
+        atkHarvestModules("getMenuItems");
       }
+
       return $s_instance;
     }
-        
+
   }
 
 ?>

@@ -10,6 +10,83 @@
                              // be executed somewhere in a local function scope.
   $g_projectnamesize = 20;
 
+  /**
+   * Return the Achievo version number.
+   * @return string the version number of Achievo
+   */
+  function achievoVersion()
+  {
+    include(atkconfig("atkroot")."version.inc");
+    return $achievo_version;
+  }
+
+  /**
+   * Return the Achievo state. (stable or development)
+   * @return string the state of Achievo
+   */
+  function achievoState()
+  {
+    include(atkconfig("atkroot")."version.inc");
+    return $achievo_state;
+  }
+
+  function getAchievoTitle()
+  {
+    $achievo_version = achievoVersion();
+    $achievo_state = achievoState();
+    $title = atktext("app_title")." ".$achievo_version;
+    if($achievo_state!=="stable") $title.=" ($achievo_state)";
+    return $title;
+  }
+
+  function getSearchPiece()
+  {
+    $theme = &atkinstance("atk.ui.atktheme");
+    if($theme->getAttribute('useframes',true)) { $target='main'; } else { $target=""; }
+    $searchnode = &atkGetNode("search.search");
+    $searchpiece = $searchnode->simpleSearchForm("", $target, SESSION_NEW);
+    return $searchpiece;
+  }
+
+  function getCenterPiece(&$centerpiece,&$centerpiecelinks)
+  {
+    $user = &atkGetUser();
+    if ($user["name"]!="administrator")
+    {
+      $theme = &atkinstance("atk.ui.atktheme");
+
+      // Set the dispatchfile for this menu based on the theme setting, or to the default if not set.
+      // This makes sure that all calls to dispatch_url will generate a url for the main frame and not
+      // within the menu itself.
+      $dispatcher = $theme->getAttribute('dispatcher', atkconfig("dispatcher", "dispatch.php")); // do not use atkSelf here!
+      $c = &atkinstance("atk.atkcontroller");
+      $c->setPhpFile($dispatcher);
+
+      if($theme->getAttribute('useframes',true)) { $target='target="main"'; } else { $target=""; }
+      $centerpiece = $centerpiecelinks['pim'] = href(dispatch_url("pim.pim", "pim"), atktext("pim"), SESSION_NEW, false,$target);
+      if (is_allowed("employee.userprefs", "edit"))
+      {
+        $centerpiece.= '&nbsp; &nbsp; &nbsp;';
+        $centerpiece.= $centerpiecelinks['userprefs'] = href(dispatch_url("employee.userprefs", "edit", array("atkselector" => "person.id='".$user["id"]."'")), atktext("userprefs"), SESSION_NEW, false,$target);
+      }
+    }
+    else
+    {
+      // Administrator has a link to setup.php
+      $centerpiece = $centerpiecelinks['setup'] = href("setup.php", atktext("setup"), SESSION_NEW, false, 'target="_top"');
+    }
+  }
+
+  function getFullUsername()
+  {
+    $user = &atkGetUser();
+    $username = "<b>".$user["name"]."</b>";
+    if($user["name"]!="administrator") $username.=" [".$user["firstname"]." ".$user["lastname"]."]";
+    atkdebug("achievotools::getFullUsername() -> ".$username);
+    return $username;
+  }
+
+
   function updateSelectedProjects()
   {
     global $g_sessionManager, $g_projectnamesize;
@@ -72,16 +149,16 @@
 
          //Get project name
          $db = &atkGetDb();
-         $query = "SELECT name FROM project WHERE id='".$selectedPrj['projectid']."'";
+         $query = "SELECT project.abbreviation as projectcode, project.name as projectname FROM project WHERE id='".$selectedPrj['projectid']."'";
          $arr = $db->getrows($query);
-         $selectedPrj['projectname'] = $arr[0]['name'];
-         if (strlen($arr[0]['name']) > $g_projectnamesize)
+         $projectdescriptor = empty($arr[0]['projectcode']) ? $arr[0]['projectname'] : ($arr[0]['projectcode'] . ": " . $arr[0]['projectname']);
+         if (strlen($projectdescriptor) > $g_projectnamesize)
          {
-           $selectedPrj['projectname'] = substr($arr[0]['name'],0,$g_projectnamesize-2).".."; //update because of phases
+           $selectedPrj['projectname'] = substr($projectdescriptor, 0, $g_projectnamesize-2).".."; //update because of phases
          }
          else
          {
-           $selectedPrj['projectname'] = $arr[0]['name']; //update because of phases
+           $selectedPrj['projectname'] = $projectdescriptor; //update because of phases
          }
 
          //Check maximum number of projects in session var
@@ -98,7 +175,8 @@
        }
 
        //Reload the menu frame by creating javascript
-       $script = "var newlocation=\"menu.php?atkmenutop=projectmanagement&selectedproject=".$prjId."\";
+       $menu_url = session_url("menu.php?atkmenutop=projectmanagement&selectedproject=".$prjId, SESSION_DEFAULT);
+       $script = "var newlocation=\"$menu_url\";
                   var oldlocation=parent.menu.location.toString();
                   if (oldlocation.indexOf(newlocation) == -1) {parent.menu.location = newlocation;}";
        $page = &atkinstance("atk.ui.atkpage");
@@ -111,21 +189,25 @@
      $g_sessionManager->globalVar("selectedprj", $prj, true);
   }
 
- /**
-  * Get the projects the user recently booked hours on
-  * @return array with recently used projects
-  *
-  */
-
+  /**
+   * Get the projects the user recently booked hours on
+   * @return array with recently used projects
+   */
   function getRecentProjects()
   {
-    global $g_user, $g_projectnamesize;
-
+    global $g_projectnamesize;
     $db = &atkGetDb();
 
-    $query = "SELECT DISTINCT project.name as projectname, project.id as projectid FROM project,phase,hours ";
-    $query.= "WHERE phase.id=hours.phaseid AND ".(isset($g_user["id"])?"userid='".$g_user["id"]."' AND ":"")."phase.status='active' AND project.status='active' AND phase.projectid=project.id ";
-    $query.= "ORDER BY projectname";
+    $userid = atkArrayNvl(getUser(), "id");
+
+    $query = "SELECT DISTINCT project.abbreviation as projectcode, project.name as projectname, project.id as projectid ";
+    $query.= "FROM project,phase,hours ";
+    $query.= "WHERE phase.id=hours.phaseid ";
+    if (!empty($userid)) $query .= "AND userid='$userid' ";
+    $query.= "AND phase.status='active' ";
+    $query.= "AND project.status='active' ";
+    $query.= "AND phase.projectid=project.id ";
+    $query.= "ORDER BY projectcode, projectname";
 
     $arr = $db->getrows($query,'0','100');
 
@@ -139,18 +221,18 @@
     {
       if (!in_array($arr[$i]['projectid'], $alreadyhad))
       {
-        $alreadyhad[] = $arr[$i]['projectid'];
-        if (strlen($arr[$i]['projectname']) > $g_projectnamesize)
-        {
-          $arr[$i]['projectname'] = substr($arr[$i]['projectname'],0,$g_projectnamesize-2).".."; //update because of phases
-        }
-        $newarr[] = $arr[$i];
+        $projectid = $arr[$i]['projectid'];
+        $projectdescriptor = empty($arr[$i]['projectcode']) ? $arr[$i]['projectname'] : ($arr[$i]['projectcode'] . ": " . $arr[$i]['projectname']);
+        if (strlen($projectdescriptor) > $g_projectnamesize)
+          $projectdescriptor = substr($projectdescriptor, 0, $g_projectnamesize-2).".."; //update because of phases
+        $newarr[] = array("projectid"=>$projectid, "projectname"=>$projectdescriptor);
+        $alreadyhad[] = $projectid;
       }
     }
     return $newarr;
   }
 
-  /*
+  /**
    * given a timestamp, this function calculates the weekstamp, which is a concatenation
    * of the year and the ISO week number. (e.g. 200134)
    */
@@ -254,8 +336,14 @@
       return false;
     }
 
+    //Convert bare LF to CRLF (see: http://cr.yp.to/docs/smtplf.html)
+    //First replace CRLF to LF, then replace all LF to CRLF. This must be done to
+    //prevent replacing a CRLF with CRCRLF
+    $body = preg_replace("/(\r\n)/", "\n", $body);
+    $body = preg_replace("/(\n)/", "\r\n", $body);
+
     // Attempt to send the mail, and store the result in $result
-    $result = mail($to, "[achievo notice] " . $subject, $body, "From: " . $sender . "\r\n" . $add_header);
+    $result = mail($to, "[achievo notice] " . $subject, $body, "From: $sender\r\n" . $add_header);
 
     // Show debug info
     atkdebug($result ? "Sent mail to $to" : "Sending of mail to $to failed");
@@ -266,14 +354,22 @@
 
   function time_format($time, $displayzero=false)
   {
-    if ($time==0)
+    if ($time==0 && !$displayzero)
     {
-      if ($displayzero) return "00:00";
       return "&nbsp;";
     }
-    return ($time<0?"-":"").floor(abs($time)/60).":".sprintf("%02d",(abs($time)%60));
+
+    if(atkconfig("durationformat",0)==DURATIONFORMAT_DECIMAL)
+    {
+      $decimalvalue = floor(abs($time)/60) + (abs($time)%60)/60;
+      $result = ($time<0?"-":"").sprintf("%02.02f", $decimalvalue);
+    }
+    elseif(atkconfig("durationformat",0)==DURATIONFORMAT_TIME)
+    {
+      $result = ($time<0?"-":"").floor(abs($time)/60).":".sprintf("%02d",(abs($time)%60));
+    }
+
+    return $result;
   }
-
-
 
 ?>

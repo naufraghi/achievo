@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.1 $
-   * $Id: class.auth_interface.inc,v 5.1 2004/05/31 22:11:11 ivo Exp $
+   * @version $Revision: 5.3 $
+   * $Id: class.auth_interface.inc,v 5.3 2007/03/06 14:17:29 peter Exp $
    */
    
   /**
@@ -94,6 +94,129 @@
     function getUser($user)
     {
       return array("name"=>$user,"level"=>-1); // dummy implementation, should not be used.
+    }
+    
+    /**
+     * Check if the currently logged-in user has a certain privilege on a
+     * node.
+     * 
+     * @param atkSecurityManager $securityMgr The security manager instance.
+     * @param String $node The full nodename of the node for which to check
+     *                     access privileges. (modulename.nodename notation).
+     * @param String $privilege The privilege to check (atkaction).
+     * @return boolean True if the user has the privilege, false if not.
+     */    
+    function allowed(&$securityMgr, $node, $privilege)
+    {
+      // security disabled or user is superuser? (may do anything)
+      if (($securityMgr->m_scheme=="none") || ($securityMgr->hasLevel(-1)) || (strtolower($securityMgr->m_user["name"])=="administrator"))
+      {
+        $allowed = true;
+      }
+      // user is guest? (guests may do nothing)
+      else if (($securityMgr->hasLevel(-2)) || (strtolower($securityMgr->m_user["name"])=="guest"))
+      {
+        $allowed = false;
+      }
+      // other
+      else
+      {
+        $required = $this->getEntity($node, $privilege);
+  
+        if (count($required)==0)
+        {
+          // No access restrictions found..
+          // so either nobody or anybody can perform this
+          // operation, depending on the configuration.
+          $allowed = !atkconfig("restrictive");
+        }
+        else
+        {
+          if ($securityMgr->m_scheme=="level")
+          {
+            // in level based security, only one level is specified for each node/action combination.
+            $allowed = ($securityMgr->m_user["level"] >= $required[0]);
+          }
+          else if ($securityMgr->m_scheme=="group")
+          {
+            // user may have more then one level
+            if (is_array($securityMgr->m_user["level"]))
+            {
+              $allowed = (count(array_intersect($securityMgr->m_user["level"], $required))>0);
+            }
+            else
+            {
+              // user has only one level
+              $allowed = in_array($securityMgr->m_user["level"], $required);
+            }
+  
+          }
+          else // unknown scheme??
+          {
+            $allowed = false;
+          }
+        }  
+      }
+      
+      return $allowed;    
+    }
+    
+
+    /**
+     * Check if the currently logged-in user has the right to view, edit etc.
+     * an attribute of a node.
+     * 
+     * @param atkSecurityManager $securityMgr  the security manager
+     * @param atkAttribute       $attr         attribute reference
+     * @param string             $mode         mode (add, edit, view etc.)
+     * @param array              $record       record data
+     * 
+     * @return boolean true if access is granted, false if not.
+     */
+    function attribAllowed(&$securityMgr, &$attr, $mode, $record=NULL)   
+    {
+      $node = $attr->m_ownerInstance->atkNodeType();
+      $attribute = $attr->fieldName();
+      
+      // security disabled or user is superuser? (may do anything)
+      if (($securityMgr->m_scheme=="none") || (!atkconfig("security_attributes"))  || ($securityMgr->hasLevel(-1)) || (strtolower($securityMgr->m_user["name"])=="administrator"))
+      {
+        $allowed = true;
+      }
+      // user is guest? (guests may do nothing)
+      else if (($securityMgr->hasLevel(-2)) || (strtolower($securityMgr->m_user["name"])=="guest"))
+      {
+        $allowed = false;
+      }
+      // other
+      else
+      {      
+        // all other situations
+        $required = $this->getAttribEntity($node, $attribute, $mode);
+  
+        if ($required==-1)
+        {
+          // No access restrictions found..
+          $allowed = true;
+        }
+        else
+        {
+          if ($securityMgr->m_scheme=="level")
+          {
+            $allowed = ($securityMgr->m_user["level"] >= $required);
+          }
+          else if ($securityMgr->m_scheme=="group")
+          {
+            $allowed = in_array($securityMgr->m_user["level"],$required);
+          }
+          else // unknown scheme??
+          {
+            $allowed = false;
+          }
+        }
+      }
+      
+      return $allowed;              
     }
     
     /**

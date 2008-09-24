@@ -33,15 +33,15 @@ class atkProjectPhaseAttribute extends atkAttribute
   {
     global $ATK_VARS;
 
-    $selectedphaseid = $_REQUEST["selectedphaseid"];
-    $atkaction = $_REQUEST["atkaction"];
+    $selectedphaseid = atkArrayNvl($_REQUEST, "selectedphaseid", "");
+    $atkaction = atkArrayNvl($_REQUEST, "atkaction", "");
 
     // The current phase (in case of edit of an existing record)
-    $currentphase = $record[$this->fieldName()]["phaseid"];
-    $currentactivity = $record["activityid"];
+    $currentphase = isset($record[$this->fieldName()]["phaseid"]) ? $record[$this->fieldName()]["phaseid"] : "";
+    $currentactivity = atkArrayNvl($record, "activityid");
 
     // The current value might be overriden by use of the 'search all phases' button
-    if (isset($selectedphaseid)&&$selectedphaseid!="")
+    if ($selectedphaseid != "")
     {
       $currentphase = $selectedphaseid;
       $currentactivity = 0;
@@ -78,6 +78,7 @@ class atkProjectPhaseAttribute extends atkAttribute
     }
 
     // Load Activities for each project
+    $phaseid_arr = array();
     for ($i=0, $_i=count($phases);$i<$_i;$i++)
     {
       $phaseid_arr[] = $phases[$i]["id"];
@@ -111,11 +112,11 @@ class atkProjectPhaseAttribute extends atkAttribute
 
     if(!$this->hasFlag(AF_JS_UPDATEACTIVITY))
     {
-      $result.= '<select name="phaseid">';
+      $result = '<select name="phaseid">';
     }
     else
     {
-      $result .= $this->javascript($phasearray);
+      $result = $this->javascript($phasearray);
       $result.= '<select name="phaseid" onChange="set_activities(this.options[this.selectedIndex].value,0)">';
     }
     $result.= '<option value="">' . atktext("select", "atk");
@@ -127,7 +128,10 @@ class atkProjectPhaseAttribute extends atkAttribute
       // de juiste default selecteren
       if ($phases[$i]["id"]==$currentphase) $result.="selected";
 
-      $result .= '>'.$phases[$i]["projectname"]." - ".$phases[$i]["name"];
+      $result .= '>';
+      if (!empty($phases[$i]["projectabbreviation"]))
+        $result .= $phases[$i]["projectabbreviation"] . ": ";
+      $result .= $phases[$i]["projectname"] . " - " . $phases[$i]["name"];
     }
 
     $result .= '</select>&nbsp';
@@ -162,7 +166,12 @@ class atkProjectPhaseAttribute extends atkAttribute
 
   function display($rec)
   {
-    return $rec[$this->fieldName()]["projname"]." - ".$rec[$this->fieldName()]["phasename"];
+    $value = $rec[$this->fieldName()];
+    $result = "";
+    if (!empty($value["projabbreviation"]))
+      $result .= $value["projabbreviation"] . ": ";
+    $result .= $value["projname"] . " - " . $value["phasename"];
+    return $result;
   }
 
   /**
@@ -178,6 +187,7 @@ class atkProjectPhaseAttribute extends atkAttribute
   function db2value($rec)
   {
     return Array("projname"=>$rec["proj_name"],
+                 "projabbreviation"=>$rec["proj_abbreviation"],
                  "phaseid"=>$rec["phaseid"],
                  "phasename"=>$rec["phase_name"],
                  "activityname"=>$rec["activity_name"]);
@@ -185,7 +195,7 @@ class atkProjectPhaseAttribute extends atkAttribute
 
   function value2db($rec)
   {
-    return $rec[$this->fieldName()]["phaseid"];
+    return empty($rec[$this->fieldName()]["phaseid"]) ? 0 : $rec[$this->fieldName()]["phaseid"];
   }
 
   function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec="", $level=0, $mode="")
@@ -198,6 +208,7 @@ class atkProjectPhaseAttribute extends atkAttribute
     {
       $query->addField($this->fieldName(),"","hours",$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES));
       $query->addField("name","", "B", "proj_", false);
+      $query->addField("abbreviation","", "B", "proj_", false);
       $query->addField("name","", "A", "phase_", false);
       $query->addField("name","", "C", "activity_", false);
       $query->addJoin("activity", "C", "C.id=hours.activityid", false);
@@ -210,7 +221,7 @@ class atkProjectPhaseAttribute extends atkAttribute
 
   function getOrderByStatement()
   {
-    return "B.name, A.name";
+    return "B.abbreviation, B.name, A.name";
   }
 
   function getRecentPhases()
@@ -221,13 +232,13 @@ class atkProjectPhaseAttribute extends atkAttribute
 
     $reportnodetype = $g_sessionManager->stackVar("reportnodetype");
 
-    $query = "SELECT DISTINCT phase.id, phase.name, project.name as projectname, hours.entrydate
-              FROM phase,hours,project 
+    $query = "SELECT DISTINCT phase.id, phase.name, project.name as projectname, project.abbreviation as projectabbreviation, hours.entrydate
+              FROM phase,hours,project
               LEFT JOIN project_person ON (project_person.projectid = project.id)
-              WHERE phase.id=hours.phaseid 
-                AND userid='".$user["id"]."' 
-                AND phase.status='active' 
-                AND project.status='active' 
+              WHERE phase.id=hours.phaseid
+                AND userid='".$user["id"]."'
+                AND phase.status='active'
+                AND project.status='active'
                 AND phase.projectid=project.id ";
 
     if (!$g_securityManager->allowed("timereg.hours", "any_project"))
@@ -251,16 +262,20 @@ class atkProjectPhaseAttribute extends atkAttribute
         $newarr[$j]['id'] = $arr[$i]['id'];
         $newarr[$j]['name'] = $arr[$i]['name'];
         $newarr[$j]['projectname'] = $arr[$i]['projectname']; //update because of phases
+        $newarr[$j]['projectabbreviation'] = $arr[$i]['projectabbreviation']; //update because of phases
         $j++;
       }
     }
-    usort($newarr,array("atkProjectPhaseAttribute","cmp_projectname"));
+    usort($newarr,array("atkProjectPhaseAttribute","cmp_projectabbreviation"));
     return $newarr;
   }
-  
-  function cmp_projectname($a, $b)
+
+  function cmp_projectabbreviation($a, $b)
   {
-    return strcmp($a["projectname"], $b["projectname"]);
+    if ($a["projectabbreviation"] != $b["projectabbreviation"])
+      return strcasecmp($a["projectabbreviation"], $b["projectabbreviation"]);
+    else
+      return strcasecmp($a["projectname"], $b["projectname"]);
   }
 
 
@@ -268,7 +283,7 @@ class atkProjectPhaseAttribute extends atkAttribute
   {
     $db = &atkGetDb();
 
-    $query = "SELECT phase.id, phase.name, project.name as projectname FROM project,phase ";
+    $query = "SELECT phase.id, phase.name, project.name as projectname, project.abbreviation as projectabbreviation FROM project,phase ";
     $query.= "WHERE phase.projectid=project.id AND phase.id = $phaseid";
 
     $arr = $db->getrows($query);
@@ -375,6 +390,16 @@ class atkProjectPhaseAttribute extends atkAttribute
   function equal($recA, $recB)
   {
     return $recA["phaseid"]["phaseid"]==$recB["phaseid"]["phaseid"];
+  }
+
+  /**
+   * Check if a record has an empty value for this attribute.
+   * @param array $record The record that holds this attribute's value.
+   * @return boolean
+   */
+  function isEmpty($record)
+  {
+    return (!isset($record[$this->fieldName()]["phaseid"])||$record[$this->fieldName()]["phaseid"]=="");
   }
 }
 ?>

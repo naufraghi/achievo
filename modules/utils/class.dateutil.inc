@@ -2,7 +2,7 @@
 
   define("ONEDAY", 24*60*60);
   define("ONEWEEK", ONEDAY*7);
-
+  require_once(atkConfig("atkroot")."atk/utils/adodb-time.inc.php");
 
   class dateutil
   {
@@ -22,10 +22,10 @@
       return floor(($d2-$d1)/(60*60*24));
     }
 
-    function arr2str($arrdate)
+    function arr2str($arrdate, $format="Ymd")
     {
       if (!is_array($arrdate)) return "";
-      return sprintf("%04d%02d%02d", $arrdate["year"], $arrdate["month"], $arrdate["day"]);
+      return dateutil::stamp2str(dateutil::arr2stamp($arrdate), $format);
     }
 
     function str2arr($strdate)
@@ -43,9 +43,9 @@
       return adodb_mktime(12,0,0,$arrdate["month"],$arrdate["day"],$arrdate["year"]);
     }
 
-    function stamp2str($timestamp)
+    function stamp2str($timestamp, $format="Ymd")
     {
-      return date("Ymd", $timestamp);
+      return date($format, $timestamp);
     }
 
     function stamp2arr($timestamp)
@@ -53,16 +53,31 @@
       return dateutil::str2arr(dateutil::stamp2str($timestamp));
     }
 
+    function monthlist()
+    {
+      return array(1=>"january", 2=>"february", 3=>"march", 4=>"april", 5=>"may", 6=>"june", 7=>"july", 8=>"august", 9=>"september", 10=>"october", 11=>"november", 12=>"december");
+    }
+
     function monthname($monthnumber)
     {
-      $months = array("january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december");
-      return $months[$monthnumber-1];
+      $months = dateutil::monthlist();
+      return $months[$monthnumber];
+    }
+
+    function short_monthlist()
+    {
+      return array(1=>"jan", 2=>"feb", 3=>"mar", 4=>"apr", 5=>"may", 6=>"jun", 7=>"jul", 8=>"aug", 9=>"sep", 10=>"oct", 11=>"nov", 12=>"dec");
+    }
+
+    function short_daylist()
+    {
+      return array(0=>"su",1=>"mo",2=>"tu",3=>"we",4=>"th",5=>"fr",6=>"sa");
     }
 
     function short_monthname($monthnumber)
     {
-      $months = array("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec");
-      return $months[$monthnumber-1];
+      $months = dateutil::short_monthlist();
+      return $months[$monthnumber];
     }
 
     /*
@@ -88,16 +103,16 @@
       if ($weekday==0) $weekday=7;
       return date("Ymd" ,$viewtime-(86400*($weekday-7)));
     }
-    
+
     /**
-     * Calculates the weeknumber, startdate/enddate of the week for each week 
+     * Calculates the weeknumber, startdate/enddate of the week for each week
      * within the passed date range.
      *
      * @return array Array containing arrays like "week"=>weeknumber,"startdate"=>startdate,
      * "enddate"=>enddate
      */
     function weeksBetween($strstart, $strend)
-    {      
+    {
       // Initialize the weekdata array
       $weekdata = array();
 
@@ -126,8 +141,74 @@
         }
       }
 
-      // Return the array containing the weekid, start- and enddate for each week within the given from and to dates     
-      return $weekdata;    
+      // Return the array containing the weekid, start- and enddate for each week within the given from and to dates
+      return $weekdata;
+    }
+
+    /**
+     * Calculates the the date for each of the days between start- and enddate.
+     * @param string $strstart Startdate in the format yyyymmdd
+     * @param string $strend Enddate in the format yyyymmdd
+     * @return array Array containing arrays like "date"=>date
+     */
+    function daysBetween($strstart, $strend)
+    {
+      // Initialize the weekdata array
+      $daydata = array();
+
+      // First fill the weeks and start/end dates..
+      $startstamp = dateUtil::str2stamp($strstart);
+      $endstamp   = dateUtil::str2stamp($strend);
+
+      // Calculate the number of days between the selected start and end date
+      $nrofdays = dateUtil::date_diff($strstart, $strend);
+
+      // Loop through the days, starting at the day selected as "from"
+      for ($i = 0; $i <= $nrofdays; $i++)
+      {
+        // Calculate the current day depending on the startdate and iterator
+        $curstamp = $startstamp + (ONEDAY * $i);
+
+        $key = date("Ymd",$curstamp);
+        $daydata[$key]["date"] = $key;
+      }
+
+      // Return the array containing the dayid, and date for each day within the given from and to dates
+      return $daydata;
+    }
+
+    /**
+     * LastdayOfMonth returns the timestamp of the date
+     * of the last $day of $month
+     * 
+     * @example lastDayOfMonth(0,3,2007) returns
+     * the date of the last Sunday of March 2007
+     *
+     * @param int $day Weekday (must be the day number, 0 = Sunday)
+     * @param int $month Month
+     * @param int $year Year
+     * @return int Timestap of the date
+     */
+    
+    function lastDayOfMonth($day, $month, $year) 
+    {
+      // Get the timestamp for the 1. day of the month
+      $firstOfMonth = mktime(0,0,0,$month,1,$year);
+      // Get the timestamp for the last day of the month
+      $lastOfMonth = ($firstOfMonth - 86400) + date("t", $firstOfMonth) * 86400;
+      // Get the day of the week for the last day in the month
+      $lastOfMonth_DayOfWeek = date("w", $lastOfMonth);
+      
+      // Is the last of the month on the same day of day of week?
+      if ($lastOfMonth_DayOfWeek == $day) {
+      // If so, return the timestamp
+      return $lastOfMonth;
+      } else {
+      // Iterate from the last of the month until we have a match
+      for ($tempDate = $lastOfMonth; date("w", $tempDate) <> $day; $tempDate = $tempDate - 86400) {
+      }
+      return $tempDate;
+      }
     }
 
   }

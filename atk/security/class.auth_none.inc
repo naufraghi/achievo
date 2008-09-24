@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: class.auth_none.inc,v 5.2 2005/12/21 21:46:52 ivo Exp $
+   * @version $Revision: 5.3 $
+   * $Id: class.auth_none.inc,v 5.3 2006/12/09 08:50:55 ivo Exp $
    */
 
   /**
@@ -28,7 +28,10 @@
    {
      function validateUser($user, $passwd)
      {
-       return AUTH_SUCCESS;
+       if ($user == "")
+        return AUTH_SUCCESS;
+       else
+        return AUTH_MISMATCH;
      }
 
      function canMd5()

@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.6 $
-   * $Id: class.atkcopyhandler.inc,v 5.6 2006/01/30 11:03:31 boy Exp $
+   * @version $Revision: 5.7 $
+   * $Id: class.atkcopyhandler.inc,v 5.7 2007/02/13 14:11:35 peter Exp $
    */
    
   /**
@@ -45,6 +45,13 @@
       $db = &$this->m_node->getDb();
       if(count($recordset)>0)
       {
+        // allowed to copy record?
+        if (!$this->allowed($recordset[0]))
+        {
+          $this->renderAccessDeniedPage();
+          return;
+        }
+        
         if(!$this->m_node->copyDb($recordset[0]))
         {
           atkdebug("atknode::action_copy() -> Error");          

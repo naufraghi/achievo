@@ -10,29 +10,58 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: formfocus.js,v 5.2 2005/12/12 20:35:21 boy Exp $
+   * @version $Revision: 5.7 $
+   * $Id: formfocus.js,v 5.7 2007/06/27 09:12:47 peter Exp $
    */
    
-function placeFocus()
+function placeFocus(inEditForm)
 {
-  if (document.forms.length > 0) 
-  {
-    var field = document.forms[0];
-    for (i = 0; i < field.length; i++) 
-    {      
-      if (((field.elements[i].type == "text") || (field.elements[i].type =="textarea") || (field.elements[i].type.toString().charAt(0) == "s"))) 
+  if (typeof(inEditForm) == 'undefined')
+    inEditForm = true;
+    
+  if (document.forms.length == 0) return;
+
+  var fields = document.forms[0].elements;
+  for (i = 0; i < fields.length; i++) 
+  { 
+    var field = fields[i];
+    var type = field.type.toLowerCase();  
+     
+    if (type == "text" || type == "textarea" || type.toString().charAt(0) == "s") 
+    {
+      if (!inEditForm)
       {
-        if (field.elements[i].id) 
-        {
-          obj = get_object('ar_'+field.elements[i].id);
-          if (obj && obj.style.display!=='none')
-          {
-            document.forms[0].elements[i].focus();
-            break;
-          }
-        }
+        field.focus();
+        break;
       }
+      
+      var found = false;
+      
+      var node = field.parentNode;
+      while (node != null)
+      {
+        if (node.nodeName.toLowerCase() == 'tr')
+        {
+          
+          found = node.id != null && node.id.substring(0, 3) == 'ar_' && node.style.display != 'none';
+          if (found) 
+          {
+            try 
+            {
+              field.focus();
+            }
+            catch (err)
+            {
+              // ignore error
+            }
+          }
+          break;
+        }
+        
+        node = node.parentNode;
+      }
+      
+      if (found) break;
     }
   }
 }

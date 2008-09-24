@@ -6,6 +6,7 @@
   useattrib("atknumberattribute");
   useattrib("atkdurationattribute");
   useattrib("atkdateattribute");
+  useattrib("atkdummyattribute");
   useattrib("atkfuzzysearchattribute");
   useattrib("project.spendhoursattribute");
   userelation("atkmanytoonerelation");
@@ -27,11 +28,12 @@
 
   class phase extends atkNode
   {
-    function phase()
+    function phase($name="phase", $flags=0)
     {
-      global $g_securityManager;
+      $securitymanager = &atkGetSecurityManager();
+      $initialplanningallowed = isset($securitymanager) && $securitymanager->allowed("project.project","initialplanning");
 
-      $this->atkNode("phase",NF_AUTOSELECT|NF_EDITAFTERADD); // node() constructor is *not* called automatically!
+      $this->atkNode($name,$flags|NF_AUTOSELECT|NF_EDITAFTERADD); // node() constructor is *not* called automatically!
 
       $this->add(new atkNumberAttribute("id",AF_AUTOKEY));
       $this->add(new atkAttribute("name",AF_OBLIGATORY|AF_SEARCHABLE, 50));
@@ -47,23 +49,28 @@
 
       // template *must* come after phase_activity, because phase_activity does a delete of all
       // records on store, so template must be stored after phase_activity.
-      $this->add(new phasetemplateAttribute("template","project.tpl_phase", AF_HIDE_LIST|AF_HIDE_EDIT));
+      $this->add(new phasetemplateAttribute("template","project.tpl_phase", AF_HIDE_LIST|AF_HIDE_EDIT|AF_FORCE_LOAD));
 
-      $this->add(new atkDateAttribute("startdate", "F d Y", "d F Y"));
-      $this->add(new atkDateAttribute("enddate", "F d Y", "d F Y"));
+      $this->add(new atkDateAttribute("startdate", "", ""));
+      $this->add(new atkDateAttribute("enddate", "", ""));
+      $this->add(new atkDummyAttribute("duration","",AF_HIDE_ADD|AF_HIDE_EDIT));
 
       // deliverable dependency
       $depends = &$this->add(new atkManyToOneRelation("dependsondeliverable", "project.deliverable"));
       $depends->setDestinationFilter("project_id=[projectid.id]");
 
       //$this->add(new atkNumberAttribute("max_phasetime"));
-      $this->add(new atkDurationAttribute("initial_planning",'','', ($g_securityManager->allowed("project.project","initialplanning")?0:AF_READONLY_EDIT)|AF_TOTAL|AF_DURATION_STRING));
+      $this->add(new atkDurationAttribute("initial_planning",'','', ($initialplanningallowed?0:AF_READONLY_EDIT)|AF_TOTAL|AF_DURATION_STRING));
       $this->add(new atkDurationAttribute("current_planning",'','', AF_HIDE_ADD|AF_TOTAL|AF_DURATION_STRING));
       $this->add(new spendHoursAttribute("spend_hours","id",AF_TOTAL));
 
       $this->add(new atkOneToManyRelation("phaseplanning", "project.phaseplanning", "phaseid", AF_HIDE_LIST));
 
       $this->add(new atkFuzzySearchAttribute("phaseplanning_add", "employee.employee", "storePhaseplanning", "multiselect", AF_HIDE_ADD|AF_BLANK_LABEL, 20));
+
+      $cascadingdeletehours = atkConfig::get("project", "project_cascading_delete_hours", false);
+      if($cascadingdeletehours)
+        $this->add(new atkOneToManyRelation("hours","timereg.hours","phaseid",AF_HIDE|AF_CASCADE_DELETE));
 
       $this->addSecurityMap("view","project.admin");
       $this->setOrder("phase.startdate, phase.name");
@@ -75,15 +82,65 @@
       return "[name]";
     }
 
-    function name_display($record, $mode="list")
+
+    function name_display($record, $mode)
     {
-      $attr = &$this->getAttribute('name');
-      $result = $attr->display($record, $mode);
-      if ($this->allowed('edit', $record))
+      // Do not return a html link in plain or csv mode or select screen
+      if (($mode=="plain") || ($mode=="csv"))
+        return $record["name"];
+
+      // Special select handling
+      if (atkArrayNvl($this->m_postvars,"atkaction")=="select")
       {
-        $result = href(dispatch_url("project.phase", "edit", array("atkselector"=>"phase.id='".$record["id"]."'")), $result, SESSION_NESTED);
+        // Decode the given target url
+        $url = atkArrayNvl($this->m_postvars, "atktarget");
+        $url = atkurldecode($url);
+        $url = str_replace("%5B", "[", $url);
+        $url = str_replace("%5D", "]", $url);
+        $url = str_replace("_15B", "[", $url);
+        $url = str_replace("_15D", "]", $url);
+
+        // Parse it using the record
+        atkimport("atk.utils.atkstringparser");
+        $parser = &new atkStringParser($url);
+        $url = $parser->parse($record,true);
+
+        // Return a link
+        return href($url, $record["name"], SESSION_NESTED);
       }
-      return $result;
+      else
+      {
+        // Make all project links clickable
+        $defaultaction = $this->allowed("edit") ? "edit" : "view";
+        $url = dispatch_url("project.phase", $defaultaction, array("atkselector"=>"phase.id='{$record["id"]}'"));
+        return href($url, $record["name"], SESSION_NESTED);
+      }
+    }
+
+    function duration_display($record,$mode)
+    {
+      if(is_array($record["startdate"]) && is_array($record["enddate"]))
+      {
+        $startdate = mktime(12,0,0,$record["startdate"]["month"],$record["startdate"]["day"],$record["startdate"]["year"]);
+        $enddate = mktime(12,0,0,$record["enddate"]["month"],$record["enddate"]["day"],$record["enddate"]["year"]);
+
+        $seconds_in_a_day = 86400;
+        $sunday_val = "0";
+        $saturday_val = "6";
+        $workday_counter = 0;
+
+        $ptr_year = intval(date("Y", $start_date));
+
+        for($day_val = $startdate; $day_val <= $enddate; $day_val+=$seconds_in_a_day)
+        {
+          $pointer_day = date("w", $day_val);
+          if(($pointer_day != $sunday_val) && ($pointer_day != $saturday_val))
+            $workday_counter++;
+
+        }
+        return $workday_counter." ".($workday_counter==1?atktext("day","project"):atktext("days","project"));
+      }
+      return "";
     }
 
     function initial_values()
@@ -265,6 +322,33 @@
           return COLOR_WARNING;
         }
       }
+    }
+
+    function recordActions($record, &$actions, &$mraactions)
+    {
+      //when we have a phase that belongs to a template, the records cannot be deleted in an admin screen.
+      if(isset($record["template"]["id"]) && ($record["template"]["id"]!="") && $record["template"]["id"]!=0)
+      {
+        unset($actions["delete"]);
+      }
+    }
+
+    function preAdd(&$rec)
+    {
+      //if the phase is added, check if the name is filled in and the template is
+      if(empty($rec["name"]))
+      {
+        if(!empty($rec["template"]["id"]))
+        {
+          $node = &atkGetNode("project.tpl_phase");
+          /* @var $node atkNode */
+          $select = sprintf($node->m_table.".".$node->primaryKeyField()."='%s'",$rec["template"]["id"]);
+          list($record) = $node->selectDb($select,"","","",array("name"));
+          if($record!=NULL)
+            $rec["name"] = $record["name"];
+        }
+      }
+      return true;
     }
   }
 ?>

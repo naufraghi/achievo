@@ -12,8 +12,8 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.5 $
-   * $Id: class.atkshuttlerelation.inc,v 5.5 2006/05/12 13:24:43 martin Exp $
+   * @version $Revision: 5.8 $
+   * $Id: class.atkshuttlerelation.inc,v 5.8 2006/11/30 16:06:24 lineke Exp $
    */
 
    /** @internal base include */
@@ -56,10 +56,8 @@
         $selectedPk[] = $newselected;
       }
 
-      $filter = $this->parseFilter($this->m_destinationFilter,$record);
-      // now select all records
-      $recordset = $this->m_destInstance->selectDb($filter);
-
+      $recordset = $this->_getSelectableRecords($record, $mode);
+        
       $left = array();
       $right = array();
       $width=100;
@@ -81,7 +79,7 @@
       $result = '<table border="0"><tr><td>'.atktext('available', 'atk').':<br/>';
 
       $leftname = $fieldprefix.$this->fieldName()."_sel";
-      $rightname = $fieldprefix.$this->fieldName().'_AMDAE_'.$this->getRemoteKey();
+      $rightname = $fieldprefix.$this->fieldName().'[]['.$this->getRemoteKey().']';
       $result.= $this->_renderSelect($leftname, $left, $width, $rightname);
 
       $result.= '</td><td valign="center" align="center">';
@@ -117,7 +115,7 @@
      */
     function _renderSelect($name, $recordset, $width, $opposite)
     {
-      $result = '<select id="'.$name.'" name="'.$name.'[]" multiple size="10" style="width: '.$width.'px;" onDblClick="shuttle_move(\''.$name.'\', \''.$opposite.'\')">';
+      $result = '<select class="shuttle_select" id="'.$name.'" name="'.$name.'" multiple size="10" style="width: '.$width.'px;" onDblClick="shuttle_move(\''.$name.'\', \''.$opposite.'\')">';
       for($i=0, $_i=count($recordset); $i<$_i; $i++)
       {
         $result.= '<option value="'.$recordset[$i][$this->m_destInstance->primaryKeyField()].'">'.$this->m_destInstance->descriptor($recordset[$i]);

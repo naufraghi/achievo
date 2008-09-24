@@ -3,7 +3,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -12,13 +12,13 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.5 $
-   * $Id: class.atkwysiwygattribute.inc,v 5.5 2006/01/30 11:03:31 boy Exp $
+   * @version $Revision: 5.8 $
+   * $Id: class.atkwysiwygattribute.inc,v 5.8 2007/08/29 07:45:53 ivo Exp $
    */
-   
-  /** 
+
+  /**
    * @internal include baseclass.
-   */  
+   */
   include_once(atkconfig("atkroot")."atk/atkbrowsertools.inc");
   include_once(atkconfig("atkroot")."atk/attributes/class.atktextattribute.inc");
 
@@ -55,10 +55,12 @@
    *
    * Note: this attribute is based on a microsoft component which is
    * limited in features, and only works in Internet Explorer.
-   * It is recommented to use atkFckAttribute instead, which is a much
+   * It is recommended to use atkFckAttribute instead, which is a much
    * more feature-rich editor, which works in most popular browsers.
+   * @deprecated This attribute is no longer maintained, please use the
+   * atkFckAttribute instead.
    *
-   * @author Lineke Willems <lineke@ibuildings.nl>   
+   * @author Lineke Willems <lineke@ibuildings.nl>
    * @package atk
    * @subpackage attributes
    *
@@ -100,7 +102,7 @@
     function edit($record="", $fieldprefix="")
     {
       global $config_atkroot, $config_enable_ie_extensions;
-      global $atkwwview, $PHP_SELF;
+      global $atkwwview;
 
       if (!ieExtensions())
       {
@@ -115,8 +117,8 @@
         }
 
         $viewselectbox = '<select name="atkwwview['.$fieldprefix.$this->fieldName().']">
-                            <option value="visual">'.text("ww_visualmode").
-                            '<option value="plain" '.($wwview=="plain"?"selected":"").'>'.text("ww_sourcemode").
+                            <option value="visual">'.atktext("ww_visualmode").
+                            '<option value="plain" '.($wwview=="plain"?"selected":"").'>'.atktext("ww_sourcemode").
                          '</select>';
 
         if ($wwview!="plain")
@@ -285,7 +287,7 @@
         {
           $result.= "<!-- DEInsertTableParam Object -->";
           //$result.= "<object ID=\"ObjTableInfo\" CLASSID=\"clsid:47B0DFC7-B7A3-11D1-ADC5-006008A5848C\" width=2 height=2 VIEWASTEXT>";
-          
+
           //$result.= "</object>";
           $result.= "<IFRAME ID=\"$this->m_editorname\" STYLE=\"height:350;width:630;background-color:white;\">";
           $result.= "</IFRAME>";
@@ -390,7 +392,7 @@
       /*if ($this->editmode(WW_FONT_FACE))
       {
         $btn = "<select name=\"".$this->m_editorname."_FontName\" style=\"width:140\" TITLE=\"Font Name\" LANGUAGE=\"javascript\" onchange=\"obj_editor=".$this->m_editorname."; return FontName_onchange(this)\"> ";
-        $btn.= "<option value=\"0\" selected >".text('wysiwyg_fontface');
+        $btn.= "<option value=\"0\" selected >".atktext('wysiwyg_fontface');
 
         $btn.='	<option value="Verdana" >Verdana
           <option value="Arial" >Arial
@@ -406,7 +408,7 @@
       if ($this->editmode(WW_FONT_SIZE))
       {
         $btn ="<select name=\"".$this->m_editorname."_FontSize\" style=\"width:40\" TITLE=\"Font Size\" LANGUAGE=\"javascript\" onchange=\"obj_editor = ".$this->m_editorname."; return FontSize_onchange(this)\"> ";
-        $btn.= "<option value=\"0\" selected >".text('wysiwyg_fontsize');
+        $btn.= "<option value=\"0\" selected >".atktext('wysiwyg_fontsize');
 
         $btn.='    <option value="1">1
           <option value="2">2
@@ -479,7 +481,7 @@
 
     function button($name, $function)
     {
-      return "<a href='' onclick=\"obj_editor=".$this->m_editorname.";  $function(); return false;\" onmouseover=\"load_image('".$this->m_editorname."_$name','".$this->m_urlpath."images/$name"."_focus.gif');\" onmouseout=\"load_image('".$this->m_editorname."_$name','".$this->m_urlpath."images/$name.gif')\" ><img name='".$this->m_editorname."_$name' src='".$this->m_urlpath."images/$name.gif' alt='".text("wysiwyg_$name")."' border=0 align=absmiddle ></a> ";
+      return "<a href='' onclick=\"obj_editor=".$this->m_editorname.";  $function(); return false;\" onmouseover=\"load_image('".$this->m_editorname."_$name','".$this->m_urlpath."images/$name"."_focus.gif');\" onmouseout=\"load_image('".$this->m_editorname."_$name','".$this->m_urlpath."images/$name.gif')\" ><img name='".$this->m_editorname."_$name' src='".$this->m_urlpath."images/$name.gif' alt='".atktext("wysiwyg_$name")."' border=0 align=absmiddle ></a> ";
     }
 
   }

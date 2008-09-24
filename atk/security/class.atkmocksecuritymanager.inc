@@ -12,8 +12,8 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.1 $
-   * $Id: class.atkmocksecuritymanager.inc,v 5.1 2006/01/30 11:03:34 boy Exp $
+   * @version $Revision: 5.2 $
+   * $Id: class.atkmocksecuritymanager.inc,v 5.2 2006/10/10 12:41:56 peter Exp $
    */
   
   /** @internal include */

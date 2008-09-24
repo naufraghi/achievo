@@ -41,7 +41,7 @@
 
       $this->m_zoom = $g_sessionManager->stackVar("zoom");
 
-      if ($ATK_VARS["employee_sel"]!="")
+      if (atkArrayNvl($ATK_VARS, "employee_sel", "") != "")
       {
         // A selection was made with the dropdown.
         userelation("atkmanytoonerelation");
@@ -77,10 +77,6 @@
 
       include_once("achievotools.inc");
 
-      $navigatorBox = $ui->renderBox(array("title"=>atkText("parameters","employeestats","employee"),"content"=>$this->navigator()));
-      $page->addContent($navigatorBox);
-
-
       $empnode = &atkGetNode("employee.employee");
 
       $descriptor="";
@@ -98,7 +94,7 @@
                 '<input type="submit" value="&lt;&lt; '.atktext('back').'"></form>';
       }
 
-      $output.=$backbtn;
+      $output =$backbtn;
 
       $params["employeeid"] = $employeeid;
       $params["viewstart"] = $startdate;
@@ -114,7 +110,7 @@
       if (count($prjdata)==0)
       {
         // There is no data.
-        $output.='<br><br>'.sprintf(atktext('nodata', $this->m_type), $descriptor).'<br>';
+        $output.='<br><br>'.sprintf(atktext('nodata',$this->m_node, $this->m_type), $descriptor).'<br>';
       }
       else
       {
@@ -128,7 +124,7 @@
         $output.= "<br><br>".$prjstats->showGraph();
 
         // Textual version:
-        $output.= "<br><br>".$this->_tableStats(atktext("project"), $prjdata, array("name"), $detailparams, "projectid");
+        $output.= "<br><br>".$this->_tableStats(atktext("project"), $prjdata, array("abbreviation", "name"), $detailparams, "projectid");
 
         // ACTIVITY STATS
         $activitystats = &new dataGraphAttribute("activitytimedistribution", "activitytime", $params, "auto");
@@ -151,9 +147,12 @@
 
       $output.="<br>".$backbtn."<br>";
 
-      $contentBox = $ui->renderBox(array("title"=>atkText("stats","employee").($descriptor!=""?" - ".$descriptor:""),"content"=>$output));
-      $page->addContent($contentBox);
-
+      $boxes = array(
+        $ui->renderBox(array("title"=>atkText("parameters","employeestats","employee"),"content"=>$this->navigator())),
+        $ui->renderBox(array("title"=>atkText("stats","employee").($descriptor!=""?" - ".$descriptor:""),"content"=>$output)),
+      );
+      $actionpage = $this->renderActionPage("stats", $boxes);
+      $page->addContent($actionpage);
     }
 
     function _paramForm($contents)
@@ -180,10 +179,10 @@
                         "employee_sel"=>array("id"=>$this->m_employeeid));
 
 
-      $startdateatt = new atkDateAttribute("viewstart","F d Y","d F Y", 0, date("Ymd"));
-      $enddateatt = new atkDateAttribute("viewend","F d Y","d F Y", 0, date("Ymd"));
+      $startdateatt = new atkDateAttribute("viewstart","","", 0, date("Ymd"));
+      $enddateatt = new atkDateAttribute("viewend","","", 0, date("Ymd"));
 
-      $output = '<form action="dispatch.php" method="get">';
+      $output = '<form action="'.getDispatchFile().'" method="get">';
       $output.= session_form();
       $output.= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
       $output.= '<input type="hidden" name="atkaction" value="'.$this->m_action.'">';
@@ -224,7 +223,7 @@
 
       $cells = array();
 
-      $cells[0] = array($itemheader, atktext("time"), text("percentage"));
+      $cells[0] = array($itemheader, atktext("time"), atktext("percentage"));
       if ($mayviewdetail) $cells[0][] = atktext("details");
 
       for($i=0, $_i=count($dataset); $i<$_i; $i++)

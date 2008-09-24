@@ -17,8 +17,8 @@
    * @todo Make sure EVERY config variable is located here and properly
    * documented.
    *
-   * @version $Revision: 5.50 $
-   * $Id: defaultconfig.inc.php,v 5.50 2006/04/24 15:30:24 peter Exp $
+   * @version $Revision: 5.70 $
+   * $Id: defaultconfig.inc.php,v 5.70 2007/12/10 11:12:36 peter Exp $
    */
 
   /********************* FILE LOCATIONS & PATHS ******************************/
@@ -30,7 +30,7 @@
    */
   $config_application_root = "/";
 
-  if ($config_atkroot == "")
+  if ($config_atkroot == "" || isset($_REQUEST["config_atkroot"])) // may not be passed in request (register_globals danger) 
   {
     /**
      * The root of the ATK application, where the atk/ directory resides
@@ -123,7 +123,7 @@
    *
    * Currently supported are:
    *   mysql:   MySQL (3.X ?)
-   *   mysql41: MySQL > 4.1.3
+   *   mysqli:  MySQL > 4.1.3
    *   oci8:    Oracle 8i
    *   oci9:    Oracle 9i and 10g
    *   pgsql:   PostgreSQL
@@ -131,6 +131,17 @@
    * @var String
    */
   $config_db["default"]["driver"]="mysql";
+
+  /**
+   * Test database mapping. Maps normal databases to their test database.
+   * Most of the applications only use one database in that case the default
+   * should be sufficient. But in case you use multiple database and also
+   * want to run tests on all these database you can override this mapping
+   * or add your own mappings.
+   *
+   * @var array
+   */
+  $config_test_db_mapping = array('default' => 'test');
 
   /**
    * Backwardscompatibility setting. Set this to MYSQL_BOTH if your
@@ -145,6 +156,12 @@
    * @var int
    */
   $config_pgsqlfetchmode = defined("PGSQL_ASSOC") ? PGSQL_ASSOC : 0;
+
+  /**
+   * Database Cluster nodes
+   * $config_db_cluster["default"] = array("master","slave","slave2");
+   */
+  $config_db_cluster = array();
 
   /********************************** SECURITY *******************************/
 
@@ -185,6 +202,12 @@
    * @var int
    */
   $config_authentication_cookie_expire = 10080;
+
+  /**
+   * The default state cookie expiry time (in minutes) (7 days)
+   * @var int
+   */
+  $config_state_cookie_expire = 10080;
 
   /**
    *
@@ -234,6 +257,12 @@
    *
    * @var String
    */
+  $config_auth_database    = "default";
+
+  /**
+   *
+   * @var String
+   */
   $config_auth_usertable   = "user";
 
   /**
@@ -248,6 +277,13 @@
    */
   $config_auth_accesstable = "access";
 
+  /**
+   * If left empty auth_levelfield is used.
+   * 
+   * @var String
+   */
+  $config_auth_accessfield = "";
+  
   /**
    *
    * @var String
@@ -428,6 +464,12 @@
    */
   $config_mailreport = "";
 
+  /**
+   * Output missing translation "errors".
+   * @var String
+   */
+  $config_debug_translations = false;
+
   /************************************ LAYOUT *******************************/
 
   /**
@@ -462,6 +504,13 @@
   $config_menu_align = "center";
 
   /**
+   * Auto-include logout link in menu?
+   *
+   * @var Boolean
+   */
+  $config_menu_logout_link = true;
+
+  /**
    * 0 = no   - 1 = yes
    * @var int
    */
@@ -480,28 +529,17 @@
   $config_fullscreen = false;
 
   /**
-   * Whether the action links in a recordlist appear left or right
-   * @var String
-   */
-  $config_recordlist_orientation  = "left";
-
-  /**
-   *
-   * @var String
-   */
-  $config_recordlist_vorientation = "middle";
-
-  /**
-   * Use icons for action links or not
-   * @var String
-   */
-   $config_recordlist_icons = "true";
-
-  /**
    * Whatever tabs are enabled or not
    * @var boolean
    */
   $config_tabs = true;
+
+  /**
+   * Whatever DHTML tabs should be stateful or not
+   * (E.g. the current tab is saved for the current node/selector combination)
+   * @var boolean
+   */
+  $config_dhtml_tabs_stateful = true;
 
   /**
    * The number of records to display on a single page
@@ -549,6 +587,14 @@
    * @var String
    */
   $config_language_basedir = "languages/";
+
+  /**
+   * Use browser language to detect application language.
+   * By default set to false to remain backwards compatible.
+   *
+   * @var boolean
+   */
+  $config_use_browser_language = false;
 
   /**
    * True: one language switch attributes automatically switches all others on
@@ -631,7 +677,16 @@
   /****************** MISCELLANEOUS CONFIGURATION OPTIONS ********************/
 
   /**
-   * The application identifier (used for sessions)
+   * The session name. If this configuration option is not set the 
+   * $config_identifier option is used instead.
+   * 
+   * @var string
+   */
+  $config_session_name = "";
+  
+  /**
+   * The application identifier. 
+   *  
    * @var String
    * @todo update this bit of documentation as it doesn't really say much
    */
@@ -672,7 +727,7 @@
    * @var Array
    */
   $config_allowed_includes = array("atk/lock/lock.php", "atk/lock/lock.js.php", "atk/javascript/class.atkdateattribute.js.inc",
-                                               "atk/popups/help.inc", "atk/popups/colorpicker.inc");
+                                   "atk/popups/help.inc", "atk/popups/colorpicker.inc", "atk/ext/captcha/img/captcha.jpg.php");
 
   /**
    * Forces the themecompiler to recompile the theme all the time
@@ -721,7 +776,7 @@
    * confirm box for deleting instead of a seperate page
    * @var boolean
    */
-  $config_javascript_confirmation = false;
+  $config_recordlist_javascript_delete = false;
 
   /**
    * This should be turned on when an application makes use
@@ -738,13 +793,73 @@
    * @var boolean
    */
   $config_mail_enabled = true;
-  
+
   /**
    * Default extended search action. This action can always be overriden
    * in the node by using $node->setExtendedSearchAction. At this time
    * (by default) the following values are supported: 'search' or 'smartsearch'
-   * 
+   *
    * @var string
    */
   $config_extended_search_action = 'search';
+
+  /**
+   * Should all many-to-one relations have the AF_RELATION_AUTOCOMPLETE flag set?
+   *
+   * @var boolean
+   */
+  $config_manytoone_autocomplete_default = false;
+
+  /**
+   * Should all many-to-one relations that have the AF_LARGE flag set also
+   * have the AF_RELATION_AUTOCOMPLETE flag set?
+   *
+   * @var boolean
+   */
+  $config_manytoone_autocomplete_large = true;
+
+  /**
+   * Should manytoone relations having the AF_RELATION_AUTOCOMPLETE flag also
+   * use auto completion in search forms?
+   *
+   * @var boolean
+   */
+  $config_manytoone_search_autocomplete = true;
+
+  /**
+   * Controls how many characters a user must enter before an auto-completion
+   * search is being performed.
+   *
+   * @var int
+   */
+  $config_manytoone_autocomplete_minchars = 2;
+
+  /**
+   * The search mode of the autocomplete fields. Can be 'startswith', 'exact' or 'contains'.
+   *
+   * @access private
+   * @var String
+   */
+  $config_manytoone_autocomplete_searchmode = "contains";
+
+  /**
+   * Value determines wether the search of the autocompletion is case-sensitive.
+   *
+   * @var boolean
+   */
+  $config_manytoone_autocomplete_search_case_sensitive = false;
+
+  /**
+   * Warn the user if he/she has changed something in a form
+   * and leaves the page without pressing save or cancel.
+   *
+   * @var bool
+   */
+  $config_lose_changes_warning = false;
+
+/**
+ * Directories that contains modules (needed for testcases)
+ */
+
+//  $config_module_dirs = array("/modules");
 ?>

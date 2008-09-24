@@ -6,13 +6,14 @@
  *
  * This class makes it possible to relate contacts to a project in a certain role(s).
  *
- * $Id: class.project_personcontact.inc,v 1.13 2006/04/26 10:34:39 guido Exp $
+ * $Id: class.project_personcontact.inc,v 1.16 2007/03/19 22:17:16 sandy Exp $
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.16 $
  *
  */
 
 userelation("atkmanytoonerelation");
+useattrib("docmanager.relateddocument");
 
 class project_personcontact extends atkNode
 {
@@ -23,11 +24,15 @@ class project_personcontact extends atkNode
     $this->add(new atkManyToOneRelation("projectid", "project.project", AF_OBLIGATORY|AF_PRIMARY|AF_HIDE));
     $this->add(new atkManyToOneRelation("personid", "project.select_contact", AF_OBLIGATORY|AF_PRIMARY|AF_RELATION_AUTOLINK|AF_LARGE));
     $this->add(new atkManyToOneRelation("role", "project.role", AF_OBLIGATORY|AF_PRIMARY|AF_RELATION_AUTOLINK));
+    $this->add(new relatedDocument("document", "projectid"));
+
+
     $this->addFilter("personid.role = 'contact'");
 
-    // if you may edit the project, you may also add contactpersons to it.
+    // If you may edit the project, you may also add contactpersons to it.
     $this->setSecurityAlias("project.project");
-    $this->m_securityMap["add"] = "edit";
+    foreach(array("add", "save", "update", "delete") as $action)
+      $this->m_securityMap[$action] = "edit";
 
     $this->setTable("project_person", "project_person");
     $this->setOrder("projectid.name ASC, personid.lastname ASC");
@@ -51,16 +56,16 @@ class project_personcontact extends atkNode
     // Assign the referenced project
     $projectnode = &atkGetNode("project.project");
     $projectrecord = $projectnode->selectDb("project.id='".$project_personcontactrecord[0]["projectid"]["id"]."'");
-    $documentWriter->assignDocumentSingleRecord($projectnode, $projectrecord[0], "project_");
+    $documentWriter->assignDocumentSingleRecord($projectnode, $projectrecord[0], "project_", "", "", "", "", "view");
 
     // Assign the referenced personcontact
     $personcontactnode = &atkGetNode("project.select_contact");
     $personcontactrecord = $personcontactnode->selectDb("person.id='".$project_personcontactrecord[0]["personid"]["id"]."'");
-    $documentWriter->assignDocumentSingleRecord($personcontactnode, $personcontactrecord[0], "person_");
+    $documentWriter->assignDocumentSingleRecord($personcontactnode, $personcontactrecord[0], "person_", "", "", "", "", "view");
 
     // Assign the referenced personcontact's organization (if available)
     $organizationnode = &atkGetNode("organization.organization");
-    $organizationrecord = $organizationnode->selectDb("organization.id='".$personcontactrecord[0]["company"]["id"]."'");
+    $organizationrecord = $organizationnode->selectDb("organization.id='".$personcontactrecord[0]["company"]["id"]."'", "", "", "", "", "view");
     if (count($organizationrecord) > 0)
     {
       $documentWriter->assignDocumentSingleRecord($organizationnode, $organizationrecord[0], "organization_");
@@ -72,7 +77,7 @@ class project_personcontact extends atkNode
 
     // Assign the referenced coordinator
     $employeenode = &atkGetNode("employee.employee");
-    $coordinatorrecord = $employeenode->selectDb("person.id='".$projectrecord[0]["coordinator"]["id"]."'");
+    $coordinatorrecord = $employeenode->selectDb("person.id='".$projectrecord[0]["coordinator"]["id"]."'", "", "", "", "", "view");
     $documentWriter->assignDocumentSingleRecord($employeenode, $coordinatorrecord[0], "coordinator_");
 
     // Also assign the generic (date) vars tot the documentWriter

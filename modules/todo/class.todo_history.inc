@@ -7,9 +7,9 @@
    *
    * Rewriten to be an extension of todo class by Ivo.
    *
-   * @version $Revision: 1.4 $
+   * @version $Revision: 1.6 $
    *
-   * $Id: class.todo_history.inc,v 1.4 2003/04/17 21:27:14 ivo Exp $
+   * $Id: class.todo_history.inc,v 1.6 2007/03/27 14:37:33 guido Exp $
    *
    */
 
@@ -23,16 +23,11 @@
   {
     function todo_history()
     {
-      $this->todo(); // call baseclass constructor, but with new name.
+      $this->todo("todo_history"); // call baseclass constructor, but with new name.
       $this->m_type = "todo_history";
-      
 
       $this->m_flags|= NF_READONLY;
       $this->add(new atkManyToOneRelation("todoid", "todo.todo",AF_READONLY|AF_OBLIGATORY|AF_SEARCHABLE));
-
-      // We disable the history attribute, for it will cause a recursive loop if history would have
-      // a history.
-      $this->remove("history");
 
       // We also need to change the updated attribute, because now we no longer want it hide_list,
       // and we don't want to store the current date, but the original date that the todo was
@@ -48,16 +43,20 @@
 
     }
 
+
+
     function postUpdate($rec)
     {
       // do nothing. we need to define this dummy, otherwise todo::postUpdate
       // might be called, which creates another history item.
+      return true;
     }
 
     function postAdd($rec)
     {
       // do nothing. we need to define this dummy, otherwise todo::postAdd
       // might be called, which spams people about new todo's.
+      return true;
     }
 
   }

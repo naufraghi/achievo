@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.27 $
-   * $Id: class.atkpage.inc,v 5.27 2006/04/20 19:30:57 ivo Exp $
+   * @version $Revision: 5.48 $
+   * $Id: class.atkpage.inc,v 5.48 2007/11/30 10:10:12 peter Exp $
    */
 
   /**
@@ -24,6 +24,7 @@
   define("HTML_DOCTYPE",4);                     // Add doctype to page
   define("HTML_ALL",HTML_BODY|HTML_HEADER);     // Shortcut
   define("HTML_STRICT",HTML_ALL|HTML_DOCTYPE);  // Shortcut
+  define("HTML_PARTIAL", 8);                    // Partial (only content, this flag can't be ANDed!)
 
 
   /**
@@ -56,7 +57,7 @@
      * @access private
      * @var array
      */
-    var $m_scriptcode = array();
+    var $m_scriptcode = array("before"=>array(),"after"=>array());
 
     /**
      * List of javascript code statements to execute when a form on
@@ -123,12 +124,49 @@
      * If called twice for the same filename, the file is loaded only once.
      * @param String $file The (relative path and) filename of the javascript
      *                     file.
+     * @param String $before The (partial) name of a script that this script
+     *                       should be loaded in front of. This can be used
+     *                       to inject a script before another script, or to
+     *                       avoid conflicts. Usually, this parameter is not
+     *                       needed.
      */
-    function register_script($file)
+    function register_script($file, $before="")
     {
-      if (!in_array($file, $this->m_scriptfiles)) $this->m_scriptfiles[] = $file;
+      if (!in_array($file, $this->m_scriptfiles))
+      {
+        if ($before=="")
+        {
+          $this->m_scriptfiles[] = $file;
+        }
+        else
+        {
+          // lookup the dependency and inject script right before it.
+          $result = array(); $injected = false;
+          for ($i=0, $_i=count($this->m_scriptfiles); $i<$_i; $i++)
+          {
+            if (stristr($this->m_scriptfiles[$i], $before)!==false)
+            {
+              // inject the new one here.
+              $result[] = $file; $injected = true;
+            }
+            $result[] = $this->m_scriptfiles[$i];
+          }
+          if (!$injected) $result[] = $file; // inject at the end if dependency not found.
+
+          $this->m_scriptfiles = $result;
+        }
+      }
     }
 
+    /**
+     * Return all javascript files
+     *
+     * @return array contain file paths
+     */
+    function getScripts()
+    {
+      return $this->m_scriptfiles;
+    }
     /**
      * Register a javascript code statement which will be rendered in the
      * header.
@@ -137,10 +175,12 @@
      * twice, will result in the statement only being rendered and executed
      * once.
      * @param String $code The javascript code to place in the header.
+     * @param Boolean $before Include the script before the javascript files
      */
-    function register_scriptcode($code)
+    function register_scriptcode($code,$before=false)
     {
-      if (!in_array($code, $this->m_scriptcode)) $this->m_scriptcode[] = $code;
+      $element = ($before?'before':'after');
+      if (!in_array($code, $this->m_scriptcode[$element])) $this->m_scriptcode[$element][] = $code;
     }
 
     /**
@@ -164,6 +204,20 @@
      if (!in_array($code, $this->m_loadscripts)) $this->m_loadscripts[] = $code;
    }
 
+   /**
+    * Return all javascript codes in an array
+    *
+    * @return array
+    */
+   function getScriptCodes()
+   {
+     $scriptCodes = array_merge($this->m_scriptcode['before'], $this->m_scriptcode['after']);
+     $scriptCodes[] = $this->_getGlobalSubmitScriptCode();
+     $scriptCodes[] = $this->_getGlobalLoadScriptCode();
+
+     return $scriptCodes;
+   }
+
     /**
      * Register a Cascading Style Sheet.
      *
@@ -180,10 +234,20 @@
         $media = 'all';
       }
 
-      if (!array_key_exists($file, $this->m_stylesheets)) 
+      if (!array_key_exists($file, $this->m_stylesheets))
       {
         $this->m_stylesheets[$file] = $media;
       }
+    }
+
+    /**
+     * Return all stylesheet files
+     *
+     * @return array contain file paths
+     */
+    function getStyles()
+    {
+      return $this->m_stylesheets;
     }
 
     /**
@@ -195,6 +259,16 @@
      function register_stylecode($code)
      {
        if (!in_array($code, $this->m_stylecode)) $this->m_stylecode[] = $code;
+     }
+
+    /**
+     * Return all style codes
+     *
+     * @return array
+     */
+     function getStyleCodes()
+     {
+       return $this->m_stylecode;
      }
 
      /**
@@ -221,29 +295,22 @@
     {
       $res = "<head>\n  <title>$title</title>\n";
 
-      // $Name: achievo_1_2_1 $ is the CVS tag.
+      // $Name: achievo_1_3_4 $ is the CVS tag.
       $version = atkversion();
-      if ("\$Name: achievo_1_2_1 $"!="\$"."Name:  $") $version.=" ($Name: achievo_1_2_1 $)";
-      $res.= '  <META NAME="atkversion" CONTENT="'.$version.'">'."\n";
+      if ("\$Name: achievo_1_3_4 $"!="\$"."Name:  $") $version.=" ($Name: achievo_1_3_4 $)";
+      $res.= '  <meta name="atkversion" content="'.$version.'" />'."\n";
 
-      $res.= '  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset='.atktext("charset","atk").'">'."\n";
+      $res.= '  <meta http-equiv="Content-Type" content="text/html; charset='.atktext("charset","atk").'" />'."\n";
       if ($extra_header != "") $res.= $extra_header."\n";
 
       $this->addScripts($res);
-
-      foreach ($this->m_stylesheets as $file => $media)
-      {
-        $res.='  <link href="'.$file.'" rel="stylesheet" type="text/css" media="'.$media.'" />'."\n";
-      }
-
-      for ($i = 0; $i < count($this->m_stylecode); $i++)
-        $res.= '<style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
+      $this->addStyles($res);
 
       $favico = atkconfig("defaultfavico");
       if ($favico!="")
       {
-        $res.= '<link rel="icon" href="'.$favico.'" type="image/x-icon">
-                <link rel="shortcut icon" href="'.$favico.'" type="image/x-icon">'."\n";
+        $res.= '  <link rel="icon" href="'.$favico.'" type="image/x-icon" />'."\n";
+        $res.= '  <link rel="shortcut icon" href="'.$favico.'" type="image/x-icon" />'."\n";
       }
 
       $res.="</head>\n";
@@ -252,49 +319,126 @@
 
     /**
      * Adds javascripts from the member variables to HTML output
-     * @param String $res The HTML output
+     * @param String $res Reference to the HTML output
      */
-    function addScripts(&$res)
+    function addScripts(&$res, $partial=false)
     {
-      for ($i = 0; $i < count($this->m_scriptfiles); $i++)
+      
+      $count_scriptcode = count($this->m_scriptcode['before']);
+      if($count_scriptcode>0) $res .= '  <script type="text/javascript">'."\n";
+      $res.= $this->renderScriptCode("before");
+
+      if($count_scriptcode>0) $res .= "  </script>\n";
+      
+      if (!$partial)
       {
-        $res.='  <script type="text/javascript" language="JavaScript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
+        for ($i = 0; $i < count($this->m_scriptfiles); $i++)
+          $res .= '  <script type="text/javascript" src="'.$this->m_scriptfiles[$i].'"></script>'."\n";
       }
-
-      $res.="  <script type=\"text/javascript\">
-  function globalSubmit(form)
-  {
-     var retval = true;\n";
-
-      for ($i=0, $_i = count($this->m_submitscripts); $i<$_i; $i++)
+      else 
       {
-        $res.="    retval = ".$this->m_submitscripts[$i]."\n";
-        $res.="    if (retval!=true) return false;\n";
-      }
-
-      $res.="    return retval;
-   }\n";
-
-      if (count($this->m_loadscripts))
-      {
-        $res.="  function globalLoad()
-  {\n";
-        for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
+        
+        $files = '';
+        for ($i = 0; $i < count($this->m_scriptfiles); $i++)
         {
-          $res.= $this->m_loadscripts[$i]."\n";
+          $files .= "ATK.Tools.loadScript('".$this->m_scriptfiles[$i]."');\n";
+        }          
+        
+        if (!empty($files))
+        {
+          $res .= '<script type="text/javascript">'.$files.'</script>';
         }
-        $res.="  }\n";
       }
+
+      $res .= '  <script type="text/javascript">';
 
       // javascript code.
-      for ($i=0, $_i=count($this->m_scriptcode); $i<$_i; $i++)
-      {
-        $res.= $this->m_scriptcode[$i]."\n";
-      }
+      $res.=$this->renderScriptCode("after");
 
-      $res.= "  </script>\n\n";
+      $res.=$this->_getGlobalSubmitScriptCode($partial);
+      $res.=$this->_getGlobalLoadScriptCode($partial);  
+
+      $res .= "  </script>\n\n";
+    }
+    
+    /**
+     * Renders the registered javascripts, if $position is set to "before" the scripts will be
+     * placed before the scripts that are already present. Otherwise they will be appended
+     * at the end.
+     *
+     * @param string $position ("before" or "after")
+     * @return string 
+     */
+    function renderScriptCode($position)
+    {
+      $res = "";
+      for ($i=0, $_i=count($this->m_scriptcode[$position]); $i<$_i; $i++)
+      {
+        $res.= $this->m_scriptcode[$position][$i]."\n";
+      }
+      return $res;
     }
 
+    function _getGlobalSubmitScriptCode($partial=false)
+    {
+      // global submit script can only be registered in the original request
+      if ($partial)
+      {
+        return "";
+      }
+      
+      $res = "\n    function globalSubmit(form)\n";
+      $res .= "    {\n";
+      $res .= "      var retval = true;\n";
+
+      for ($i=0,$_i = count($this->m_submitscripts); $i<$_i; $i++)
+      {
+        $res .= "      retval = ".$this->m_submitscripts[$i]."\n";
+        $res .= "      if (retval!=true) return false;\n";
+      }
+
+      $res .= "      return retval;\n";
+      $res .= "    }\n";
+      return $res;
+    }
+
+    function _getGlobalLoadScriptCode($partial=false)
+    {
+      $res = '';
+      if (count($this->m_loadscripts))
+      {
+        $res = "";
+        if (!$partial)
+        {
+          $res .= "    function globalLoad()\n";
+          $res .= "    {\n";
+        }
+
+        for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
+        {
+          $res .= "      {$this->m_loadscripts[$i]}\n";
+        }
+
+        if (!$partial)  $res.= "    }\n";
+      }
+      return $res;
+    }
+
+    /**
+     * Add stylesheets and stylecodes to the HMTL output
+     *
+     * @param String $res Reference to the HTML output
+     */
+    function addStyles(&$res)
+    {
+      foreach ($this->m_stylesheets as $file => $media)
+      {
+        $res.='  <link href="'.$file.'" rel="stylesheet" type="text/css" media="'.$media.'" />'."\n";
+      }
+
+      for ($i = 0; $i < count($this->m_stylecode); $i++)
+        $res.= '<style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
+    }
 
     /**
      * Add content to the page.
@@ -303,6 +447,26 @@
     function addContent($content)
     {
       $this->m_content.=$content;
+    }
+    
+    /**
+     * Returns the current page content.
+     *
+     * @return string current page content
+     */
+    function getContent()
+    {
+      return $this->m_content;
+    }
+    
+    /**
+     * Sets the page content (overwriting current content).
+     *
+     * @param string $content new page content
+     */
+    function setContent($content)
+    {
+      $this->m_content = $content;
     }
 
     /**
@@ -317,7 +481,7 @@
       $res = '<body ';
       if (count($this->m_loadscripts))
       {
-        $res.='onLoad="globalLoad();" ';
+        $res.='onload="globalLoad();" ';
       }
       $res.= $extraprops.">\n";
       return $res;
@@ -335,9 +499,11 @@
      * @param string $extrabodyprops  Extra attributes to add to the <body> tag.
      * @return String The HTML page, including <html> and </html> tags.
      */
-
-    function render($title, $flags=7,$extrabodyprops="", $extra_header="")
+    function render($title, $flags=HTML_STRICT,$extrabodyprops="", $extra_header="")
     {
+      $ui = &atkinstance('atk.ui.atkui');
+      $theme = &atkinstance('atk.ui.atktheme');
+
       if(is_bool($flags) && $flags==true)
       {
         $flags=HTML_STRICT;
@@ -346,17 +512,36 @@
       {
         $flags=HTML_HEADER|HTML_DOCTYPE;
       }
+      elseif (hasFlag($flags, HTML_PARTIAL))
+      {
+        return $this->renderPartial();
+      }
+
+      if ($theme->tplPath('page.tpl')) $this->m_content= $ui->render('page.tpl',array('content'=>$this->m_content));
+
       $page = '';
-      if(hasFlag($flags,HTML_DOCTYPE)) $page.=atkconfig("doctype");
+      if(hasFlag($flags,HTML_DOCTYPE)) $page.=$theme->getAttribute('doctype',atkconfig("doctype"));
       $page.= "\n<html>\n";
+
       if(hasFlag($flags,HTML_HEADER)) $page.= $this->head($title, $extra_header);
       if (hasFlag($flags,HTML_BODY)) $page.= $this->body($extrabodyprops);
-      $page.= $this->m_content."\n";
+
+      $page.=$this->m_content."\n";
       $page.= $this->renderHiddenVars();
       if (hasFlag($flags,HTML_BODY)) $page.= "</body>\n";
       $page.= "</html>\n";
-
+      
       return $page;
+    }
+
+    /**
+     * Render partial.
+     */
+    function renderPartial()
+    {
+      $result = $this->m_content;
+      $this->addScripts($result, true);
+      return $result;
     }
 
     /**
@@ -385,10 +570,6 @@
      */
     function atkPage()
     {
-      global $ATK_VARS;
-      /** @todo: Move this to the places where the tabscript is registered. */
-      // Load default tab show script.
-      $this->register_loadscript('if ( window.showTab ) {showTab(\''.(isset($ATK_VARS['atktab'])?$ATK_VARS['atktab']:'').'\');}');
     }
 
     /**

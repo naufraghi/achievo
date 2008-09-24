@@ -62,9 +62,6 @@ class projectstats extends atkNode
     $enddate = $this->m_viewend;
     $projectid = $this->m_projectid;
 
-    $navigatorBox = $ui->renderBox(array("title"=>atkText("parameters","project"),"content"=>$this->navigator()));
-    $page->addContent($navigatorBox);
-
     $prjnode = &atkGetNode("project.project");
 
     $descriptor="";
@@ -184,8 +181,13 @@ class projectstats extends atkNode
     }
 
     $output.="<br>".$backbtn."<br>";
-    $contentBox = $ui->renderBox(array("title"=>atkText("stats","project").$descriptor,"content"=>$output));
-    $page->addContent($contentBox);
+
+    $boxes = array(
+      $ui->renderBox(array("title"=>atkText("parameters","project"),"content"=>$this->navigator())),
+      $ui->renderBox(array("title"=>atkText("stats","project").$descriptor,"content"=>$output)),
+    );
+    $actionpage = $this->renderActionPage("stats", $boxes);
+    $page->addContent($actionpage);
 
   }
 
@@ -207,10 +209,10 @@ class projectstats extends atkNode
     "month"=>substr($enddate,5,2),
     "day"=>substr($enddate,8,2)));
 
-    $startdateatt = new atkDateAttribute("viewstart","F d Y","d F Y", 0, date("Ymd"));
-    $enddateatt = new atkDateAttribute("viewend","F d Y","d F Y", 0, date("Ymd"));
+    $startdateatt = new atkDateAttribute("viewstart","","", 0, date("Ymd"));
+    $enddateatt = new atkDateAttribute("viewend","","", 0, date("Ymd"));
 
-    $output = '<form action="dispatch.php" method="get">';
+    $output = '<form action="'.getDispatchFile().'" method="get">';
     $output.= session_form();
     $output.= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
     $output.= '<input type="hidden" name="atkaction" value="'.$this->m_action.'">';
@@ -265,9 +267,7 @@ class projectstats extends atkNode
     {
        $row = array();
        $row[]=($i+1);
-       $row[]=href("dispatch.php?atknodetype=".$this->atkNodeType().
-                   "&atkaction=".$this->m_action.
-                   "&projectid=".$projects[$i]["id"],
+       $row[]=href(dispatch_url($this->atknodetype(),$this->m_action,array("projectid"=>$projects[$i]["id"])),
                    $projects[$i]["name"],
                    SESSION_NESTED);
        $row[] = time_format($projects[$i]["totaltime"], true);
@@ -340,11 +340,9 @@ class projectstats extends atkNode
     $tbl->setColAlignment(1,TBL_RIGHT);
     $tbl->setColAlignment(2,TBL_RIGHT);
 
-    $res.=$tbl->render($data, TBL_DATA|TBL_FOOTER, "recordlist");
+    $res = $tbl->render($data, TBL_DATA|TBL_FOOTER, "recordlist");
     return $res;
   }
-
-
 }
 
 ?>

@@ -12,8 +12,8 @@
    * @copyright (c)2006 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.2 $
-   * $Id: class.atkcalculatorattribute.inc,v 1.2 2006/04/10 19:30:40 ivo Exp $
+   * @version $Revision: 1.5 $
+   * $Id: class.atkcalculatorattribute.inc,v 1.5 2007/12/09 19:29:15 yury Exp $
    */
 
   /**
@@ -109,6 +109,23 @@
       eval("\$result = ".$parser->parse($record).";");
       return $result;
     }
+
+    /**
+     * Returns a displayable string for this value, to be used in HTML pages.
+     * 
+     * @access public
+     * @param array $record The record that holds the value for this attribute
+     * @param String $mode The display mode.
+     * @return String HTML String
+     */
+    function display($record, $mode="")
+    {
+      if($this->m_ownerInstance->m_partial == "attribute.".$this->fieldName().".refresh")
+      {
+        $record[$this->fieldName()] = $this->load($db, $record);
+      }
+      return parent::display($record, $mode);
+    }    
   }
 
 ?>

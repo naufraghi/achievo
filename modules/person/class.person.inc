@@ -7,9 +7,9 @@
  * This class is a generalisation of employee and contact and is used for schedule_attendees
  * and for the general attribute of employee and contact.
  *
- * $Id: class.person.inc,v 1.16 2006/04/11 20:48:16 sandy Exp $
+ * $Id: class.person.inc,v 1.23 2007/09/15 18:53:32 yury Exp $
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.23 $
  *
  */
 
@@ -47,11 +47,12 @@ class person extends atkNode
     $this->add(new atkTextAttribute("remark", TEXT_LARGE, AF_HIDE_LIST));
     $this->add(new atkAttribute("role", AF_OBLIGATORY|AF_HIDE, 15)); //discriminator
     $this->add(new atkParserAttribute("vcard", href("?atkaction=vcard&id=[id]", atktext("vcard"), SESSION_NESTED), AF_NO_LABEL|AF_HIDE_ADD), NULL, 10000);
-    $this->m_securityMap["vcard"] = "view";
 
+    $this->addSecurityMap("vcard", "view");
     $this->setTable("person", "person");
     $this->setOrder("person.role, person.lastname");
     $this->setIndex("lastname");
+    $this->setDescriptorTemplate("[title_id.title] [lastname], [firstname] ([role])");
   }
 
   function lastname_display($record, $mode)
@@ -91,47 +92,34 @@ class person extends atkNode
     }
   }
 
-  function descriptor_def()
+  function action_vcard(&$handler)
   {
-    return "[lastname], [firstname] ([role])";
-  }
+    // Get the record
+    $id = atkArrayNvl($this->m_postvars, "id");
+    $persons = $this->selectDb("person.id='".$id."'", "", "", "", "", "view");
 
-  function action_vcard()
-  {
-    return $this->createVCard($this->m_postvars["id"]);
-  }
-
-  function createVCard($id)
-  {
+    // Create the vcard
     include_once(moduleDir("utils")."vcard.php");
-    $v = new vCard();
+    $vcard = new vCard();
+    $this->assignVcard($vcard, $persons[0]);
 
-    $recs = $this->selectDb("id='".$id."'", "", "", "", array("phone", "cellular", "lastname", "firstname",
-                                                              "address", "city", "state", "zipcode",
-                                                              "country", "email", "remark"));
-    $record = $recs[0];
-
-    $v->setPhoneNumber($record["phone"], "PREF;WORK;VOICE");
-    $v->setPhoneNumber($record["cellular"], "CELL");
-    $v->setName($record["lastname"], $record["firstname"], "", "");
-    $v->setAddress("", "", $record["address"], $record["city"], $record["state"], $record["zipcode"], $record["country"]);
-    $v->setEmail($record["email"]);
-    $v->setNote($record["remark"]);
-
-    $output = $v->getVCard();
-    //$filename = $v->getFileName();
-    //Remove spaces that would break the vcard filename
-    $name = str_replace(" ", "_", $record['firstname']."_".$record['lastname'] );
-    $filename = $name.".vcf";
-
-    Header("Content-Disposition: attachment; filename=$filename");
-    Header("Content-Length: ".strlen($output));
-    Header("Connection: close");
-    Header("Content-Type: text/x-vCard; name=$filename");
-
-    echo $output;
+    // Output the vcard and stop further script execution
+    $vcard->outputVCard();
+    exit;
   }
 
+  function assignVcard(&$vcard, $record)
+  {
+    $vcard->setPhoneNumber($record["phone"], "HOME;VOICE");
+    $vcard->setPhoneNumber($record["cellular"], "HOME;CELL");
+    $vcard->setPhoneNumber($record["fax"], "HOME;FAX");
+    $vcard->setName($record["lastname"], $record["firstname"], "", $record["title_id"]["title"]);
+    $vcard->setFormattedName(trim($record["title_id"]["title"] . " " . $record["firstname"] . " " . $record["lastname"]));
+    $vcard->setAddress("", "", $record["address"], $record["city"], $record["state"], $record["zipcode"], $record["country"], "HOME");
+    $vcard->setEmail($record["email"]);
+    $vcard->setNote($record["remark"]);
+    $vcard->setProperty("TITLE", $record["function"]);
+  }
 }
 
 ?>

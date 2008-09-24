@@ -9,8 +9,8 @@
    * @copyright (c) 2006 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision: 1.1 $
-   * $Id: class.pimitemattribute.inc,v 1.1 2006/04/16 12:32:18 guido Exp $
+   * @version $Revision: 1.4 $
+   * $Id: class.pimitemattribute.inc,v 1.4 2006/07/26 20:01:04 guido Exp $
    */
 
   /**
@@ -53,8 +53,20 @@
     /**
      * Populates the internal m_options, m_values and m_lookup arrays with pim items
      */
-    function loadpimitems()
+    function loadpimitems($record,$mode)
     {
+      $useritems = array();
+      if($mode=="edit" || $mode=="add")
+      {
+        $user = getUser();
+        $userpimitemsnode = &atkGetNode("pim.userpimitems");
+        $pimitems = $userpimitemsnode->selectDb("userpimitems.userid = '".$user["id"]."'");
+        foreach($pimitems as $key => $item)
+        {
+          if($mode=="add" || ($record["pimitem"]==$item["pimitem"] && $mode="edit"))
+            $useritems[] = $item['pimitem'];
+        }
+      }
       // Do not continue if pim items already loaded
       if ($this->m_pimitemsloaded)
         return;
@@ -68,9 +80,22 @@
         foreach($items as $itemName => $itemFunc)
         {
           $item = $module.'_'.$itemName;
-          $this->m_lookup[$item] = atkText($module,$module).' - '.atkText(array("pim_$itemName", $itemName),$module);
+          if(!in_array($item,$useritems))
+            $this->m_lookup[$item] = atkText($module,$module).' - '.atkText(array("pim_$itemName", $itemName),$module);
         }
       }
+
+      // Remove items that the user allready has
+      $user = getUser();
+      $userpimitemsnode = &atkGetNode("pim.userpimitems");
+      $pimitems = $userpimitemsnode->selectDb("userpimitems.userid = '".$user["id"]."'");
+
+      // Remove disallowed pimitems from the list
+      $disallowedpimitems = atkConfig("disallowedpimitems", array());
+      foreach($disallowedpimitems as $disallowedpimitem)
+        if (array_key_exists($disallowedpimitem, $this->m_lookup))
+          unset($this->m_lookup[$disallowedpimitem]);
+
       $this->m_options = array_values($this->m_lookup);
       $this->m_values = array_keys($this->m_lookup);
 
@@ -84,9 +109,9 @@
      * @param array $record Array with fields
      * @return string text string of $record
      */
-    function display($record)
+    function display($record,$mode="")
     {
-      $this->loadpimitems();
+      $this->loadpimitems($record,$mode);
       return parent::display($record);
     }
 
@@ -98,9 +123,9 @@
      *                            of any html form element for this attribute.
      * @return String Piece of html code containing the select control
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="",$mode="")
     {
-      $this->loadpimitems();
+      $this->loadpimitems($record,$mode);
       return parent::edit($record, $fieldprefix);
     }
   }

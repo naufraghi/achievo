@@ -1,5 +1,4 @@
 <?php
-
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
@@ -12,8 +11,8 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: class.atkmockquery.inc,v 5.3 2006/03/30 12:57:56 martin Exp $
+   * @version $Revision: 5.4 $
+   * $Id: class.atkmockquery.inc,v 5.4 2006/10/10 12:41:55 peter Exp $
    */
 
   /**
@@ -33,5 +32,4 @@
   class atkMockQuery extends atkQuery
   {
   }
-
 ?>

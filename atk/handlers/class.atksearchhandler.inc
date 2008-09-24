@@ -13,8 +13,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.8 $
-   * $Id: class.atksearchhandler.inc,v 5.8 2006/04/14 15:16:18 peter Exp $
+   * @version $Revision: 5.12 $
+   * $Id: class.atksearchhandler.inc,v 5.12 2007/03/23 11:08:03 guido Exp $
    */
 
   /**
@@ -58,15 +58,18 @@
       $node = &$this->m_node;
 
       $node->addStyle("style.css");
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode($this->m_node);
 
       $page = &$this->getPage();
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
+      $page->register_loadscript("placeFocus();");
       $ui = &$this->getUi();
       if (is_object($ui))
       {
         $params = array();
-        $params["formstart"] = '<form name="entryform" action="'.$_SERVER["PHP_SELF"].'?'.SID.'" method="post">';
+        $params["formstart"] = '<form name="entryform" action="'.$controller->getPhpFile().'?'.SID.'" method="post">';
 
         // usually, extended search is called from a page, and we go back to that page
         // when the user presses search.
@@ -86,7 +89,7 @@
 
         $params["content"] = $this->invoke("searchForm", $record);
         $params["buttons"][] = '<input type="submit" class="btn_search" value="'.atktext("search", "atk").'">';
-        $params["formend"] = '</form><SCRIPT type="text/javascript" LANGUAGE="JavaScript">placeFocus()</SCRIPT>';
+        $params["formend"] = '</form>';
 
         $output = $ui->renderAction("search", $params);
 
@@ -119,8 +122,8 @@
 
         $params = array();
         $params['searchmode_title'] = atktext("search_mode", "atk");
-        $params['searchmode_and'] = '<input type="radio" name="atksearchmethod" value="AND" checked>'.atktext("search_and", "atk");
-        $params['searchmode_or'] = '<input type="radio" name="atksearchmethod" value="OR">'.atktext("search_or", "atk");
+        $params['searchmode_and'] = '<input type="radio" name="atksearchmethod" class="atkradio" value="AND" checked>'.atktext("search_and", "atk");
+        $params['searchmode_or'] = '<input type="radio" name="atksearchmethod" class="atkradio" value="OR">'.atktext("search_or", "atk");
         $params["fields"] = array();
 
         foreach (array_keys($node->m_attribList) as $attribname)
@@ -128,7 +131,7 @@
           $p_attrib = &$node->m_attribList[$attribname];
 
           if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
-            $p_attrib->addToSearchformFields($params["fields"], $node, $record, $this->m_postvars['atksearchmode']);
+            $p_attrib->addToSearchformFields($params["fields"], $node, $record, "", $this->m_postvars['atksearchmode']);
         }
         return $ui->render($node->getTemplate("search", $record), $params);
       }

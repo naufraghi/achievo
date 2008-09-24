@@ -12,8 +12,8 @@
    * @copyright (c)2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.8 $
-   * $Id: function.atktext.php,v 1.8 2006/04/19 06:43:46 ivo Exp $
+   * @version $Revision: 1.11 $
+   * $Id: function.atktext.php,v 1.11 2006/08/30 19:33:49 ivo Exp $
    */
 
   /**
@@ -46,7 +46,7 @@
        $str = atktext($id, $module, $node);
        break;
      }
-     default: $str = atktext($params["id"], $params["module"], $params["node"], $params["lng"]);
+     default: $str = atktext($params["id"], atkArrayNvl($params, "module", ""), atkArrayNvl($params, "node", ""), atkArrayNvl($params, "lng", ""));
    }
 
    if (isset($params["filter"]))
@@ -54,6 +54,7 @@
      $fn = $params["filter"];
      $str = $fn($str);
    }
+
    // parse the rest of the params in the string
    atkimport("atk.utils.atkstringparser");
    $parser = &new atkStringParser($str);

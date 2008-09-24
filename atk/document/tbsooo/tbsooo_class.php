@@ -31,36 +31,14 @@ class clsTinyButStrongOOo extends clsTinyButStrong
 
   function SetZipBinary($path_binary, $test=false)
   {
-    // set the 'zip' binary to compress OOo files
-    if ($path_binary != '') {
-      $this->_zip_bin = $this->_PathQuote($path_binary);
-    }
-
-    // test if zip is present
-    if ($test) {
-      if (strlen(shell_exec($this->_zip_bin.' -h')) == 0) {
-        $this->meth_Misc_Alert('SetZipBinary method', 'Problem to execute the command : shell_exec(\''.$this->_zip_bin.' -h\')');
-        return false;
-      }
-    }
-    return true;
+    atkdebug('clsTinyButStrongOOo->SetZipBinary: This method is deprecated', DEBUG_WARNING);
+    return false;
   }
 
   function SetUnzipBinary($path_binary, $test=false)
   {
-    // set the 'unzip binary to decompress OOo files
-    if ($path_binary != '') {
-      $this->_unzip_bin = $this->_PathQuote($path_binary);
-    }
-
-    // test if unzip is present
-    if ($test) {
-      if (strlen(shell_exec($this->_unzip_bin.' -h')) == 0) {
-        $this->meth_Misc_Alert('SetUnzipBinary method', 'Problem to execute the command : shell_exec(\''.$this->_unzip_bin.' -h\')');
-        return false;
-      }
-    }
-    return true;
+    atkdebug('clsTinyButStrongOOo->SetUnzipBinary: This method is deprecated', DEBUG_WARNING);
+    return false;
   }
 
   function SetProcessDir($process_path)
@@ -69,21 +47,21 @@ class clsTinyButStrongOOo extends clsTinyButStrong
 
     // set the directory for processing temporary OOo files
     if ($process_path == '') {
-      $this->meth_Misc_Alert('SetProcessDir method', 'Parameter is empty');
+      atkerror('clsTinyButStrongOOo->SetProcessDir: Parameter is empty');
       return false;
     }
     // add a trailing / at the path
     $this->_process_path = $process_path.(substr($process_path, -1, 1) == '/' ? '' : '/');
-    
+
     // test if 'dir' exists
     if (!is_dir($this->_process_path)) {
-      $this->meth_Misc_Alert('SetProcessDir method', 'Directory not found : '.$this->_process_path);
+      atkerror('clsTinyButStrongOOo->SetProcessDir: Directory not found : '.$this->_process_path);
       return false;
     }
 
     // test if 'dir' is writable
     if (!is_writable($this->_process_path)) {
-      $this->meth_Misc_Alert('SetProcessDir method', 'Directory not writable : '.$this->_process_path);
+      atkerror('clsTinyButStrongOOo->SetProcessDir: Directory not writable : '.$this->_process_path);
       return false;
     }
     return true;
@@ -98,12 +76,13 @@ class clsTinyButStrongOOo extends clsTinyButStrong
   {
     // test if OOo source file exist
     if (!file_exists($ooo_template_filename)) {
-      $this->meth_Misc_Alert('NewDocFromTpl method', 'File not found : '.$ooo_template_filename);
+      atkerror('clsTinyButStrongOOo->NewDocFromTpl: File not found : '.$ooo_template_filename);
       return false;
     }
 
     // create unique ID
     $unique = md5(microtime());
+    
     // find path, file and extension
     $a_pathinfo = pathinfo($ooo_template_filename);
     $this->_ooo_file_ext  = $a_pathinfo['extension'];
@@ -111,13 +90,13 @@ class clsTinyButStrongOOo extends clsTinyButStrong
 
     // create unique temporary basename dir
     if (!mkdir($this->_ooo_basename, 0700)) {
-      $this->meth_Misc_Alert('NewDocFromTpl method', 'Can\'t create directory : '.$this->_ooo_basename);
+      atkerror('clsTinyButStrongOOo->NewDocFromTpl: Can\'t create directory : '.$this->_ooo_basename);
       return false;
     }
 
     // copy the ooo template into the temporary basename dir
     if (!copy($ooo_template_filename, $this->_ooo_basename.'.'.$this->_ooo_file_ext)) {
-      $this->meth_Misc_Alert('NewDocFromTpl method', 'Can\'t copy file to process dir : '.$ooo_template_filename);
+      atkerror('clsTinyButStrongOOo->NewDocFromTpl: Can\'t copy file to process dir : '.$ooo_template_filename);
       return false;
     }
     return $this->_ooo_basename.'.'.$this->_ooo_file_ext;
@@ -126,24 +105,31 @@ class clsTinyButStrongOOo extends clsTinyButStrong
   function LoadXmlFromDoc($xml_file)
   {
     $this->_xml_filename = $xml_file;
+    $xmlfilename = $this->_ooo_basename.'/'.$this->_xml_filename;
+    $ooofilename = $this->_ooo_basename.'.'.$this->_ooo_file_ext;
 
     // unzip the XML files
-    exec($this->_unzip_bin.' '.$this->_ooo_basename.'.'.$this->_ooo_file_ext.' -d '.$this->_ooo_basename.' '.$this->_xml_filename, $results, $return_code);
+    $atkzip = &atkNew("atk.utils.atkzip");
+    $extracted = $atkzip->extract($ooofilename, $this->_ooo_basename, $xml_file);
 
-    if ($return_code!=0) {
-      atkerror(sprintf("Error while extracting zip file (return code %s), please check if the unzip executable is in your path", $return_code));
+    if (!$extracted) {
+      atkerror("clsTinyButStrongOOo->LoadXmlFromDoc: Error while extracting the template from the document file");
       return false;
     }
 
     // test if XML file exist
-    if (!file_exists($this->_ooo_basename.'/'.$this->_xml_filename)) {
-      $this->meth_Misc_Alert('LoadXmlFromDoc method', 'File not found : '.$this->_ooo_basename.'/'.$this->_xml_filename);
+    if (!file_exists($xmlfilename)) {
+      atkerror('clsTinyButStrongOOo->LoadXmlFromDoc: File not found: '.$xmlfilename);
       return false;
+    }
+    else
+    {
+      atkdebug('clsTinyButStrongOOo->LoadXmlFromDoc: File exists: '.$xmlfilename);
     }
 
     // load the template
     $this->ObjectRef = &$this;
-    $this->LoadTemplate($this->_ooo_basename.'/'.$this->_xml_filename, '=~_CharsetEncode');
+    $this->LoadTemplate($xmlfilename, '=~_CharsetEncode');
 
     // convert apostrophe from XML file for TBS functions
     $this->Source = str_replace('&apos;', '\'', $this->Source);
@@ -155,23 +141,35 @@ class clsTinyButStrongOOo extends clsTinyButStrong
   {
     // get the source result
     $this->Show(TBS_NOTHING);
+    
+    // Some variables
+    $xmlfilename = $this->_ooo_basename.'/'.$this->_xml_filename;
+    $ooofilename = $this->_ooo_basename.'.'.$this->_ooo_file_ext;
 
     // store the merge result in place of the XML source file
-    $fdw = fopen($this->_ooo_basename.'/'.$this->_xml_filename, "w");
+    $fdw = fopen($xmlfilename, "w");
     fwrite($fdw, $this->Source, strlen($this->Source));
     fclose ($fdw);
 
     // test if XML file exist
-    if (!file_exists($this->_ooo_basename.'/'.$this->_xml_filename)) {
-      $this->meth_Misc_Alert('SaveXmlToDoc method', 'File not found : '.$this->_ooo_basename.'/'.$this->_xml_filename);
+    if (!file_exists($xmlfilename)) {
+      atkerror('clsTinyButStrongOOo->SaveXmlToDoc: File not found : '.$xmlfilename);
+      return false;
+    }
+
+    // test if ZIP file exist
+    if (!file_exists($ooofilename)) {
+      atkerror('clsTinyButStrongOOo->SaveXmlToDoc: File not found : '.$ooofilename);
       return false;
     }
 
     // zip and remove the file
-    exec($this->_zip_bin.' -u -j -m '.$this->_ooo_basename.'.'.$this->_ooo_file_ext.' '.$this->_ooo_basename.'/'.$this->_xml_filename, $results, $return_code);
+    $atkzip = &atkNew("atk.utils.atkzip");
+    $added = $atkzip->add($ooofilename, $xmlfilename);
+    unlink($xmlfilename);
 
-    if ($return_code!=0) {
-      atkerror(sprintf("Error while adding to zip file (return code %s), please check if the zip executable is in your path", $return_code));
+    if (!$added) {
+      atkerror("clsTinyButStrongOOo->SaveXmlToDoc: Error while integrating data into the document file");
       return false;
     }
 
@@ -240,7 +238,7 @@ class clsTinyButStrongOOo extends clsTinyButStrong
         if ($file != ".." && $file != ".") {
           if (filemtime($this->_process_path.$file) < $now) {
             if (!(is_dir($this->_process_path.$file) ? @rmdir($this->_process_path.'/'.$file) : @unlink($this->_process_path.$file))) {
-              $this->meth_Misc_Alert('ClearProcessDir method', 'Can\'t remove directory or file : '.$this->_process_path.$file);
+              atkdebug('clsTinyButStrongOOo->ClearProcessDir: Can\'t remove directory or file : '.$this->_process_path.$file);
             }
           }
         }
@@ -274,7 +272,7 @@ class clsTinyButStrongOOo extends clsTinyButStrong
         break;
       case 'ISO 8859-1': // encode ISO 8859-1 to UTF8
       default:
-        $string_encode = utf8_encode($string_encode); 
+        $string_encode = utf8_encode($string_encode);
         break;
     }
     return $string_encode;
@@ -286,7 +284,7 @@ class clsTinyButStrongOOo extends clsTinyButStrong
 
     // remove the temporary directory
     if (is_dir($this->_ooo_basename) && !rmdir ($this->_ooo_basename)) {
-      $this->meth_Misc_Alert('_RemoveTmpDir method', 'Can\'t remove directory : '.$this->_ooo_basename);
+      atkterror('clsTinyButStrongOOo->_RemoveTmpBasenameDir: Can\'t remove directory : '.$this->_ooo_basename);
     }
   }
 }

@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.13 $
-   * $Id: class.atkrelation.inc,v 5.13 2006/05/12 13:24:43 martin Exp $
+   * @version $Revision: 5.20 $
+   * $Id: class.atkrelation.inc,v 5.20 2007/08/14 14:54:14 guido Exp $
    */
 
   /**
@@ -48,6 +48,12 @@
     var $m_descTemplate = NULL;
 
     /**
+     * Descriptor handler.
+     * @var Object
+     */
+    var $m_descHandler = NULL;
+
+    /**
      * Constructor
      * @param String $name The name of the relation.
      * @param String $destination The destination node (in module.name notation)
@@ -79,6 +85,37 @@
     }
 
     /**
+     * Adds a filter value to the destination filter.
+     * @param String $filter Filter to be added to the destination filter.
+     */
+    function addDestinationFilter($filter)
+    {
+      if($this->m_destinationFilter != "")
+        $this->m_destinationFilter = "({$this->m_destinationFilter}) AND ({$filter})";
+      else
+        $this->m_destinationFilter = $filter;
+      return $this;
+    }
+
+    /**
+     * Get descriptor handler.
+     * @return Object descriptor handler
+     */
+    function &getDescriptorHandler()
+    {
+      return $this->m_descHandler;
+    }
+
+    /**
+     * Set descriptor handler.
+     * @param Object $handler The descriptor handler.
+     */
+    function setDescriptorHandler(&$handler)
+    {
+      $this->m_descHandler = &$handler;
+    }
+
+    /**
      * Returns the descriptor template for the destination node.
      * @return String The descriptor Template
      */
@@ -94,6 +131,18 @@
     function setDescriptorTemplate($template)
     {
       $this->m_descTemplate = $template;
+    }
+
+    /**
+     * Descriptor handler. Forwards description handler calls
+     * to the real description handler.
+     */
+    function descriptor($record, &$node)
+    {
+      $method = $this->m_name."_descriptor";
+      if (method_exists($this->m_descHandler, $method))
+        return $this->m_descHandler->$method($record, $node);
+      else return $this->m_descHandler->descriptor($record, $node);
     }
 
     /**
@@ -118,13 +167,26 @@
 	        return false;
 	      }
 
-        if ($this->hasFlag(AF_NO_FILTER)) $this->m_destInstance->m_flags |= NF_NO_FILTER;
+        if ($this->hasFlag(AF_NO_FILTER))
+          $this->m_destInstance->m_flags |= NF_NO_FILTER;
+
         foreach (array_keys($this->m_destInstance->m_attribList) as $key)
         {
           $attribute = &$this->m_destInstance->m_attribList[$key];
+
           if (is_subclass_of($attribute, "atkrelation") && is_object($this->m_ownerInstance) && $attribute->m_destination == $this->m_ownerInstance->atkNodeType())
+          {
             $attribute->m_destInstance = &$this->m_ownerInstance;
+
+            if (count($attribute->m_tabs) == 1 && $attribute->m_tabs[0] == "default")
+            {
+              $attribute->setTabs($this->m_tabs);
+            }
+          }
         }
+
+        if (!empty($this->m_descHandler))
+          $this->m_destInstance->setDescriptorHandler($this);
 
         if (!empty($this->m_descTemplate))
           $this->m_destInstance->setDescriptorTemplate($this->m_descTemplate);
@@ -160,7 +222,11 @@
     {
       if ($this->createDestination() && isset($record[$this->fieldName()][$this->m_destInstance->primaryKeyField()]))
       {
-          return empty($record[$this->fieldName()][$this->m_destInstance->primaryKeyField()]);
+        return empty($record[$this->fieldName()][$this->m_destInstance->primaryKeyField()]);
+      }
+      else if ($this->createDestination() && isset($record[$this->fieldName()]))
+      {
+        return empty($record[$this->fieldName()]);
       }
       return true; // always empty if error.
     }
@@ -234,10 +300,10 @@
       // Return the translation
       return $label;
     }
-    
+
     /**
      * Parses the destination filter
-     * 
+     *
      * @param $destfilter sting filter to parse
      * @param $record the current record
      * @return $filter string filter.

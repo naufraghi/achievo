@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.3 $
-   * $Id: themedef.inc,v 1.3 2006/05/18 07:00:18 ivo Exp $
+   * @version $Revision: 1.5 $
+   * $Id: themedef.inc,v 1.5 2007/05/10 22:13:30 ivo Exp $
    */
 
   /** Theme definition */
@@ -24,4 +24,7 @@
   $theme["select"]    = "#96a7ff";
 
   $theme["tabtype"] = "dhtml";
+
+  $theme['frame_top_height']=95;
+
 ?>

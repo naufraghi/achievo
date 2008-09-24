@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.20 $
-   * $Id: class.atktextattribute.inc,v 5.20 2006/01/30 11:03:31 boy Exp $
+   * @version $Revision: 5.27 $
+   * $Id: class.atktextattribute.inc,v 5.27 2007/08/06 09:52:43 peter Exp $
    */
 
   /**
@@ -20,7 +20,7 @@
    */
   include_once(atkconfig("atkroot")."atk/atkbrowsertools.inc");
   atkimport("atk.attributes.atkattribute");
-   
+
   /**
    * The atkTextAttribute class represents an attribute of a node
    * that is a big text field.
@@ -77,8 +77,45 @@
      * @param $size Array with field rows and cols for additional size of the text box
      * @return piece of html code with a textarea
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode='add')
     {
+      // list mode, show a small textarea, until it get's focus
+      // and is inflated to a big textarea
+      if ($mode == 'list')
+      {
+        $id = $fieldprefix.$this->fieldName();
+
+        $page = &$this->m_ownerInstance->getPage();
+
+        // NOTE:
+        // The onblur function uses a small timeout to make sure a click on a
+        // new element is performed earlier then the swap of fields.
+        // If we don't do this the click might end up wrong.
+        $page->register_loadscript("
+          \$('{$id}').onfocus = function() {
+            \$('{$id}_textarea').value = this.value;
+            Element.hide(this);
+            Element.show('{$id}_textarea');
+            \$('{$id}_textarea').focus();
+          };
+
+          \$('{$id}_textarea').onblur = function() {
+            \$('{$id}').value = this.value;
+            window.setTimeout(function() {
+              Element.hide('{$id}_textarea');
+              Element.show('{$id}'); }, 500
+            );
+          };
+        ");
+
+        $html =
+          '<textarea id="'.$id.'" name="'.$id.'" wrap="soft" rows="1" cols="20">'."\n".htmlspecialchars($record[$this->fieldName()]).'</textarea>'.
+          '<textarea id="'.$id.'_textarea" wrap="soft" rows="5" cols="40" style="display: none"></textarea>';
+
+        return $html;
+      }
+
+
       (isset($record[$this->fieldName()]))?$text=$record[$this->fieldName()]:$text="";
 
       if ($this->m_cols != 0)
@@ -102,7 +139,8 @@
 
       $result= "<textarea id='$id' name='$id' wrap='soft' ";
       if ($rows) $result.= "rows='$rows' ";
-      if ($cols) $result.= "cols='$cols'";
+      if ($cols) $result.= "cols='$cols' ";
+      $result.=$this->getCSSClassAttribute();
       $result.=">\n".htmlspecialchars($text)."</textarea>";
       return $result;
     }
@@ -139,16 +177,9 @@
      */
     function value2db($rec)
     {
-      if (is_object($this->m_ownerInstance))
-      {
-        $db = &$this->m_ownerInstance->getDb();
-      }
-      else
-      {
-        $db = &atkGetDb();
-      }
+      $db = &$this->getDb();
       if ($db->getType() != "oci9")
-        return escapeSQL($rec[$this->fieldName()]);
+        return $db->escapeSQL($rec[$this->fieldName()]);
       else
         return $rec[$this->fieldName()]; //CLOB in oci9 don't need quotes to be escaped EVIL HACK! THIS IS NOT ATKTEXTATTRIBUTE's PROBLEM!
     }
@@ -169,6 +200,9 @@
 
     function dbFieldType()
     {
+      // make sure our metadata is set
+      if (is_object($this->m_ownerInstance)) $this->m_ownerInstance->setAttribSizes();
+
       if ($this->m_dbfieldtype=="")
       {
         return "text";

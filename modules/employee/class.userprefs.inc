@@ -1,49 +1,53 @@
 <?php
 
-function getThemes()
-{
-  $s = array();
-
-  // First look in the themes directory
-  $handle=opendir("themes");
-  while ($file = readdir($handle))
-    if ($file != "." && $file != ".." && $file != "CVS")  $s[]= $file;
-  closedir($handle);
-
-  // Then look in the atk backend directory
-  $handle=opendir("atk/themes");
-  while ($file = readdir($handle))
-    if ($file != "." && $file != ".." && $file != "CVS") $s[]= $file;
-  closedir($handle);
-
-  sort($s);
-
-  // return array with themes
-  return $s;
-}
-
 useattrib("atkdummyattribute");
 useattrib("atknumberattribute");
 useattrib("atkpasswordattribute");
 useattrib("atklistattribute");
+useattrib('employee.adminlangselectattribute');
 
 class userprefs extends atkNode
 {
+  /**
+   * Constructor
+   *
+   * @todo support more startdays (http://www.pjh2.de/datetime/weeknumber/wnd.php?l=en)
+   * @return userprefs
+   */
   function userprefs()
   {
-    $this->atkNode("userprefs",NF_NO_ADD|NF_NO_DELETE);
+    $this->atkNode("userprefs",NF_NO_ADD|NF_NO_DELETE|NF_TRACK_CHANGES);
 
     $this->add(new atkNumberAttribute("id", AF_PRIMARY|AF_HIDE));
     $this->add(new atkAttribute("userid", AF_HIDE));
     if (atkconfig("authentication")=="db")
     {
-      $this->add(new atkDummyAttribute("passwordexplanation", atktext("password_leaveblankifunchanged"), AF_HIDE_ADD|AF_HIDE_LIST));
-      $this->add(new atkPasswordAttribute("password",AF_OBLIGATORY));
+      $this->addPasswordAttribute();
     }
-    $themes = getThemes();
-    $this->add(new atkListAttribute("theme",$themes,$themes,AF_HIDE_ADD|AF_NO_TRANSLATION));
+    $themes = $this->getThemes();
+    $this->add(new atkListAttribute("theme",$themes,$themes,AF_HIDE_ADD));
+    $this->add(new adminLangSelectAttribute('lng',AF_OBLIGATORY));
 
     $this->setTable("person", "person");
+  }
+
+  function initial_values()
+  {
+    return array("lng"=>atkconfig("language"));
+  }
+  
+  function addPasswordAttribute()
+  {
+    $this->add(new atkDummyAttribute("passwordexplanation", atktext("password_leaveblankifunchanged"), AF_HIDE_ADD|AF_HIDE_LIST|AF_HIDE_SEARCH|AF_HIDE_VIEW));
+    $passwordrestrictions = array(
+      "minsize" => atkconfig("password_minsize", 0),
+      "minupperchars" => atkconfig("password_minupperchars", 0),
+      "minlowerchars" => atkconfig("password_minlowerchars", 0),
+      "minalphabeticchars" => atkconfig("password_minalphabeticchars", 0),
+      "minnumbers" => atkconfig("password_minnumbers", 0),
+      "minspecialchars" => atkconfig("password_minspecialchars", 0)
+    );
+    $this->add(new atkPasswordAttribute("password", false, AF_HIDE_LIST|AF_PASSWORD_NOVALIDATE, 40, $passwordrestrictions));
   }
 
   function descriptor_def()
@@ -51,9 +55,18 @@ class userprefs extends atkNode
     return "[userid]";
   }
 
+  function getThemes()
+  {
+    $traverser = &atknew('atk.utils.atkdirectorytraverser');
+    $themefinder = &atknew('module.employee.utils.themefinder');
+    $traverser->addCallbackObject($themefinder);
+    $traverser->traverse(atkconfig('atkroot'));
+    return $themefinder->getThemes();
+  }
+
   function postUpdate($record)
   {
-    global $g_user, $g_sessionManager, $g_securityManager;
+    global $g_user, $g_sessionManager, $g_securityManager, $ATK_VARS;
 
     if($record["id"]==$g_user["id"])
     {
@@ -66,11 +79,23 @@ class userprefs extends atkNode
       // will immediately start to use the new settings.
       $g_securityManager->reloadUser();
 
-      // Also, we must refresh the screen.
-      echo '<script language="javascript">';
-      echo 'parent.location = "index.php"';
-      echo '</script>';
-      exit;
+      // Also, we must refresh the screen if the theme or language is changed
+      if (($record["theme"] != $record["atkorgrec"]["theme"]) || ($record["lng"] != $record["atkorgrec"]["lng"]))
+      {
+        $reloadurl = session_url(sprintf("index.php?atknodetype=%s&atkaction=edit&atkselector=%s.%s=%s",
+                              $this->atknodetype(),
+                              $this->m_table,
+                              $this->primaryKeyField(),
+                              $ATK_VARS[$this->primaryKeyField()]), SESSION_NEW);
+        echo '<script type="text/javascript">';
+        echo "top.window.location='$reloadurl';";
+        echo '</script>';
+        exit();
+      }
+      else
+      {
+        return true;
+      }
     }
   }
 }

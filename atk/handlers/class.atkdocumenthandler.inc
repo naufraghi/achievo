@@ -10,8 +10,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing/ ATK open source license
    *
-   * @version $Revision: 1.5 $
-   * $Id: class.atkdocumenthandler.inc,v 1.5 2006/01/10 23:38:57 guido Exp $
+   * @version $Revision: 1.7 $
+   * $Id: class.atkdocumenthandler.inc,v 1.7 2006/11/08 10:56:29 guido Exp $
    */
 
   /**
@@ -50,11 +50,7 @@
         return false;
       }
 
-      // Compose the filename to be used (doctemplatedir/module/node/<docmentfilename)
-      $basepath = atkconfig("doctemplatedir", "doctemplates/");
-      $module = $this->m_node->m_module;
-      $node = $this->m_node->m_type;
-      $tpl_file = $basepath  . $module . "/" . $node . "/" . $this->m_postvars["atkdoctpl"];
+      $tpl_file = $this->getFilenameForTemplate($this->m_postvars["atkdoctpl"]);
 
       // Check for invalid characters in filename, modulename and nodename in order to prevent hacking
       if (ereg("[<>\\/|;]", $module . $node . $this->m_postvars["atkdoctpl"]) !== false)
@@ -72,7 +68,7 @@
 
       // Assign the record variables to the OpenOffice.org DocumentWriter
       if (method_exists($this->m_node, "assignDocumentVars"))
-        $this->m_node->assignDocumentVars($this, $openDocumentWriter, $this->m_postvars["atkselector"]);
+        $this->m_node->assignDocumentVars($openDocumentWriter, $this->m_postvars["atkselector"]);
       else
         $this->assignDocumentVars($openDocumentWriter, $this->m_postvars["atkselector"]);
 
@@ -103,5 +99,19 @@
       $documentWriter->assignDocumentGenericVars();
     }
 
+    /**
+     * Compose the filename to be used (doctemplatedir/module/node/<docmentfilename)
+     *
+     * @param String $template
+     * @return String
+     */
+    function getFilenameForTemplate($template)
+    {
+      $basepath = atkconfig("doctemplatedir", "doctemplates/");
+      $module = $this->m_node->m_module;
+      $node = $this->m_node->m_type;
+
+      return $basepath  . $module . "/" . $node . "/" . $template;
+    }
   }
 ?>

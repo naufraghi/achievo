@@ -11,8 +11,8 @@
    * @copyright (c)2004-2005 Peter C. Verhage
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.8 $
-   * $Id: module.inc,v 1.8 2006/03/11 08:15:12 ivo Exp $
+   * @version $Revision: 1.9 $
+   * $Id: module.inc,v 1.9 2006/10/21 09:33:13 peter Exp $
    */
 
   /**
@@ -67,6 +67,7 @@ class mod_meta extends atkModule
     if (!$this->nodeExists($node)) return NULL;
     $table = getNodeType($node);
 
+    atkimport('atk.atkmetanode');
     $node = new atkMetaNode(array("type" => $table, "table" => $table, "handler" => new atkMetaHandler(array(&$this, "initMetaPolicy"))));
     $node->m_module = "meta";
     $node->setSecurityAlias("meta.meta");
