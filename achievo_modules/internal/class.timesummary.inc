@@ -123,7 +123,7 @@ class timesummary extends atkNode
 
         $content .= "Da ".$startdateatt->edit()." a ".$enddateatt->edit();
         $content .= "<h2>$title</h2>\n";
-        $content .= "<p>Le ora segnate come malattia/ferie non vengono conteggiate.</p>\n";
+        $content .= "<p>Le ore segnate come malattia/ferie non vengono conteggiate.</p>\n";
 
         // Tabella ore lavorate per progetto
         $content .= "<table border='1'>\n";
