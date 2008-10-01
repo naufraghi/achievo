@@ -14,7 +14,8 @@
         {
             registerNode("internal.timesummary", 
                          array("report", "any_user", "view_all", "any_project"));
-
+            registerNode("internal.timebalance", 
+                         array("report", "any_user", "view_all", "any_project"));
         }
         function getDependencies($mode)
         {
@@ -25,6 +26,12 @@
             $this->menuitem("internal",
                             dispatch_url("internal.timesummary", "report"),
                             "main", true, 370);
+            $this->menuitem("time_summary",
+                            dispatch_url("internal.timesummary", "report"),
+                            "internal", true);
+            $this->menuitem("time_balance",
+                            dispatch_url("internal.timebalance", "report"),
+                            "internal", true);
         }
     }
 ?>
