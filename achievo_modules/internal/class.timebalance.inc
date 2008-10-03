@@ -3,7 +3,7 @@
  * Copyright 2007 Develer S.r.l. (http://www.develer.com/)
  * All rights reserved.
  *
- * $Id: $
+ * $Id:$
  * Author: Matteo Bertini <naufraghi@develer.com>
  */
 
@@ -26,7 +26,7 @@ function flipflop()
     return $_flipflop;
 }
 
-class timesummary extends atkNode
+class timebalance extends atkNode
 {
     function timesummary()
     {
@@ -54,48 +54,39 @@ class timesummary extends atkNode
         else
             $date_end = sprintf("%04d",$date_end["year"])."-".sprintf("%02d",$date_end["month"])."-".sprintf("%02d",$date_end["day"]);
 
-        /* Accetta un testo con due colonne:
-            username euro/ora
-        */
-        $euro_ora_text = $this->m_postvars['euro_ora_text'];
-        $euro_ora_array = array();
-        foreach (explode("\n", $euro_ora_text) as $line)
-        {
-            $line = explode(" ", $line);
-            $euro_ora_array[$line[0]] = (real) $line[1];
-        }
-        atkdebug("euro_ora_array: ".var_export($euro_ora_array, 1));
+        if (!$this->allowed("any_user"))
+            $single_user = "AND hours.userid ='$userid'";
+        else
+            $single_user = "";
+
+        $ore_registrate = "
+            SELECT person.userid, usercontract.uc_hours, project.name AS project_name,
+                phase.name AS phase_name, hours.activitydate, sum(hours.time) AS time_spent,
+                (project.name = '__dipendenti' AND phase.name IN ('malattia', 'ferie')) AS nopay,
+                (project.name LIKE 'd20_%') AS d20
+            FROM hours
+                JOIN person ON hours.userid = person.id
+                JOIN phase ON hours.phaseid = phase.id
+                JOIN activity ON hours.activityid = activity.id
+                JOIN project ON phase.projectid = project.id
+                JOIN usercontract ON usercontract.userid = person.id
+            WHERE activitydate >= '$date_start'
+                AND activitydate <= '$date_end'
+                $single_user
+            GROUP BY person.userid, usercontract.uc_hours, hours.activitydate, nopay, d20";
 
         $select = "
-                SELECT
-                    person.userid,
-                    project.name AS prj,
-                    sum(hours.time)/60.0 as ore
-                FROM hours
-                    JOIN person ON hours.userid = person.id
-                    JOIN phase ON hours.phaseid = phase.id
-                    JOIN activity ON hours.activityid = activity.id
-                    JOIN project ON phase.projectid = project.id";
-        $filter = "
-                WHERE
-                    activitydate >= '$date_start' AND
-                    activitydate <= '$date_end'";
-        $filter_nopay = "
-                AND NOT (
-                    project.name = '__dipendenti' AND
-                    phase.name IN ('ferie', 'malattia')
-                )";
-        if (!$this->allowed("any_user")) $filter.= " AND hours.userid ='$userid' ";
-        $groupby = "
-                GROUP BY lower(person.userid), lower(prj)
-                ORDER BY lower(person.userid), lower(prj)";
-
-        $sql = $select . $filter . $filter_nopay . $groupby;
+            SELECT userid, uc_hours, nopay, d20,
+                sum(time_spent)/60 AS time_worked,
+                sum(time_spent >= 5*60) AS tickets
+            FROM (
+                $ore_registrate
+            ) AS ore_registrate
+            GROUP BY LOWER(userid), uc_hours, nopay, d20";
 
         return array("date_start" => $date_start,
                      "date_end" => $date_end,
-                     "euro_ora_array" => $euro_ora_array,
-                     "rows" => $db->getRows($sql));
+                     "rows" => $db->getRows($select));
     }
 
     function action_search()
@@ -116,102 +107,41 @@ class timesummary extends atkNode
         $content .= session_form();
 
         $results = $this->get_timesummary();
-        $title = "Timereport: ".$results["date_start"]." - ".$results["date_end"];
+        $title = "TimeBalance: ".$results["date_start"]." - ".$results["date_end"];
 
         $startdateatt = new atkDateAttribute("date_start","F d Y","d F Y", 0, $results["date_start"], AF_OBLIGATORY);
         $enddateatt = new atkDateAttribute("date_end","F d Y","d F Y", 0, $results["date_end"], AF_OBLIGATORY);
 
         $content .= "Da ".$startdateatt->edit()." a ".$enddateatt->edit();
         $content .= "<h2>$title</h2>\n";
-        $content .= "<p>Le ore segnate come malattia/ferie non vengono conteggiate.</p>\n";
 
         // Tabella ore lavorate per progetto
         $content .= "<table border='1'>\n";
-        $content .= "<tr><th>User Id</th><th>Progetto</th><th>Ore</th><th>Euro</th></tr>\n";
+        $content .= "<tr><th>User</th><th>Ore giornaliere</th><th>Ore lavorate</th><th>Tikets</th></tr>\n";
         $progetti = array();
         $persone = array();
         foreach ($results['rows'] as $key => $r)
         {
-            if (!array_key_exists($r['prj'], $progetti)) $progetti[$r['prj']] = array("ore" => 0.0, "euro" => 0.0);
-            if (!array_key_exists($r['userid'], $persone)) $persone[$r['userid']] = array("ore" => 0.0, "euro" => 0.0, "euro_ora" => 0.0);
-            $progetti[$r['prj']]['ore'] += $r['ore'];
-            $persone[$r['userid']]['ore'] += $r['ore'];
-
-            atkdebug("Euro ora loop: ".var_export($r, 1)." incr ore prj:".var_export($progetti[$r['prj']], 1).", user:".var_export($persone[$r['userid']], 1));
-
-            if (array_key_exists($r['userid'], $results['euro_ora_array']))
-            {
-                $r['euro'] = $r['ore'] * $results['euro_ora_array'][$r['userid']];
-                $persone[$r['userid']]['euro_ora'] = $results['euro_ora_array'][$r['userid']];
-            }
+            if ($r['nopay'])
+                $content .= "<tr style='background: #FF4444'>";
+            elseif ($r['d20'])
+                $content .= "<tr style='background: #DDDD66'>";
+            elseif (flipflop())
+                $content .= "<tr style='background: #44DD44'>";
             else
-            {
-                $r['euro'] = "Manca euro/h";
-                $persone[$r['userid']]['euro_ora'] = "Manca euro/h";
-            }
-
-            if (is_numeric($progetti[$r['prj']]['euro']) and is_numeric($r['euro']))
-                $progetti[$r['prj']]['euro'] += $r['euro'];
+                $content .= "<tr style='background: #99DD99'>";
+            $content .= "<td>".$r['userid']."</td>";
+            $content .= "<td align='right'>".str_number_format($r['uc_hours'], 2)."</td>";
+            $content .= "<td align='right'>".str_number_format($r['time_worked'], 2)."</td>";
+            if ($r['nopay'])
+                $content .= "<td align='right'>nopay</td>";
+            elseif ($r['d20'])
+                $content .= "<td align='right'>d20</td>";
             else
-                $progetti[$r['prj']]['euro'] = "Manca euro/h";
-            if (is_numeric($persone[$r['userid']]['euro']) and is_numeric($r['euro']))
-                $persone[$r['userid']]['euro'] += $r['euro'];
-            else
-                $persone[$r['userid']]['euro'] = "Manca euro/h";
-
-            if (flipflop())
-                $content .= "<tr>";
-            else
-                $content .= "<tr style='background: #DDDDC0'>";
-            $content .= "<td>".$r['userid']."</td><td>".$r['prj']."</td><td align='right'>".str_number_format($r['ore'], 2)."</td><td align='right'>".str_number_format($r['euro'], 2)."</td>";
+                $content .= "<td align='right'>".$r['tickets']."</td>";
             $content .= "</tr>\n";
         }
         $content .= "</table>";
-
-        // Tabella ore per progetto / ore per persona
-        $content .= "<table><tr><td>";
-            // Tabella ore per progetto
-            $content .= "<table border='1'><tr><th>Totale progetto</th><th>Ore</th><th>Euro</th></tr>";
-            uksort($progetti, "strcasecmp"); //Ordina per chiave, le persone sono già ordinate
-            foreach ($progetti as $key => $prj)
-            {
-                if (flipflop())
-                    $content .= "<tr>";
-                else
-                    $content .= "<tr style='background: #DDDDC0'>";
-                $content .= "<th>$key</th><td align='right'>".str_number_format($prj['ore'], 2)."</td><td align='right'>".str_number_format($prj['euro'], 2)."</td>";
-                $content .= "</tr>\n";
-            }
-            $content .= "</table>";
-        $content .= "</td><td>";
-            // Tabella ore per persona
-            $content .= "<table border='1'><tr><th>Totale persona</th><th>ore</th><th>euro/ora</th><th>euro</th><th>IVA</th><th>Ivato</th></tr>";
-            $totale_ore_develer = 0;
-            foreach ($persone as $key => $pers)
-            {
-                if (flipflop())
-                    $content .= "<tr>";
-                else
-                    $content .= "<tr style='background: #DDDDC0'>";
-                $content .= "<th>$key</th>";
-                $content .= "<td align='right'>".str_number_format($pers['ore'], 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro_ora'], 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro'], 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro']*0.2, 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro']*1.2, 2)."</td>";
-                $content .= "</tr>\n";
-                $totale_ore_develer += $pers['ore'];
-            }
-            $content .= "<th>Totale</th><td align='right'>".str_number_format($totale_ore_develer, 2)."</td>";
-            $content .= "<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>\n";
-            $content .= "</table>";
-        $content .= "</td></tr></table>";
-
-        $content .= '<input type="submit" value="'.atktext("refresh").'">';
-
-        $content .= "<table><tr><td>Inserire: nome_utente euro/h</td></tr>\n";
-        $content .= "<tr><td><textarea rows='5' cols='40' name='euro_ora_text'>".$this->m_postvars['euro_ora_text']."</textarea>";
-        $content .= "</td></tr></table>\n";
 
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
