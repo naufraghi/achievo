@@ -1,11 +1,42 @@
 <?php
 /*
- * Copyright 2007 Develer S.r.l. (http://www.develer.com/)
+ * Copyright 2008 Develer S.r.l. (http://www.develer.com/)
  * All rights reserved.
  *
  * $Id:$
  * Author: Matteo Bertini <naufraghi@develer.com>
  */
+
+/*
+SELECT userid, activitydate, time_contract, SUM(time_worked) as time_worked,
+    SUM(time_malattia) as time_malattia, SUM(time_ferie) as time_ferie, SUM(time_d20) as time_d20,
+    SUM(tickets) as tickets
+    FROM (
+        SELECT userid, activitydate, time_contract,
+            (NOT (malattia OR ferie OR d20)) * SUM(time_spent)/60 AS time_worked,
+            malattia * SUM(time_spent)/60 AS time_malattia,
+            ferie * SUM(time_spent)/60 AS time_ferie,
+            d20 * SUM(time_spent)/60 AS time_d20,
+            (NOT (malattia OR ferie OR d20)) * SUM(time_spent > 5*60) AS tickets
+            FROM (
+                SELECT person.userid, usercontract.uc_hours/5 as time_contract, project.name AS project_name,
+                    phase.name AS phase_name, hours.activitydate, sum(hours.time) AS time_spent,
+                    (project.name = '__dipendenti' AND phase.name = 'malattia') AS malattia,
+                    (project.name = '__dipendenti' AND phase.name = 'ferie') AS ferie,
+                    (project.name LIKE 'd20_%') AS d20
+                FROM hours
+                    JOIN person ON hours.userid = person.id
+                    JOIN phase ON hours.phaseid = phase.id
+                    JOIN activity ON hours.activityid = activity.id
+                    JOIN project ON phase.projectid = project.id
+                    JOIN usercontract ON usercontract.userid = person.id
+                    WHERE activitydate > '2008-08-05'
+                GROUP BY person.userid, usercontract.uc_hours, hours.activitydate, malattia, ferie, d20
+            ) AS lavoro
+        GROUP BY userid, activitydate, time_contract, malattia, ferie, d20
+    ) AS parts
+GROUP BY userid, activitydate, time_contract
+*/
 
 useattrib("atkdateattribute");
 
@@ -26,6 +57,21 @@ function flipflop()
     return $_flipflop;
 }
 
+function get_num_workdays($date_start, $date_end)
+{
+    $start_date = date_create($date_start);
+    $stop_date = date_create($date_end);
+    $curr_date = date_create($date_start);
+    $workdays = 0;
+    while ($curr_date <= $stop_date)
+    {
+        if (0 < $curr_date->format("w") & $curr_date->format("w") < 6)
+            $workdays += 1;
+        $curr_date->modify("+1 day");
+    }
+    return $workdays;
+}
+
 class timebalance extends atkNode
 {
     function timesummary()
@@ -41,7 +87,7 @@ class timebalance extends atkNode
         $db = &atkGetDb();
 
         /* Accetta una data in ingresso oppure imposta l'intervallo all'ultimo mese appena concluso*/
-        $last_month_start  = mktime(0, 0, 0, date("m")-1, 1, date("Y"));
+        $last_month_start = mktime(0, 0, 0, date("m")-1, 1, date("Y"));
         $last_month_end = mktime(0, 0, 0, date("m"), 0, date("Y"));
         $date_start = $this->m_postvars['date_start'];
         $date_end = $this->m_postvars['date_end'];
@@ -112,33 +158,50 @@ class timebalance extends atkNode
         $startdateatt = new atkDateAttribute("date_start","F d Y","d F Y", 0, $results["date_start"], AF_OBLIGATORY);
         $enddateatt = new atkDateAttribute("date_end","F d Y","d F Y", 0, $results["date_end"], AF_OBLIGATORY);
 
+        $workdays = get_num_workdays($results["date_start"], $results["date_end"]);
+
         $content .= "Da ".$startdateatt->edit()." a ".$enddateatt->edit();
         $content .= "<h2>$title</h2>\n";
+        $content .= "<p>".date_create()->format("Y-m-d")."</p>\n";
 
         // Tabella ore lavorate per progetto
         $content .= "<table border='1'>\n";
-        $content .= "<tr><th>User</th><th>Ore giornaliere</th><th>Ore lavorate</th><th>Tikets</th></tr>\n";
-        $progetti = array();
-        $persone = array();
+        $content .= "<tr><th>User</th><th>Ore previste</th><th>Ore lavorate</th><th>Tickets</th></tr>\n";
         foreach ($results['rows'] as $key => $r)
         {
+            $username = $r['userid'];
+            $contract_hours = str_number_format($r['uc_hours']*$workdays, 2);
+            $tickets = $r['tickets'];
+            $time_worked = str_number_format($r['time_worked'], 2);
+
             if ($r['nopay'])
-                $content .= "<tr style='background: #FF4444'>";
+            {
+                $bgcolor = "#FF4444";
+                //$username = "&nbsp;";
+                $contract_hours = "&nbsp;";
+                $tickets = "nopay";
+            }
             elseif ($r['d20'])
-                $content .= "<tr style='background: #DDDD66'>";
+            {
+                $bgcolor = "#DDDD66";
+                //$username = "&nbsp;";
+                $contract_hours = "&nbsp;";
+                $tickets = "d20";
+            }
             elseif (flipflop())
-                $content .= "<tr style='background: #44DD44'>";
+            {
+                $bgcolor = "#44DD44";
+            }
             else
-                $content .= "<tr style='background: #99DD99'>";
-            $content .= "<td>".$r['userid']."</td>";
-            $content .= "<td align='right'>".str_number_format($r['uc_hours'], 2)."</td>";
-            $content .= "<td align='right'>".str_number_format($r['time_worked'], 2)."</td>";
-            if ($r['nopay'])
-                $content .= "<td align='right'>nopay</td>";
-            elseif ($r['d20'])
-                $content .= "<td align='right'>d20</td>";
-            else
-                $content .= "<td align='right'>".$r['tickets']."</td>";
+            {
+                $bgcolor = "#99DD99";
+            }
+
+            $content .= "<tr style='background: $bgcolor'>";
+            $content .= "<td>$username</td>";
+            $content .= "<td align='right'>$contract_hours</td>";
+            $content .= "<td align='right'>$time_worked</td>";
+            $content .= "<td align='right'>$tickets</td>";
             $content .= "</tr>\n";
         }
         $content .= "</table>";
