@@ -106,29 +106,39 @@ class timebalance extends atkNode
             $single_user = "";
 
         $ore_registrate = "
-            SELECT person.userid, usercontract.uc_hours, project.name AS project_name,
-                phase.name AS phase_name, hours.activitydate, sum(hours.time) AS time_spent,
-                (project.name = '__dipendenti' AND phase.name IN ('malattia', 'ferie')) AS nopay,
-                (project.name LIKE 'd20_%') AS d20
-            FROM hours
-                JOIN person ON hours.userid = person.id
-                JOIN phase ON hours.phaseid = phase.id
-                JOIN activity ON hours.activityid = activity.id
-                JOIN project ON phase.projectid = project.id
-                JOIN usercontract ON usercontract.userid = person.id
-            WHERE activitydate >= '$date_start'
-                AND activitydate <= '$date_end'
-                $single_user
-            GROUP BY person.userid, usercontract.uc_hours, hours.activitydate, nopay, d20";
+                SELECT person.userid, usercontract.uc_hours/5 as time_contract, project.name AS project_name,
+                    phase.name AS phase_name, hours.activitydate, sum(hours.time) AS time_spent,
+                    (project.name = '__dipendenti' AND phase.name = 'malattia') AS malattia,
+                    (project.name = '__dipendenti' AND phase.name = 'ferie') AS ferie,
+                    (project.name LIKE 'd20_%') AS d20
+                FROM hours
+                    JOIN person ON hours.userid = person.id
+                    JOIN phase ON hours.phaseid = phase.id
+                    JOIN activity ON hours.activityid = activity.id
+                    JOIN project ON phase.projectid = project.id
+                    JOIN usercontract ON usercontract.userid = person.id
+                WHERE activitydate >= '$date_start'
+                    AND activitydate <= '$date_end'
+                    $single_user
+                GROUP BY person.userid, usercontract.uc_hours, hours.activitydate, malattia, ferie, d20";
 
         $select = "
-            SELECT userid, uc_hours, nopay, d20,
-                sum(time_spent)/60 AS time_worked,
-                sum(time_spent >= 5*60) AS tickets
+SELECT userid, activitydate, time_contract, SUM(time_worked) as time_worked,
+    SUM(time_malattia) as time_malattia, SUM(time_ferie) as time_ferie, SUM(time_d20) as time_d20,
+    SUM(tickets) as tickets
+    FROM (
+        SELECT userid, activitydate, time_contract,
+            (NOT (malattia OR ferie OR d20)) * SUM(time_spent)/60 AS time_worked,
+            malattia * SUM(time_spent)/60 AS time_malattia,
+            ferie * SUM(time_spent)/60 AS time_ferie,
+            d20 * SUM(time_spent)/60 AS time_d20,
+            (NOT (malattia OR ferie OR d20)) * SUM(time_spent > 5*60) AS tickets
             FROM (
                 $ore_registrate
-            ) AS ore_registrate
-            GROUP BY LOWER(userid), uc_hours, nopay, d20";
+            ) AS lavoro
+        GROUP BY userid, activitydate, time_contract, malattia, ferie, d20
+    ) AS parts
+GROUP BY userid, activitydate, time_contract";
 
         return array("date_start" => $date_start,
                      "date_end" => $date_end,
@@ -166,29 +176,20 @@ class timebalance extends atkNode
 
         // Tabella ore lavorate per progetto
         $content .= "<table border='1'>\n";
-        $content .= "<tr><th>User</th><th>Ore previste</th><th>Ore lavorate</th><th>Tickets</th></tr>\n";
+        $content .= "<tr><th>User</th><th>Giorno</th><th>Ore previste</th><th>Ore lavorate</th>
+                         <th>Malattia</th><th>Ferie</th><th>Tickets</th>
+                     </tr>\n";
         foreach ($results['rows'] as $key => $r)
         {
             $username = $r['userid'];
-            $contract_hours = str_number_format($r['uc_hours']*$workdays, 2);
-            $tickets = $r['tickets'];
+            $activitydate = $r['activitydate'];
+            $contract_hours = str_number_format($r['time_contract'], 2);
             $time_worked = str_number_format($r['time_worked'], 2);
+            $time_malattia = str_number_format($r['time_malattia'], 2);
+            $time_ferie = str_number_format($r['time_ferie'], 2);
+            $tickets = $r['tickets'];
 
-            if ($r['nopay'])
-            {
-                $bgcolor = "#FF4444";
-                //$username = "&nbsp;";
-                $contract_hours = "&nbsp;";
-                $tickets = "nopay";
-            }
-            elseif ($r['d20'])
-            {
-                $bgcolor = "#DDDD66";
-                //$username = "&nbsp;";
-                $contract_hours = "&nbsp;";
-                $tickets = "d20";
-            }
-            elseif (flipflop())
+            if (flipflop())
             {
                 $bgcolor = "#44DD44";
             }
@@ -199,8 +200,11 @@ class timebalance extends atkNode
 
             $content .= "<tr style='background: $bgcolor'>";
             $content .= "<td>$username</td>";
+            $content .= "<td>$activitydate</td>";
             $content .= "<td align='right'>$contract_hours</td>";
             $content .= "<td align='right'>$time_worked</td>";
+            $content .= "<td align='right'>$time_malattia</td>";
+            $content .= "<td align='right'>$time_ferie</td>";
             $content .= "<td align='right'>$tickets</td>";
             $content .= "</tr>\n";
         }
