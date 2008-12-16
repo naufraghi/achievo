@@ -116,7 +116,7 @@ class timesummary extends atkNode
         $content .= session_form();
 
         $results = $this->get_timesummary();
-        $title = "Timereport: ".$results["date_start"]." - ".$results["date_end"];
+        $title = "TimeSummary: ".$results["date_start"]." - ".$results["date_end"];
 
         $startdateatt = new atkDateAttribute("date_start","F d Y","d F Y", 0, $results["date_start"], AF_OBLIGATORY);
         $enddateatt = new atkDateAttribute("date_end","F d Y","d F Y", 0, $results["date_end"], AF_OBLIGATORY);
