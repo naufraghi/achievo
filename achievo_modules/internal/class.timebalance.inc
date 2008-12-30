@@ -246,10 +246,11 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 $content .= "<tr style='background: $bgcolor'>";
                 $content .= "<td>$userid</td>";
                 $content .= "<td>".$userdata['fullname']."</td>";
-                $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
                 if (strftime("%w", $abstime) != '0' and strftime("%w", $abstime) != '6') {
+                    $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
                     $content .= "<td align='right'>".f($userdata['time_contract'])."</td>";
                 } else {
+                    $content .= "<td><b>".strftime("%Y-%m-%d %a", $abstime)."</b></td>";
                     $content .= "<td align='right'>&nbsp</td>";
                 }
                 if ($activity)
