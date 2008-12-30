@@ -252,10 +252,10 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                     //FIXME: add option to skip holydays
                     $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
                     $content .= "<td align='right'>".f($userdata['time_contract'])."</td>";
-                    $activity['tot_contract'] += $userdata['time_contract'];
-                    $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'];
+                    $userdata['tot_contract'] += $userdata['time_contract'];
+                    $ore_registro = $userdata['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'];
                     $content .= "<td align='right'>".f($ore_registro)."</td>";
-                    $activity['tot_registro'] += $ore_registro;
+                    $userdata['tot_registro'] += $ore_registro;
                 } else {
                     $content .= "<td><b>".strftime("%Y-%m-%d %a", $abstime)."</b></td>";
                     $content .= "<td align='right'>&nbsp</td>";
