@@ -210,7 +210,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 $time_balance[$r['userid']] = array('fullname' => $r['firstname']." ".$r['lastname'],
                                                     'activity' => $alldays,
                                                     'time_contract' => $r['time_contract'],
-                                                    'tot_contract' => $workdays*$r['time_contract'],
+                                                    'tot_contract' => 0.0,
                                                     'tot_registro' => 0.0,
                                                     'tot_worked' => 0.0,
                                                     'tot_malattia' => 0.0,
@@ -219,14 +219,11 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                                                     'tot_tickets' => 0,
                                                    );
             }
-            $time_registro = floatval($r['time_contract']) - floatval($r['time_malattia']) - floatval($r['time_ferie']);
-            $time_balance[$r['userid']]['activity'][$r['activitydate']] = array('time_registro' => $time_registro,
-                                                                                'time_worked' => floatval($r['time_worked']),
+            $time_balance[$r['userid']]['activity'][$r['activitydate']] = array('time_worked' => floatval($r['time_worked']),
                                                                                 'time_malattia' => floatval($r['time_malattia']),
                                                                                 'time_ferie' => floatval($r['time_ferie']),
                                                                                 'time_d20' => floatval($r['time_d20']),
                                                                                 'tickets' => intval($r['tickets']));
-            $time_balance[$r['userid']]['tot_registro'] += floatval($r['time_registro']);
             $time_balance[$r['userid']]['tot_worked'] += floatval($r['time_worked']);
             $time_balance[$r['userid']]['tot_malattia'] += floatval($r['time_malattia']);
             $time_balance[$r['userid']]['tot_ferie'] += floatval($r['time_ferie']);
@@ -252,15 +249,20 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 $content .= "<td>$userid</td>";
                 $content .= "<td>".$userdata['fullname']."</td>";
                 if (strftime("%w", $abstime) != '0' and strftime("%w", $abstime) != '6') {
+                    //FIXME: add option to skip holydays
                     $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
                     $content .= "<td align='right'>".f($userdata['time_contract'])."</td>";
+                    $activity['tot_contract'] += $userdata['time_contract'];
+                    $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'];
+                    $content .= "<td align='right'>".f($ore_registro)."</td>";
+                    $activity['tot_registro'] += $ore_registro;
                 } else {
                     $content .= "<td><b>".strftime("%Y-%m-%d %a", $abstime)."</b></td>";
+                    $content .= "<td align='right'>&nbsp</td>";
                     $content .= "<td align='right'>&nbsp</td>";
                 }
                 if ($activity)
                 {
-                    $content .= "<td align='right'>".f($activity['time_registro'])."</td>";
                     $content .= "<td align='right'>".f($activity['time_worked'])."</td>";
                     $content .= "<td align='right'>".f($activity['time_malattia'])."</td>";
                     $content .= "<td align='right'>".f($activity['time_ferie'])."</td>";
@@ -269,7 +271,6 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 }
                 else
                 {
-                    $content .= "<td align='right'>&nbsp</td>";
                     $content .= "<td align='right'>&nbsp</td>";
                     $content .= "<td align='right'>&nbsp</td>";
                     $content .= "<td align='right'>&nbsp</td>";
