@@ -145,6 +145,8 @@ class timebalance extends atkNode
                     JOIN usercontract ON usercontract.userid = person.id
                 WHERE activitydate >= '$date_start'
                     AND activitydate <= '$date_end'
+                    AND usercontract.startdate <= activitydate
+                    AND activitydate <= usercontract.enddate
                     $single_user
                 GROUP BY person.firstname, person.lastname, person.userid, usercontract.uc_hours,
                          hours.activitydate, malattia, ferie, d20
@@ -184,14 +186,18 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
         $results = $this->get_timesummary();
         $title = "TimeBalance: ".$results["date_start"]." - ".$results["date_end"];
 
-        $startdateatt = new atkDateAttribute("date_start","F d Y","d F Y", 0, $results["date_start"], AF_OBLIGATORY);
-        $enddateatt = new atkDateAttribute("date_end","F d Y","d F Y", 0, $results["date_end"], AF_OBLIGATORY);
+        $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
+        $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
+
+        $_startdate = array("date_start" => $startdateatt->dateArray($results["date_start"]));
+        $_enddate = array("date_end" => $enddateatt->dateArray($results["date_end"]));
 
         $workdays = get_num_workdays($results["date_start"], $results["date_end"]);
         $daykeys = array_map("d", get_days_array($results["date_start"], $results["date_end"]));
         $alldays = array_fill_keys($daykeys, array());
 
-        $content .= "Da ".$startdateatt->edit()." a ".$enddateatt->edit();
+        $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate);
+        $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= "<h2>$title</h2>\n";
         $content .= "<p>".date_create()->format("Y-m-d")."</p>\n";
 
@@ -203,44 +209,55 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
             {
                 $time_balance[$r['userid']] = array('fullname' => $r['firstname']." ".$r['lastname'],
                                                     'activity' => $alldays,
+                                                    'time_contract' => $r['time_contract'],
                                                     'tot_contract' => $workdays*$r['time_contract'],
                                                     'tot_worked' => 0.0,
                                                     'tot_malattia' => 0.0,
                                                     'tot_ferie' => 0.0,
+                                                    'tot_d20' => 0.0,
                                                     'tot_tickets' => 0,
                                                    );
             }
-            $time_balance[$r['userid']]['activity'][$r['activitydate']] = array('time_contract' => $r['time_contract'],
-                                                                                'time_worked' => $r['time_worked'],
-                                                                                'time_malattia' => $r['time_malattia'],
-                                                                                'time_ferie' => $r['time_ferie'],
-                                                                                'tickets' => $r['tickets']);
-            $time_balance[$r['userid']]['tot_worked'] += $r['time_worked'];
-            $time_balance[$r['userid']]['tot_malattia'] += $r['time_malattia'];
-            $time_balance[$r['userid']]['tot_ferie'] += $r['time_malattia'];
-            $time_balance[$r['userid']]['tot_tickets'] += $r['tickets'];
+            $time_balance[$r['userid']]['activity'][$r['activitydate']] = array('time_worked' => floatval($r['time_worked']),
+                                                                                'time_malattia' => floatval($r['time_malattia']),
+                                                                                'time_ferie' => floatval($r['time_ferie']),
+                                                                                'time_d20' => floatval($r['time_d20']),
+                                                                                'tickets' => intval($r['tickets']));
+            $time_balance[$r['userid']]['tot_worked'] += floatval($r['time_worked']);
+            $time_balance[$r['userid']]['tot_malattia'] += floatval($r['time_malattia']);
+            $time_balance[$r['userid']]['tot_ferie'] += floatval($r['time_malattia']);
+            $time_balance[$r['userid']]['tot_d20'] += floatval($r['time_d20']);
+            $time_balance[$r['userid']]['tot_tickets'] += intval($r['tickets']);
+            atkdebug("TimeBalance loop: ".var_export($r, 1));
         }
         // Tabelle banca ore
         foreach ($time_balance as $userid => $userdata)
         {
             $content .= "<table border='1'>\n";
             $content .= "<tr><th>User</th><th>Nome</th><th>Giorno</th><th>Ore previste</th>
-                             <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Tickets</th>
+                             <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Develer20</th><th>Tickets</th>
                          </tr>\n";
             foreach ($userdata['activity'] as $date => $activity)
             {
                 $bgcolor = flipflop("#44FF44", "#99FF99");
 
+                $abstime = strtotime($date);
+
                 $content .= "<tr style='background: $bgcolor'>";
                 $content .= "<td>$userid</td>";
                 $content .= "<td>".$userdata['fullname']."</td>";
-                $content .= "<td>".$date."</td>";
+                $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
+                if (strftime("%w", $abstime) != '0' and strftime("%w", $abstime) != '6') {
+                    $content .= "<td align='right'>".f($userdata['time_contract'])."</td>";
+                } else {
+                    $content .= "<td align='right'>&nbsp</td>";
+                }
                 if ($activity)
                 {
-                    $content .= "<td align='right'>".f($activity['time_contract'])."</td>";
                     $content .= "<td align='right'>".f($activity['time_worked'])."</td>";
                     $content .= "<td align='right'>".f($activity['time_malattia'])."</td>";
                     $content .= "<td align='right'>".f($activity['time_ferie'])."</td>";
+                    $content .= "<td align='right'>".f($activity['time_d20'])."</td>";
                     $content .= "<td align='right'>".$activity['tickets']."</td>";
                 }
                 else
@@ -258,6 +275,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
             $content .= "<th align='right'>".f($userdata['tot_worked'])."</th>";
             $content .= "<th align='right'>".f($userdata['tot_malattia'])."</th>";
             $content .= "<th align='right'>".f($userdata['tot_ferie'])."</th>";
+            $content .= "<th align='right'>".f($userdata['tot_d20'])."</th>";
             $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
             $content .= "</tr>\n";
             $content .= "</table>\n";
