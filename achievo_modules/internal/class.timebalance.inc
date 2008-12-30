@@ -276,7 +276,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
             $content .= "<th align='right'>".f($userdata['tot_worked'])."</th>";
             $content .= "<th align='right'>".f($userdata['tot_malattia'])."</th>";
             $content .= "<th align='right'>".f($userdata['tot_ferie'])."</th>";
-            $content .= "<th align='right'>".f($userdata['tot_d20'])."</th>";
+            $content .= "<th align='right'>".f($userdata['tot_d20'])." (".f($userdata['tot_worked']*0.2).")"."</th>";
             $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
             $content .= "</tr>\n";
             $content .= "</table>\n";
