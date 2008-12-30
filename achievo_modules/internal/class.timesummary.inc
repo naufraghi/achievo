@@ -119,10 +119,13 @@ class timesummary extends atkNode
         $results = $this->get_timesummary();
         $title = "TimeSummary: ".$results["date_start"]." - ".$results["date_end"];
 
-        $startdateatt = new atkDateAttribute("date_start","F d Y","d F Y", 0, $results["date_start"], AF_OBLIGATORY);
-        $enddateatt = new atkDateAttribute("date_end","F d Y","d F Y", 0, $results["date_end"], AF_OBLIGATORY);
+        $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
+        $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
 
-        $content .= "Da ".$startdateatt->edit()." a ".$enddateatt->edit();
+        $_startdate = array("date_start" => $startdateatt->dateArray($results["date_start"]));
+        $_enddate = array("date_end" => $enddateatt->dateArray($results["date_end"]));
+
+        $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate);
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= "<h2>$title</h2>\n";
         $content .= "<p>Le ore segnate come malattia/ferie non vengono conteggiate.</p>\n";
