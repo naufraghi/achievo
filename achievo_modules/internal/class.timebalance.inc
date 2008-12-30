@@ -271,12 +271,16 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 }
                 $content .= "</tr>\n";
             }
-            $content .= "<tr><th>User</th><th>Nome</th><th>Totale</th>";
+            $content .= "<tr><th>User</th><th>Nome</th><th>Giorno</th><th>Ore previste</th>
+                             <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Develer20</th><th>Tickets</th>
+                         </tr>\n";
+            $content .= "<tr><th>$userid</th><th>".$userdata['fullname']."</th><th>Totale</th>";
             $content .= "<th align='right'>".f($userdata['tot_contract'])."</th>";
             $content .= "<th align='right'>".f($userdata['tot_worked'])."</th>";
             $content .= "<th align='right'>".f($userdata['tot_malattia'])."</th>";
             $content .= "<th align='right'>".f($userdata['tot_ferie'])."</th>";
-            $content .= "<th align='right'>".f($userdata['tot_d20'])." (".f($userdata['tot_worked']*0.2).")"."</th>";
+            $content .= "<th align='right'><a title='".f($userdata['tot_d20'])."'>";
+                $content .= f(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a></th>";
             $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
             $content .= "</tr>\n";
             $content .= "</table>\n";
