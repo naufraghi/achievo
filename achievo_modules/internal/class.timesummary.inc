@@ -139,31 +139,34 @@ class timesummary extends atkNode
 
             atkdebug("Euro ora loop: ".var_export($r, 1)." incr ore prj:".var_export($progetti[$r['prj']], 1).", user:".var_export($persone[$r['userid']], 1));
 
-            if (array_key_exists($r['userid'], $results['euro_ora_array']))
-            {
+            if (array_key_exists($r['userid'], $results['euro_ora_array'])) {
                 $r['euro'] = $r['ore'] * $results['euro_ora_array'][$r['userid']];
                 $persone[$r['userid']]['euro_ora'] = $results['euro_ora_array'][$r['userid']];
-            }
-            else
-            {
+            } else {
                 $r['euro'] = "Manca euro/h";
                 $persone[$r['userid']]['euro_ora'] = "Manca euro/h";
             }
 
-            if (is_numeric($progetti[$r['prj']]['euro']) and is_numeric($r['euro']))
+            if (is_numeric($progetti[$r['prj']]['euro']) and is_numeric($r['euro'])) {
                 $progetti[$r['prj']]['euro'] += $r['euro'];
-            else
+            } else {
                 $progetti[$r['prj']]['euro'] = "Manca euro/h";
-            if (is_numeric($persone[$r['userid']]['euro']) and is_numeric($r['euro']))
+            }
+            if (is_numeric($persone[$r['userid']]['euro']) and is_numeric($r['euro'])) {
                 $persone[$r['userid']]['euro'] += $r['euro'];
-            else
+            } else {
                 $persone[$r['userid']]['euro'] = "Manca euro/h";
+            }
 
-            if (flipflop())
+            if (flipflop()) {
                 $content .= "<tr>";
-            else
+            } else {
                 $content .= "<tr style='background: #DDDDC0'>";
-            $content .= "<td>".$r['userid']."</td><td>".$r['prj']."</td><td align='right'>".str_number_format($r['ore'], 2)."</td><td align='right'>".str_number_format($r['euro'], 2)."</td>";
+            }
+            $content .= "<td>".$r['userid']."</td>";
+            $content .= "<td>".$r['prj']."</td>";
+            $content .= "<td align='right'>".str_number_format($r['ore'], 2)."</td>";
+            $content .= "<td align='right'>".str_number_format($r['euro'], 2)."</td>";
             $content .= "</tr>\n";
         }
         $content .= "</table>";
@@ -185,7 +188,8 @@ class timesummary extends atkNode
             $content .= "</table>";
         $content .= "</td><td>";
             // Tabella ore per persona
-            $content .= "<table border='1'><tr><th>Totale persona</th><th>ore</th><th>euro/ora</th><th>euro</th><th>IVA</th><th>Ivato</th></tr>";
+            $content .= "<table border='1'><tr><th>Totale persona</th><th>ore</th><th>euro/ora</th>";
+            $content .= "<th>euro</th><th>IVA</th><th>Ivato</th><th>Modificato</th></tr>";
             $totale_ore_develer = 0;
             foreach ($persone as $key => $pers)
             {
