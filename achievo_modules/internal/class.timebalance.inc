@@ -225,7 +225,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                                                                                 'tickets' => intval($r['tickets']));
             $time_balance[$r['userid']]['tot_worked'] += floatval($r['time_worked']);
             $time_balance[$r['userid']]['tot_malattia'] += floatval($r['time_malattia']);
-            $time_balance[$r['userid']]['tot_ferie'] += floatval($r['time_malattia']);
+            $time_balance[$r['userid']]['tot_ferie'] += floatval($r['time_ferie']);
             $time_balance[$r['userid']]['tot_d20'] += floatval($r['time_d20']);
             $time_balance[$r['userid']]['tot_tickets'] += intval($r['tickets']);
             atkdebug("TimeBalance loop: ".var_export($r, 1));
