@@ -70,7 +70,8 @@ class timesummary extends atkNode
                 SELECT
                     person.userid,
                     project.name AS prj,
-                    sum(hours.time)/60.0 as ore
+                    sum(hours.time)/60.0 as ore,
+                    max(entrydate) as lastmod
                 FROM hours
                     JOIN person ON hours.userid = person.id
                     JOIN phase ON hours.phaseid = phase.id
@@ -122,6 +123,7 @@ class timesummary extends atkNode
         $enddateatt = new atkDateAttribute("date_end","F d Y","d F Y", 0, $results["date_end"], AF_OBLIGATORY);
 
         $content .= "Da ".$startdateatt->edit()." a ".$enddateatt->edit();
+        $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= "<h2>$title</h2>\n";
         $content .= "<p>Le ore segnate come malattia/ferie non vengono conteggiate.</p>\n";
 
@@ -132,10 +134,16 @@ class timesummary extends atkNode
         $persone = array();
         foreach ($results['rows'] as $key => $r)
         {
-            if (!array_key_exists($r['prj'], $progetti)) $progetti[$r['prj']] = array("ore" => 0.0, "euro" => 0.0);
-            if (!array_key_exists($r['userid'], $persone)) $persone[$r['userid']] = array("ore" => 0.0, "euro" => 0.0, "euro_ora" => 0.0);
+            if (!array_key_exists($r['prj'], $progetti)) {
+                $progetti[$r['prj']] = array("ore" => 0.0, "euro" => 0.0);
+            }
+            if (!array_key_exists($r['userid'], $persone)) {
+                $persone[$r['userid']] = array("ore" => 0.0, "euro" => 0.0, "euro_ora" => 0.0, "lastmod" => "0000-00-00");
+            }
             $progetti[$r['prj']]['ore'] += $r['ore'];
+            $progetti[$r['prj']]['lastmod'] = max($progetti[$r['prj']]['lastmod'], $r['lastmod']);
             $persone[$r['userid']]['ore'] += $r['ore'];
+            $persone[$r['userid']]['lastmod'] = max($persone[$r['userid']]['lastmod'], $r['lastmod']);
 
             atkdebug("Euro ora loop: ".var_export($r, 1)." incr ore prj:".var_export($progetti[$r['prj']], 1).", user:".var_export($persone[$r['userid']], 1));
 
@@ -174,7 +182,7 @@ class timesummary extends atkNode
         // Tabella ore per progetto / ore per persona
         $content .= "<table><tr><td>";
             // Tabella ore per progetto
-            $content .= "<table border='1'><tr><th>Totale progetto</th><th>Ore</th><th>Euro</th></tr>";
+            $content .= "<table border='1'><tr><th>Totale progetto</th><th>Ore</th><th>Euro</th><th>Modificato</th></tr>";
             uksort($progetti, "strcasecmp"); //Ordina per chiave, le persone sono già ordinate
             foreach ($progetti as $key => $prj)
             {
@@ -182,7 +190,9 @@ class timesummary extends atkNode
                     $content .= "<tr>";
                 else
                     $content .= "<tr style='background: #DDDDC0'>";
-                $content .= "<th>$key</th><td align='right'>".str_number_format($prj['ore'], 2)."</td><td align='right'>".str_number_format($prj['euro'], 2)."</td>";
+                $content .= "<th>$key</th><td align='right'>".str_number_format($prj['ore'], 2)."</td>";
+                $content .= "<td align='right'>".str_number_format($prj['euro'], 2)."</td>";
+                $content .= "<td>".$prj['lastmod']."</td>";
                 $content .= "</tr>\n";
             }
             $content .= "</table>";
@@ -203,6 +213,7 @@ class timesummary extends atkNode
                 $content .= "<td align='right'>".str_number_format($pers['euro'], 2)."</td>";
                 $content .= "<td align='right'>".str_number_format($pers['euro']*0.2, 2)."</td>";
                 $content .= "<td align='right'>".str_number_format($pers['euro']*1.2, 2)."</td>";
+                $content .= "<td>".$pers['lastmod']."</td>";
                 $content .= "</tr>\n";
                 $totale_ore_develer += $pers['ore'];
             }
