@@ -184,14 +184,17 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
         $results = $this->get_timesummary();
         $title = "TimeBalance: ".$results["date_start"]." - ".$results["date_end"];
 
-        $startdateatt = new atkDateAttribute("date_start","F d Y","d F Y", 0, $results["date_start"], AF_OBLIGATORY);
-        $enddateatt = new atkDateAttribute("date_end","F d Y","d F Y", 0, $results["date_end"], AF_OBLIGATORY);
+        $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
+        $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
+
+        $_startdate = array("date_start" => $startdateatt->dateArray($results["date_start"]));
+        $_enddate = array("date_end" => $enddateatt->dateArray($results["date_end"]));
 
         $workdays = get_num_workdays($results["date_start"], $results["date_end"]);
         $daykeys = array_map("d", get_days_array($results["date_start"], $results["date_end"]));
         $alldays = array_fill_keys($daykeys, array());
 
-        $content .= "Da ".$startdateatt->edit()." a ".$enddateatt->edit();
+        $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate);
         $content .= "<h2>$title</h2>\n";
         $content .= "<p>".date_create()->format("Y-m-d")."</p>\n";
 
