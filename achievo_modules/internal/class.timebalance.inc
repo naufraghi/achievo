@@ -218,16 +218,17 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                                                     'tot_tickets' => 0,
                                                    );
             }
-            $time_balance[$r['userid']]['activity'][$r['activitydate']] = array('time_worked' => $r['time_worked'],
-                                                                                'time_malattia' => $r['time_malattia'],
-                                                                                'time_ferie' => $r['time_ferie'],
-                                                                                'time_d20' => $r['time_d20'],
-                                                                                'tickets' => $r['tickets']);
-            $time_balance[$r['userid']]['tot_worked'] += $r['time_worked'];
-            $time_balance[$r['userid']]['tot_malattia'] += $r['time_malattia'];
-            $time_balance[$r['userid']]['tot_ferie'] += $r['time_malattia'];
-            $time_balance[$r['userid']]['tot_d20'] += $r['time_d20'];
-            $time_balance[$r['userid']]['tot_tickets'] += $r['tickets'];
+            $time_balance[$r['userid']]['activity'][$r['activitydate']] = array('time_worked' => floatval($r['time_worked']),
+                                                                                'time_malattia' => floatval($r['time_malattia']),
+                                                                                'time_ferie' => floatval($r['time_ferie']),
+                                                                                'time_d20' => floatval($r['time_d20']),
+                                                                                'tickets' => intval($r['tickets']));
+            $time_balance[$r['userid']]['tot_worked'] += floatval($r['time_worked']);
+            $time_balance[$r['userid']]['tot_malattia'] += floatval($r['time_malattia']);
+            $time_balance[$r['userid']]['tot_ferie'] += floatval($r['time_malattia']);
+            $time_balance[$r['userid']]['tot_d20'] += floatval($r['time_d20']);
+            $time_balance[$r['userid']]['tot_tickets'] += intval($r['tickets']);
+            atkdebug("TimeBalance loop: ".var_export($r, 1));
         }
         // Tabelle banca ore
         foreach ($time_balance as $userid => $userdata)
@@ -246,9 +247,13 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 $content .= "<td>$userid</td>";
                 $content .= "<td>".$userdata['fullname']."</td>";
                 $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
+                if (strftime("%w", $abstime) != '0' and strftime("%w", $abstime) != '6') {
+                    $content .= "<td align='right'>".f($userdata['time_contract'])."</td>";
+                } else {
+                    $content .= "<td align='right'>&nbsp</td>";
+                }
                 if ($activity)
                 {
-                    $content .= "<td align='right'>".f($userdata['time_contract'])."</td>";
                     $content .= "<td align='right'>".f($activity['time_worked'])."</td>";
                     $content .= "<td align='right'>".f($activity['time_malattia'])."</td>";
                     $content .= "<td align='right'>".f($activity['time_ferie'])."</td>";
@@ -257,7 +262,6 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 }
                 else
                 {
-                    $content .= "<td align='right'>&nbsp</td>";
                     $content .= "<td align='right'>&nbsp</td>";
                     $content .= "<td align='right'>&nbsp</td>";
                     $content .= "<td align='right'>&nbsp</td>";
