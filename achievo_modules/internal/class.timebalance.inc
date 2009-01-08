@@ -42,6 +42,8 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract
 
 useattrib("atkdateattribute");
 
+atkimport("modules.scheduler.scheduler_holidays");
+
 function str_number_format($var, $digits)
 {
     if (is_numeric($var))
@@ -76,12 +78,20 @@ function get_days_array($date_start, $date_end)
     return $days;
 }
 
+function is_holiday($curr_date)
+{
+    $holidays = new scheduler_holidays();
+    $holiday = $holidays->isHoliday($curr_date->format("Ymd"));
+    $weekend = ($curr_date->format("w") == 0 | $curr_date->format("w") == 6);
+    return $weekend | $holiday;
+}
+
 function get_num_workdays($date_start, $date_end)
 {
     $workdays = 0;
     foreach (get_days_array($date_start, $date_end) as $curr_date)
     {
-        if (0 < $curr_date->format("w") & $curr_date->format("w") < 6)
+        if ( !is_holiday($curr_date) )
             $workdays += 1;
     }
     return $workdays;
@@ -248,7 +258,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 $content .= "<tr style='background: $bgcolor'>";
                 $content .= "<td>$userid</td>";
                 $content .= "<td>".$userdata['fullname']."</td>";
-                if (strftime("%w", $abstime) != '0' and strftime("%w", $abstime) != '6') {
+                if ( !is_holiday(date_create($date)) ) {
                     //FIXME: add option to skip holydays
                     $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
                     $content .= "<td align='right'>".f($userdata['time_contract'])."</td>";
