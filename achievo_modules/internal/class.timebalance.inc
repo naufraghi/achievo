@@ -162,7 +162,7 @@ SELECT userid, firstname, lastname, activitydate, time_contract, SUM(time_worked
             malattia * SUM(time_spent)/60 AS time_malattia,
             ferie * SUM(time_spent)/60 AS time_ferie,
             d20 * SUM(time_spent)/60 AS time_d20,
-            (NOT (malattia OR ferie OR d20)) * SUM(time_spent > 5*60) AS tickets
+            (NOT (malattia OR ferie OR d20)) * SUM(time_spent >= 5*60) AS tickets
             FROM (
                 $ore_registrate
             ) AS lavoro
