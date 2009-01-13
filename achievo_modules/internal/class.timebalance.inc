@@ -42,9 +42,6 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract
 
 useattrib("atkdateattribute");
 
-atkimport("modules.scheduler.scheduler_holidays");
-atkimport("modules.reports.weekreport");
-
 function str_number_format($var, $digits)
 {
     if (is_numeric($var))
@@ -81,7 +78,7 @@ function get_days_array($date_start, $date_end)
 
 function is_holiday($curr_date)
 {
-    $holidays = new scheduler_holidays();
+    $holidays = &atkGetNode("scheduler.scheduler_holidays");
     $holiday = $holidays->isHoliday($curr_date->format("Ymd"));
     $weekend = ($curr_date->format("w") == 0 | $curr_date->format("w") == 6);
     return $weekend | $holiday;
@@ -216,7 +213,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
         $alldays = array_fill_keys($daykeys, array());
 
         $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate)."<br>\n";
-        $weekreport = new weekreport();
+        $weekreport = &atkGetNode("reports.weekreport");
         $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid).'</SELECT>';
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= "<h2>$title</h2>\n";
