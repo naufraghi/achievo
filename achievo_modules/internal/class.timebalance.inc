@@ -246,6 +246,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                        </tr>\n";
         foreach ($time_balance as $userid => $userdata)
         {
+            $content .= "<h3>$userid - ".$userdata['fullname']."</h3>\n";
             $content .= "<table border='1'>\n";
             $content .= $banca_head;
             foreach ($userdata['activity'] as $date => $activity)
