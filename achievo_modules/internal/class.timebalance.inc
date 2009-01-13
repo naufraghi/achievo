@@ -43,6 +43,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract
 useattrib("atkdateattribute");
 
 atkimport("modules.scheduler.scheduler_holidays");
+atkimport("modules.reports.weekreport");
 
 function str_number_format($var, $digits)
 {
@@ -114,11 +115,19 @@ class timebalance extends atkNode
         $this->atkNode("timesummary");
     }
 
+    function get_userid() {
+        if ( $this->allowed("any_user") && $this->m_postvars['userid'] ) {
+            return $this->m_postvars['userid'];
+        } else {
+            global $g_user;
+            return $g_user["id"];
+        }
+    }
+
     function get_timesummary()
     {
-        global $g_user;
-        $userid = $g_user["id"];
 
+        $userid = $this->get_userid();
         $db = &atkGetDb();
 
         /* Accetta una data in ingresso oppure imposta l'intervallo all'ultimo mese appena concluso*/
@@ -135,7 +144,7 @@ class timebalance extends atkNode
         else
             $date_end = sprintf("%04d",$date_end["year"])."-".sprintf("%02d",$date_end["month"])."-".sprintf("%02d",$date_end["day"]);
 
-        if (!$this->allowed("any_user"))
+        if ( $userid != 'all' )
             $single_user = "AND hours.userid ='$userid'";
         else
             $single_user = "";
@@ -187,6 +196,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
 
     function action_report()
     {
+        $userid = $this->get_userid();
         $ui = &$this->getUi();
         $page = &$this->getPage();
         $this->addStyle("style.css");
@@ -205,7 +215,9 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
         $daykeys = array_map("d", get_days_array($results["date_start"], $results["date_end"]));
         $alldays = array_fill_keys($daykeys, array());
 
-        $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate);
+        $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate)."<br>\n";
+        $weekreport = new weekreport();
+        $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid).'</SELECT>';
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= "<h2>$title</h2>\n";
 
@@ -305,16 +317,16 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
             $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
             $content .= "</tr>\n";
             $content .= "<tr><td colspan='10'>$title<dl>\n";
-            $content .= "<dt>$userid</dt><dd>".$userdata['fullname']."</dd>";
-            $content .= "<dt>Ore Previste</dt><dd>".f($userdata['tot_contract'])."</dd>";
-            $content .= "<dt>Ore Registro</dt><dd>".f($userdata['tot_registro'])."</dd>";
-            $content .= "<dt>Ore Lavorate</dt><dd title='".f($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
-                $content .= f($userdata['tot_worked'])."</dd>";
-            $content .= "<dt>Malattia</dt><dd>".f($userdata['tot_malattia'])."</dd>";
-            $content .= "<dt>Ferie</dt><dd>".f($userdata['tot_ferie'])."</dd>";
-            $content .= "<dt>Develer20</dt><dd title='".f($userdata['tot_d20'])."'>";
-                $content .= f(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</dd>";
-            $content .= "<dt>Tickets</dt><dd>".$userdata['tot_tickets']."</dd>";
+            $content .= "<b>$userid:</b> ".$userdata['fullname']."<br>";
+            $content .= "<b>Ore Previste:</b> ".f($userdata['tot_contract'])."<br>";
+            $content .= "<b>Ore Registro:</b> ".f($userdata['tot_registro'])."<br>";
+            $content .= "<b>Ore Lavorate:</b> <a title='".f($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
+                $content .= f($userdata['tot_worked'])."</a><br>";
+            $content .= "<b>Malattia:</b> ".f($userdata['tot_malattia'])."<br>";
+            $content .= "<b>Ferie:</b> ".f($userdata['tot_ferie'])."<br>";
+            $content .= "<b>Develer20:</b> <a title='".f($userdata['tot_d20'])."'>";
+                $content .= f(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a><br>";
+            $content .= "<b>Tickets:</b> ".$userdata['tot_tickets']."<br>";
             $content .= "</dl></td></tr>\n";
             $content .= "</table>\n";
         }
