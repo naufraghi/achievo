@@ -202,7 +202,6 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
         $_startdate = array("date_start" => $startdateatt->dateArray($results["date_start"]));
         $_enddate = array("date_end" => $enddateatt->dateArray($results["date_end"]));
 
-        $workdays = get_num_workdays($results["date_start"], $results["date_end"]);
         $daykeys = array_map("d", get_days_array($results["date_start"], $results["date_end"]));
         $alldays = array_fill_keys($daykeys, array());
 
