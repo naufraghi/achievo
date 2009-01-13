@@ -259,7 +259,6 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 $content .= "<td>$userid</td>";
                 $content .= "<td>".$userdata['fullname']."</td>";
                 if ( !is_holiday(date_create($date)) ) {
-                    //FIXME: add option to skip holydays
                     $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
                     $content .= "<td align='right'>".f($userdata['time_contract'])."</td>";
                     $userdata['tot_contract'] += $userdata['time_contract'];
