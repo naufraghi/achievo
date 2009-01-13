@@ -208,7 +208,6 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
         $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate);
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= "<h2>$title</h2>\n";
-        $content .= "<p>".date_create()->format("Y-m-d")."</p>\n";
 
         // Prepara dati in struttura 3d
         $time_balance = array();
@@ -305,9 +304,22 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 $content .= f(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</th>";
             $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
             $content .= "</tr>\n";
+            $content .= "<tr><td colspan='10'>$title<dl>\n";
+            $content .= "<dt>$userid</dt><dd>".$userdata['fullname']."</dd>";
+            $content .= "<dt>Ore Previste</dt><dd>".f($userdata['tot_contract'])."</dd>";
+            $content .= "<dt>Ore Registro</dt><dd>".f($userdata['tot_registro'])."</dd>";
+            $content .= "<dt>Ore Lavorate</dt><dd title='".f($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
+                $content .= f($userdata['tot_worked'])."</dd>";
+            $content .= "<dt>Malattia</dt><dd>".f($userdata['tot_malattia'])."</dd>";
+            $content .= "<dt>Ferie</dt><dd>".f($userdata['tot_ferie'])."</dd>";
+            $content .= "<dt>Develer20</dt><dd title='".f($userdata['tot_d20'])."'>";
+                $content .= f(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</dd>";
+            $content .= "<dt>Tickets</dt><dd>".$userdata['tot_tickets']."</dd>";
+            $content .= "</dl></td></tr>\n";
             $content .= "</table>\n";
         }
 
+        $content .= "<p>Pagina creata il ".date_create()->format("Y-m-d")."</p>\n";
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
         $content .= '<input type="hidden" name="atkaction" value="report">';
