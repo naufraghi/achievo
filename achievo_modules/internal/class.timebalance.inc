@@ -42,8 +42,6 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract
 
 useattrib("atkdateattribute");
 
-atkimport("modules.scheduler.scheduler_holidays");
-
 function str_number_format($var, $digits)
 {
     if (is_numeric($var))
@@ -80,10 +78,9 @@ function get_days_array($date_start, $date_end)
 
 function is_holiday($curr_date)
 {
-    $holidays = new scheduler_holidays();
-    $holiday = $holidays->isHoliday($curr_date->format("Ymd"));
-    $weekend = ($curr_date->format("w") == 0 | $curr_date->format("w") == 6);
-    return $weekend | $holiday;
+    $holidays_node = &atkGetNode("scheduler.scheduler_holidays");
+    $holiday = $holidays_node->isHoliday($curr_date->format("Ymd"));
+    return $holiday;
 }
 
 function get_num_workdays($date_start, $date_end)
@@ -114,11 +111,19 @@ class timebalance extends atkNode
         $this->atkNode("timesummary");
     }
 
+    function get_userid() {
+        if ( $this->allowed("any_user") && $this->m_postvars['userid'] ) {
+            return $this->m_postvars['userid'];
+        } else {
+            global $g_user;
+            return $g_user["id"];
+        }
+    }
+
     function get_timesummary()
     {
-        global $g_user;
-        $userid = $g_user["id"];
 
+        $userid = $this->get_userid();
         $db = &atkGetDb();
 
         /* Accetta una data in ingresso oppure imposta l'intervallo all'ultimo mese appena concluso*/
@@ -135,7 +140,7 @@ class timebalance extends atkNode
         else
             $date_end = sprintf("%04d",$date_end["year"])."-".sprintf("%02d",$date_end["month"])."-".sprintf("%02d",$date_end["day"]);
 
-        if (!$this->allowed("any_user"))
+        if ( $userid != 'all' )
             $single_user = "AND hours.userid ='$userid'";
         else
             $single_user = "";
@@ -187,6 +192,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
 
     function action_report()
     {
+        $userid = $this->get_userid();
         $ui = &$this->getUi();
         $page = &$this->getPage();
         $this->addStyle("style.css");
@@ -202,14 +208,14 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
         $_startdate = array("date_start" => $startdateatt->dateArray($results["date_start"]));
         $_enddate = array("date_end" => $enddateatt->dateArray($results["date_end"]));
 
-        $workdays = get_num_workdays($results["date_start"], $results["date_end"]);
         $daykeys = array_map("d", get_days_array($results["date_start"], $results["date_end"]));
         $alldays = array_fill_keys($daykeys, array());
 
-        $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate);
+        $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate)."<br>\n";
+        $weekreport = &atkGetNode("reports.weekreport");
+        $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid).'</SELECT>';
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= "<h2>$title</h2>\n";
-        $content .= "<p>".date_create()->format("Y-m-d")."</p>\n";
 
         // Prepara dati in struttura 3d
         $time_balance = array();
@@ -247,8 +253,12 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                        </tr>\n";
         foreach ($time_balance as $userid => $userdata)
         {
+            $content .= "<h3>$userid - ".$userdata['fullname']."</h3>\n";
             $content .= "<table border='1'>\n";
             $content .= $banca_head;
+
+            $banca_ore = $userdata['tot_worked'];
+
             foreach ($userdata['activity'] as $date => $activity)
             {
                 $bgcolor = flipflop("#44FF44", "#99FF99");
@@ -259,11 +269,12 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 $content .= "<td>$userid</td>";
                 $content .= "<td>".$userdata['fullname']."</td>";
                 if ( !is_holiday(date_create($date)) ) {
-                    //FIXME: add option to skip holydays
                     $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
                     $content .= "<td align='right'>".f($userdata['time_contract'])."</td>";
                     $userdata['tot_contract'] += $userdata['time_contract'];
                     $ore_registro = $userdata['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'];
+                    $ore_registro = min($ore_registro, $banca_ore);
+                    $banca_ore -= $ore_registro;
                     $content .= "<td align='right'>".f($ore_registro)."</td>";
                     $userdata['tot_registro'] += $ore_registro;
                 } else {
@@ -301,9 +312,22 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 $content .= f(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</th>";
             $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
             $content .= "</tr>\n";
+            $content .= "<tr><td colspan='10'>$title<dl>\n";
+            $content .= "<b>$userid:</b> ".$userdata['fullname']."<br>";
+            $content .= "<b>Ore Previste:</b> ".f($userdata['tot_contract'])."<br>";
+            $content .= "<b>Ore Registro:</b> ".f($userdata['tot_registro'])."<br>";
+            $content .= "<b>Ore Lavorate:</b> <a title='".f($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
+                $content .= f($userdata['tot_worked'])."</a><br>";
+            $content .= "<b>Malattia:</b> ".f($userdata['tot_malattia'])."<br>";
+            $content .= "<b>Ferie:</b> ".f($userdata['tot_ferie'])."<br>";
+            $content .= "<b>Develer20:</b> <a title='".f($userdata['tot_d20'])."'>";
+                $content .= f(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a><br>";
+            $content .= "<b>Tickets:</b> ".$userdata['tot_tickets']."<br>";
+            $content .= "</dl></td></tr>\n";
             $content .= "</table>\n";
         }
 
+        $content .= "<p>Pagina creata il ".date_create()->format("Y-m-d")."</p>\n";
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
         $content .= '<input type="hidden" name="atkaction" value="report">';
