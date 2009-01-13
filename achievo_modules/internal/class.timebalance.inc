@@ -294,17 +294,18 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                 $content .= "</tr>\n";
             }
             $content .= $banca_head;
-            $content .= "<tr><td>$userid</td><td>".$userdata['fullname']."</td><th>Totale</th>";
-            $content .= "<th align='right'>".f($userdata['tot_contract'])."</th>";
-            $content .= "<th align='right'>".f($userdata['tot_registro'])."</th>";
-            $content .= "<th align='right' title='".f($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
-                $content .= f($userdata['tot_worked'])."</th>";
-            $content .= "<th align='right'>".f($userdata['tot_malattia'])."</th>";
-            $content .= "<th align='right'>".f($userdata['tot_ferie'])."</th>";
-            $content .= "<th align='right' title='".f($userdata['tot_d20'])."'>";
-                $content .= f(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</th>";
-            $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
-            $content .= "</tr>\n";
+            $content .= "<tr><td colspan='10'><dl>\n";
+            $content .= "<dt>$userid</dt><dd>".$userdata['fullname']."</dd>";
+            $content .= "<dt>Ore Previste</dt><dd>".f($userdata['tot_contract'])."</dd>";
+            $content .= "<dt>Ore Registro</dt><dd>".f($userdata['tot_registro'])."</dd>";
+            $content .= "<dt>Ore Lavorate</dt><dd title='".f($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
+                $content .= f($userdata['tot_worked'])."</dd>";
+            $content .= "<dt>Malattia</dt><dd>".f($userdata['tot_malattia'])."</dd>";
+            $content .= "<dt>Ferie</dt><dd>".f($userdata['tot_ferie'])."</dd>";
+            $content .= "<dt>Develer20</dt><dd title='".f($userdata['tot_d20'])."'>";
+                $content .= f(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</dd>";
+            $content .= "<dt>Tickets</dt><dd>".$userdata['tot_tickets']."</dd>";
+            $content .= "</dl></td></tr>\n";
             $content .= "</table>\n";
         }
 
