@@ -78,10 +78,9 @@ function get_days_array($date_start, $date_end)
 
 function is_holiday($curr_date)
 {
-    $holidays = &atkGetNode("scheduler.scheduler_holidays");
-    $holiday = $holidays->isHoliday($curr_date->format("Ymd"));
-    $weekend = ($curr_date->format("w") == 0 | $curr_date->format("w") == 6);
-    return $weekend | $holiday;
+    $holidays_node = &atkGetNode("scheduler.scheduler_holidays");
+    $holiday = $holidays_node->isHoliday($curr_date->format("Ymd"));
+    return $holiday;
 }
 
 function get_num_workdays($date_start, $date_end)
