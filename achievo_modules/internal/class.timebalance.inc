@@ -249,6 +249,9 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
             $content .= "<h3>$userid - ".$userdata['fullname']."</h3>\n";
             $content .= "<table border='1'>\n";
             $content .= $banca_head;
+
+            $banca_ore = $userdata['tot_worked'];
+
             foreach ($userdata['activity'] as $date => $activity)
             {
                 $bgcolor = flipflop("#44FF44", "#99FF99");
@@ -263,6 +266,8 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
                     $content .= "<td align='right'>".f($userdata['time_contract'])."</td>";
                     $userdata['tot_contract'] += $userdata['time_contract'];
                     $ore_registro = $userdata['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'];
+                    $ore_registro = min($ore_registro, $banca_ore);
+                    $banca_ore -= $ore_registro;
                     $content .= "<td align='right'>".f($ore_registro)."</td>";
                     $userdata['tot_registro'] += $ore_registro;
                 } else {
