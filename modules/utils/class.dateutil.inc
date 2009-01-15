@@ -30,7 +30,19 @@
 
     function str2arr($strdate)
     {
-      return array("year"=>substr($strdate,0,4), "month"=>substr($strdate,4,2), "day"=>substr($strdate,6,2));
+      // parse dates in the common formats yyyymmdd and yyyy-mm-dd
+      if ( strlen($strdate) == 8 ) {
+        return array("year"=>substr($strdate,0,4), "month"=>substr($strdate,4,2), "day"=>substr($strdate,6,2));
+      } elseif ( strlen($strdate) == 10 ) {
+        return array("year"=>substr($strdate,0,4), "month"=>substr($strdate,5,2), "day"=>substr($strdate,8,2));
+      } else {
+        return array();
+      }
+    }
+
+    function str2str($strdate, $format="Ymd")
+    {
+      dateutil::arr2str(dateutil::str2arr($strdate), $format);
     }
 
     function str2stamp($strdate)
