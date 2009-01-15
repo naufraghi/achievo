@@ -180,7 +180,7 @@
     /**
      * LastdayOfMonth returns the timestamp of the date
      * of the last $day of $month
-     * 
+     *
      * @example lastDayOfMonth(0,3,2007) returns
      * the date of the last Sunday of March 2007
      *
@@ -189,8 +189,8 @@
      * @param int $year Year
      * @return int Timestap of the date
      */
-    
-    function lastDayOfMonth($day, $month, $year) 
+
+    function lastDayOfMonth($day, $month, $year)
     {
       // Get the timestamp for the 1. day of the month
       $firstOfMonth = mktime(0,0,0,$month,1,$year);
@@ -198,7 +198,7 @@
       $lastOfMonth = ($firstOfMonth - 86400) + date("t", $firstOfMonth) * 86400;
       // Get the day of the week for the last day in the month
       $lastOfMonth_DayOfWeek = date("w", $lastOfMonth);
-      
+
       // Is the last of the month on the same day of day of week?
       if ($lastOfMonth_DayOfWeek == $day) {
       // If so, return the timestamp
