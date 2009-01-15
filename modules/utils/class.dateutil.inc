@@ -17,8 +17,8 @@
     {
       if ($start==""||$end=="") return 0;
 
-      $d1 = adodb_mktime(12,0,0,substr($start,4,2), substr($start,6,2), substr($start,0,4));
-      $d2 = adodb_mktime(12,0,0,substr($end,4,2), substr($end,6,2), substr($end,0,4));
+      $d1 = adodb_mktime(0,0,0,substr($start,4,2), substr($start,6,2), substr($start,0,4));
+      $d2 = adodb_mktime(0,0,0,substr($end,4,2), substr($end,6,2), substr($end,0,4));
       return floor(($d2-$d1)/(60*60*24));
     }
 
@@ -40,7 +40,7 @@
 
     function arr2stamp($arrdate)
     {
-      return adodb_mktime(12,0,0,$arrdate["month"],$arrdate["day"],$arrdate["year"]);
+      return adodb_mktime(0,0,0,$arrdate["month"],$arrdate["day"],$arrdate["year"]);
     }
 
     function stamp2str($timestamp, $format="Ymd")
