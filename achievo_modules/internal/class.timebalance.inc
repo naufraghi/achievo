@@ -213,7 +213,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
 
         $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate)."<br>\n";
         $weekreport = &atkGetNode("reports.weekreport");
-        $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid).'</SELECT>';
+        $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="userid").'</SELECT>';
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= "<h2>$title</h2>\n";
 
