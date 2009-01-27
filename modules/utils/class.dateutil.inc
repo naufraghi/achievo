@@ -42,7 +42,7 @@
 
     function str2str($strdate, $format="Ymd")
     {
-      dateutil::arr2str(dateutil::str2arr($strdate), $format);
+      return dateutil::arr2str(dateutil::str2arr($strdate), $format);
     }
 
     function str2stamp($strdate)
