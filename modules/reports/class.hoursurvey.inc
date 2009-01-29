@@ -358,7 +358,7 @@ class hoursurvey extends atkNode
 
     if (!isset($userid)||$userid=="")
     {
-      $userid=$g_user["id"];
+      $userid="";//$g_user["id"]; // better default, view_all if allowed
     }
 
     if (!isset($nameswitch)||$nameswitch=="")
