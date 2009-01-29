@@ -133,7 +133,7 @@ class weekreport extends atkNode
     return $record[0];
   }
 
-  function get_employees($userid)
+  function get_employees($userid, $key="lastname")
   {
     $harvest = atkHarvestModules("getEmpDropDown", '', true);
 
@@ -142,16 +142,19 @@ class weekreport extends atkNode
       if (moduleExists('advancedsecurity'))
 //      $employee_code.='<OPTION VALUE="all">'.atktext("all_users").'</OPTION>';
       $employee_code .= $harvest['advancedsecurity'];
+      atkDebug("Using advancedsecurity");
     }
     else
     {
-
+      atkDebug("NOT using advancedsecurity");
       $db = &atkGetDb();
+
+      if ($key != "userid") {$key = "lastname";}
 
       $sql = "SELECT id, lastname,firstname,userid
             FROM person
             WHERE status='active' AND role = 'employee'
-            ORDER BY lastname
+            ORDER BY $key
            ";
 
       $records = $db->getrows($sql);
@@ -161,7 +164,11 @@ class weekreport extends atkNode
       {
         if ($userid==$records[$i]["id"]) $selected="selected";
         else $selected="";
-        $employee_code.='<OPTION VALUE="'.$records[$i]["id"].'" '.$selected.'>'.$records[$i]["lastname"].', '.$records[$i]["firstname"].'</OPTION>';
+        if ($key == "userid") {
+          $employee_code.='<OPTION VALUE="'.$records[$i]["id"].'" '.$selected.'>'.$records[$i]["userid"].", ".$records[$i]["firstname"]." ".$records[$i]["lastname"].'</OPTION>';
+        } else {
+          $employee_code.='<OPTION VALUE="'.$records[$i]["id"].'" '.$selected.'>'.$records[$i]["lastname"].", ".$records[$i]["firstname"].'</OPTION>';
+        }
       }
       }
     return $employee_code;

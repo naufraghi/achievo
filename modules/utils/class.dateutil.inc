@@ -30,7 +30,19 @@
 
     function str2arr($strdate)
     {
-      return array("year"=>substr($strdate,0,4), "month"=>substr($strdate,4,2), "day"=>substr($strdate,6,2));
+      // parse dates in the common formats yyyymmdd and yyyy-mm-dd
+      if ( strlen($strdate) == 8 ) {
+        return array("year"=>substr($strdate,0,4), "month"=>substr($strdate,4,2), "day"=>substr($strdate,6,2));
+      } elseif ( strlen($strdate) == 10 ) {
+        return array("year"=>substr($strdate,0,4), "month"=>substr($strdate,5,2), "day"=>substr($strdate,8,2));
+      } else {
+        return array();
+      }
+    }
+
+    function str2str($strdate, $format="Ymd")
+    {
+      return dateutil::arr2str(dateutil::str2arr($strdate), $format);
     }
 
     function str2stamp($strdate)
@@ -180,7 +192,7 @@
     /**
      * LastdayOfMonth returns the timestamp of the date
      * of the last $day of $month
-     * 
+     *
      * @example lastDayOfMonth(0,3,2007) returns
      * the date of the last Sunday of March 2007
      *
@@ -189,8 +201,8 @@
      * @param int $year Year
      * @return int Timestap of the date
      */
-    
-    function lastDayOfMonth($day, $month, $year) 
+
+    function lastDayOfMonth($day, $month, $year)
     {
       // Get the timestamp for the 1. day of the month
       $firstOfMonth = mktime(0,0,0,$month,1,$year);
@@ -198,7 +210,7 @@
       $lastOfMonth = ($firstOfMonth - 86400) + date("t", $firstOfMonth) * 86400;
       // Get the day of the week for the last day in the month
       $lastOfMonth_DayOfWeek = date("w", $lastOfMonth);
-      
+
       // Is the last of the month on the same day of day of week?
       if ($lastOfMonth_DayOfWeek == $day) {
       // If so, return the timestamp

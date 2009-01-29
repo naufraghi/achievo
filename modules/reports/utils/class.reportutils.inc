@@ -38,7 +38,9 @@ class reportutils
   {
     // If no supervisor parameter is given, return just all active employees
     if (empty($managerid))
-      return $this->getEmployeesFromDb();
+      return $this->getEmployeesFromDb(atkGetUserId());
+      // without atkGetUserId() an user can see ALL the other users, this way
+      // he can see only the coworkers
 
     // Otherwise, get the employees indexed by id and filter out all that are supervised by the given manager
     $employees = $this->getEmployeesById();
@@ -91,12 +93,22 @@ class reportutils
    *
    * @return array All active employees
    */
-  private function getEmployeesFromDb()
+  private function getEmployeesFromDb($userid="")
   {
+    if ($userid) { // if userid is provided, list only coworkers
+      $filter = "AND person.id IN (SELECT p2.personid
+                                   FROM project_person AS p1,
+                                        project_person AS p2
+                                   WHERE p1.projectid = p2.projectid
+                                        AND p1.personid = $userid)";
+    } else {
+      $filter = "";
+    }
     $sql = "SELECT person.id,person.lastname,person.userid, person.firstname, person.supervisor
               FROM person
               WHERE person.status='active'
               AND person.role='employee'
+              $filter
               ORDER BY person.lastname
              ";
     return atkGetDb()->getrows($sql);
