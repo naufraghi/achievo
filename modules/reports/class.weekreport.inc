@@ -649,15 +649,15 @@ class weekreport extends atkNode
         {
           $status = "approved";
         }
-        else 
+        else
         {
           $status = "locked";
         }
         if ($locks[$i]["userid"]=="" || $locks[$i]["userid"]==0)
         {
           // Lock is for all users
-          foreach($users_array as $uid)  
-          {        
+          foreach($users_array as $uid)
+          {
             $weekdata[$locks[$i]["period"]]["userdata"][$uid]["status"]=$status;
           }
         }
@@ -685,7 +685,7 @@ class weekreport extends atkNode
           foreach($data["userdata"] as $user => $userdata)
           {
             $record["userid"] = $userdata["name"];
-            $record["balance"] = $balancenode->getBalance(date("Y-m-d", adodb_mktime(0,0,0,substr($data["enddate"],3,2),substr($data["enddate"],0,2),substr($data["enddate"],6,4))), $user);
+            $record["balance"] = $balancenode->getBalance(dateutil::str2str($data["enddate"], "Y-m-d"), $user);
             $record["balance"]["outputtype"] = $outputType;
             $newtotal = 0;
 
@@ -728,7 +728,7 @@ class weekreport extends atkNode
             {
               $cmpstatus = "approved";
             }
-            else 
+            else
             {
               $cmpstatus = "unlocked";
             }
@@ -775,7 +775,7 @@ class weekreport extends atkNode
       $totalhours = 0;
       $totalcontract = 0;
       $prevbalance = $prebalance["balance"];
-    
+
       foreach($rldata as $rec)
       {
         $totalhours += $rec["total"];
@@ -849,7 +849,7 @@ class weekreport extends atkNode
         $rl->render($this, $rldata, "", '"', '";', "\r\n", "1", "",$suppress);
       }
 
-    
+
   }
 }
 
