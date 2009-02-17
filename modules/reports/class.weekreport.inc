@@ -340,22 +340,18 @@ class weekreport extends atkNode
   {
     $sessionmanager = &atkGetSessionManager();
     $startdate = $sessionmanager->pageVar("startdate");
-    if (!isset($startdate)||$startdate=="")	$startdate =  date("Ymd" ,time()-(86400*7));
-    if (is_string($startdate)) $startdate = str_replace("-", "", $startdate);
+    if (!isset($startdate)||$startdate=="")	$startdate = date("Ymd" ,time()-(ONEDAY*7));
     if (is_array($startdate)) $startdate = dateutil::arr2str($startdate);
-    $startdate = dateutil::startOfWeek($startdate);
-    return dateutil::arr2str(dateutil::str2arr($startdate), "Y-m-d");
+    return dateutil::startOfWeek($startdate, "Y-m-d");
   }
 
   function getEnddate()
   {
     $sessionmanager = &atkGetSessionManager();
     $enddate = $sessionmanager->pageVar("enddate");
-    if (!isset($enddate)||$enddate=="")	$enddate =  date("Ymd");
-    if (is_string($enddate)) $enddate = str_replace("-", "", $enddate);
+    if (!isset($enddate)||$enddate=="")	$enddate = date("Ymd");
     if (is_array($enddate)) $enddate = dateutil::arr2str($enddate);
-    $enddate = dateutil::endOfWeek($enddate);
-    return dateutil::arr2str(dateutil::str2arr($enddate), "Y-m-d");
+    return dateutil::endOfWeek($enddate, "Y-m-d");
   }
 
   function action_report(&$handler)
