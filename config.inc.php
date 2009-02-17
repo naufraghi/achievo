@@ -23,9 +23,9 @@
   // the database to use and the user/password.
   //
   $config_db["default"]["host"] = "localhost";
-  $config_db["default"]["db"] = "achievo13";
+  $config_db["default"]["db"] = "achievo";
   $config_db["default"]["user"] = "achievo";
-  $config_db["default"]["password"] = "HaveANiceDay";
+  $config_db["default"]["password"] = "XXX";
 
   // -------------------------------------------
   //           LAYOUT CONFIGURATION
@@ -89,7 +89,7 @@
   // set up the entire system and enable it only when you need it.
   // (disable it by putting // in front of it)
   //
-  $config_administratorpassword = "demo";
+  //$config_administratorpassword = "demo";
 
   // If you set $config_auth_dropdown to true, the login screen will contain
   // a list of available usernames. If you set it to false, there will be
@@ -190,8 +190,8 @@
   // This variable indicated whether contacts in the project module are
   // obligatory
   $config_project_contact_obligatory = false;
-
-
+  
+  
   // -------------------------------------------
   //             PIM MODULE
   // -------------------------------------------
@@ -238,11 +238,10 @@
   // it can be found as the second parameter.
   //
   // module("somemodule","../achievo_modules/somemodule/");
-
+  
   module("customer_stats","achievo_modules/customer_stats/");
   module("remote","achievo_modules/remote/");
   module("internal","achievo_modules/internal/");
-  //module("calendar");
 
   // -------------------------------------------
   //            END OF CONFIGURATION
