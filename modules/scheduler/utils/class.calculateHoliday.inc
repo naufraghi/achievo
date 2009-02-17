@@ -190,12 +190,12 @@ class calculateHoliday
   {
     switch ($this->m_mode)
     {
-      case "Date":    $date = mktime(0,0,0,$this->m_month,$this->m_day,$this->m_year);
+      case "Date":    $date = mktime(12,0,0,$this->m_month,$this->m_day,$this->m_year);
                       break;
       case "Special": if ($this->m_special=="easter")
                         $date = $this->_easter($this->m_offset);
                       break;
-      case "Weekday": $date = mktime(0,0,0,$this->m_month,$this->m_day,$this->m_year);
+      case "Weekday": $date = mktime(12,0,0,$this->m_month,$this->m_day,$this->m_year);
                       if(date("w",$date)<=$this->m_weekday)
                       {
                         $date+=$this->_addDays($this->m_weekday-date("w",$date));
