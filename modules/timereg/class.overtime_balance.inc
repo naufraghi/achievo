@@ -116,7 +116,7 @@
           $result[0] = $this->getDummyBalance($date, $userid, 0);
         }
       }
-      $endtime = dateUtil::arr2str($result[0]["day"], "Y-m-d");
+      $endtime = dateUtil::arr2stamp($result[0]["day"]);
       $starttime = dateUtil::str2stamp($day);
       if ($endtime < $starttime)
       {
