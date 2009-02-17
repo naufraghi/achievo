@@ -76,7 +76,8 @@
           $url = dispatch_url("timereg.overtime_balance", "add", array("userid[id]"=>$rec["balance"]["userid"]["id"],
                                                                        "day[day]"=>$rec["balance"]["day"]["day"],
                                                                        "day[month]"=>$rec["balance"]["day"]["month"],
-                                                                       "day[year]"=>$rec["balance"]["day"]["year"], "balance"=>"0.00"));
+                                                                       "day[year]"=>$rec["balance"]["day"]["year"],
+                                                                       "balance"=>"0.00"));
         }
         $res = href($url, $res, SESSION_NESTED);
       }
