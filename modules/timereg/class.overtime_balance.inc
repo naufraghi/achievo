@@ -133,9 +133,7 @@
     {
       if ($balance === "") $res["balance"] = atktext("not_inserted"); else $res["balance"] = $balance;
       $res["userid"]["id"] = $userid;
-      $res["day"]["day"] = substr($day,8,2);
-      $res["day"]["month"] = substr($day,5,2);
-      $res["day"]["year"] = substr($day,0,4);
+      $res["day"] = dateutil::str2arr($day);
       if ($id != 0) $res["id"] = $id;
       $res["manual"] = 0;
       return $res;
