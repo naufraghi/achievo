@@ -77,13 +77,6 @@ function get_days_array($date_start, $date_end)
     return $days;
 }
 
-function is_holiday($curr_date)
-{
-    $holidays_node = &atkGetNode("scheduler.scheduler_holidays");
-    $holiday = $holidays_node->isHoliday($curr_date);
-    return $holiday;
-}
-
 function f($float)
 {
     return str_number_format($float, 2);
@@ -100,6 +93,7 @@ class timebalance extends atkNode
     {
         $this->atkNode("timebalance");
         $this->overtime_node = &atkGetNode("timereg.overtime_balance");
+        $this->holidays_node = &atkGetNode("scheduler.scheduler_holidays");
     }
 
     function get_userid() {
@@ -266,7 +260,7 @@ GROUP BY userid, firstname, lastname, activitydate;
                 $content .= "<tr style='background: $bgcolor'>";
                 $content .= "<td>$userid</td>";
                 $content .= "<td>".$userdata['fullname']."</td>";
-                if ( is_holiday($date) ) {
+                if ( $this->holidays_node->isHoliday($date) ) {
                     $content .= "<td><b><i>".strftime("%Y-%m-%d %a", $abstime)."</i></b></td>";
                 } elseif ( !array_key_exists($date, $workdays) ) {
                     $content .= "<td><b>".strftime("%Y-%m-%d %a", $abstime)."</b></td>";
