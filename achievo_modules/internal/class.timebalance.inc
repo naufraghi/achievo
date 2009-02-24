@@ -82,7 +82,7 @@ function f($float)
     return str_number_format($float, 2);
 }
 
-function d($date)
+function format_date($date)
 {
     return $date->format("Y-m-d");
 }
@@ -191,7 +191,7 @@ GROUP BY userid, firstname, lastname, activitydate;
         $_startdate = array("date_start" => $startdateatt->dateArray($results["date_start"]));
         $_enddate = array("date_end" => $enddateatt->dateArray($results["date_end"]));
 
-        $daykeys = array_map("d", get_days_array($results["date_start"], $results["date_end"]));
+        $daykeys = array_map("format_date", get_days_array($results["date_start"], $results["date_end"]));
         $workdays = $this->overtime_node->enumWorkingDays($results["date_start"], $results["date_end"], $userid, 'Y-m-d');
         atkdebug("workdays: ".var_export($workdays, 1));
         $alldays = array();
