@@ -249,9 +249,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $content .= "<table border='1'>\n";
             $content .= $banca_head;
 
-            $balance = $this->overtime_node->getBalance($results["date_end"], $userid);
-            atkDebug("balance = ".var_export($balance, 1));
-            $banca_ore = $balance['balance'];
+            $userdata['date_start']['balance'] = $this->overtime_node->getBalance($results["date_start"], $userdata['id']);
+            $userdata['date_end']['balance'] = $this->overtime_node->getBalance($results["date_end"], $userdata['id']);
+            $banca_ore = $userdata['date_start']['balance']['balance'] + $userdata['tot_worked'];
 
             foreach ($userdata['activity'] as $date => $activity)
             {
@@ -271,8 +271,12 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 }
                 if ( array_key_exists($date, $workdays) ) {
                     $content .= "<td align='right'>".float2str($activity['time_contract'])."</td>";
-                    $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'];
-                    $ore_registro = min($ore_registro, $banca_ore);
+                    if ($banca_ore > 0) {
+                        $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'];
+                        $ore_registro = min($ore_registro, $banca_ore);
+                    } else {
+                        $ore_registro = 0.0;
+                    }
                     $banca_ore -= $ore_registro;
                     $content .= "<td align='right'>".float2str($ore_registro)."</td>";
                     $userdata['tot_registro'] += $ore_registro;
@@ -312,6 +316,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $content .= "</tr>\n";
             $content .= "<tr><td colspan='10'>$title<dl>\n";
             $content .= "<b>$userid:</b> ".$userdata['fullname']."<br>";
+            $content .= "<b>Banca ore al ".$results["date_start"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_start'])."<br>";
+            $content .= "<b>Banca ore al ".$results["date_end"].":</b> ".float2str($userdata['date_end']['balance']['balance'])."<br>";
             $content .= "<b>Ore Previste:</b> ".float2str($userdata['tot_contract'])."<br>";
             $content .= "<b>Ore Registro:</b> ".float2str($userdata['tot_registro'])."<br>";
             $content .= "<b>Ore Lavorate:</b> <a title='".float2str($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
