@@ -96,24 +96,24 @@
      * Given a date in the form "20010325", this function returns the date of the first
      * day (monday) of that week.
      */
-    function startOfWeek($strdate)
+    function startOfWeek($strdate, $format='Ymd')
     {
-      $viewtime = adodb_mktime(0,0,0,substr($strdate,4,2),substr($strdate,6,2),substr($strdate,0,4));
+      $viewtime = dateutil::str2stamp($strdate);
       $weekday = strftime("%w",$viewtime);
       if ($weekday==0) $weekday=7;
-      return date("Ymd" ,$viewtime-(86400*($weekday-1)));
+      return date($format ,$viewtime-(86400*($weekday-1)));
     }
 
     /*
      * Given a date in the form "20010325", this function returns the date of the last
      * day (sunday) of that week.
      */
-    function endOfWeek($strdate)
+    function endOfWeek($strdate, $format='Ymd')
     {
-      $viewtime = adodb_mktime(0,0,0,substr($strdate,4,2),substr($strdate,6,2),substr($strdate,0,4));
+      $viewtime = dateutil::str2stamp($strdate);
       $weekday = strftime("%w",$viewtime);
       if ($weekday==0) $weekday=7;
-      return date("Ymd" ,$viewtime-(86400*($weekday-7)));
+      return date($format ,$viewtime-(86400*($weekday-7)));
     }
 
     /**

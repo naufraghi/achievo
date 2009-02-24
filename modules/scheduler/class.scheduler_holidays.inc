@@ -137,9 +137,12 @@ class scheduler_holidays extends atkNode
     $date = str_replace("-","",$date);
     $year = substr($date, 0,4);
     $holidays = $this->_getHolidays($year);
+    //foreach ($holidays as $key=>$val) {atkDebug("$key: $val");}
     if (array_key_exists($date,$holidays) && is_array($holidays[$date]) && count($holidays[$date])>0) {
+        //atkDebug("isHoliday($date)");
         return true;
     } else {
+        //atkDebug("not isHoliday($date)");
         return false;
     }
   }
@@ -180,6 +183,7 @@ class scheduler_holidays extends atkNode
     }
     else
     {
+      //atkDebug("_getHolidays($year)");
       $db_holidays = $this->selectDb();
       $holidays = array();
       $calculator = new calculateHoliday();
@@ -240,6 +244,6 @@ class scheduler_holidays extends atkNode
       closedir($handle);
     }
   }
-
 }
 ?>
+

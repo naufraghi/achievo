@@ -1,5 +1,5 @@
 <?php
-
+atkimport("modules.utils.dateutil");
 
 class calculateHoliday
 {
@@ -31,8 +31,10 @@ class calculateHoliday
    */
    function getHolidayDate($holiday,$year)
    {
+     //atkDebug("getHolidayDate($holiday,$year)");
      $this->m_year=($year!=""?$year:date("Y"));
 
+     $type=($holiday["type"]!=""?$holiday["type"]:"");
      $special=($holiday["special"]!=""?$holiday["special"]:"");
      $weekday=($holiday["weekday"]!=""?$holiday["weekday"]:-1);
      $month=($holiday["month"]!=""?$holiday["month"]:0);
@@ -44,20 +46,29 @@ class calculateHoliday
      if($special!="")
      {
        $this->_seteaster($special,$offset,$length);
+       //atkDebug("_seteaster($special,$offset,$length) ".$this->m_year);
      }
      else
      {
-       if($weekday==-1)
+       if($weekday==-1 && $type=="")
        {
          $this->_setdate($month,$day,$length);
+         //atkDebug("_setdate($month,$day,$length) ".$this->m_year);
+       }
+       elseif($type=="weekend")
+       {
+         $this->_setweekend();
+         //atkDebug("_setweekend ".$this->m_year);
        }
        elseif($day==0)
        {
          $this->_setwday($weekday,$month,$offset,$length);
+         //atkDebug("_setwday($weekday,$month,$offset,$length) ".$this->m_year);
        }
        else
        {
          $this->_setdoff($weekday,$month,$day,$offset,$length);
+         //atkDebug("_setdoff($weekday,$month,$day,$offset,$length) ".$this->m_year);
        }
      }
      return $this->_calculateDate();
@@ -158,6 +169,18 @@ class calculateHoliday
      $this->m_length = $length;
    }
 
+   function _setweekend()
+   {
+     $this->m_mode="Weekend";
+     $this->m_special="";
+     $this->m_offset=0;
+     $this->m_weekday=0;
+     $this->m_month = 0;
+     $this->m_day = 0;
+     $this->m_moveTo=0;
+     $this->m_length = 0;
+   }
+
  /**
   * Calculate the actual date
   *
@@ -213,9 +236,24 @@ class calculateHoliday
       }
     }
     $ret_dates = array();
-    for($i=0;$i<$this->m_length;$i++)
-    {
-      $ret_dates[] = ($date+$this->_addDays($i));
+    if ($this->m_mode == "Weekend") {
+      foreach (dateutil::daysBetween($this->m_year."0101",
+                                     ($this->m_year+1)."0101") as $curdate=>$val)
+      {
+        //atkDebug("dateutil::str2str($curdate, 'w') == ".dateutil::str2str($curdate, "w"));
+        if ((dateutil::str2str($curdate, "w") == 0) || (dateutil::str2str($curdate, "w") == 6))
+        {
+          //atkDebug("Generating weekend $curdate");
+          $ret_dates[] = dateutil::str2stamp($curdate);
+        } else {
+          //atkDebug("Skipping weekday $curdate");
+        }
+      }
+    } else {
+      for($i=0;$i<$this->m_length;$i++)
+      {
+        $ret_dates[] = ($date+$this->_addDays($i));
+      }
     }
     return $ret_dates;
   }
