@@ -97,6 +97,7 @@ class timebalance extends atkNode
     }
 
     function get_userid() {
+        // Questo userid è in nome utente e non l'id numerico
         if ( $this->allowed("any_user") && $this->m_postvars['userid'] ) {
             return $this->m_postvars['userid'];
         } else {
