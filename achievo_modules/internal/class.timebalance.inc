@@ -261,7 +261,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract;
 
             foreach ($userdata['activity'] as $date => $activity)
             {
-                $bgcolor = flipflop("#44FF44", "#99FF99");
+                $bgcolor = flipflop("#9999FF", "#BBBBFF");
 
                 $abstime = strtotime($date);
 
