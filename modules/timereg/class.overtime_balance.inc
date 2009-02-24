@@ -346,7 +346,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
     {
       $dayofweek = dateutil::str2str($date, "w");
       $workday = (count($workdays)==0) || in_array($dayofweek, $workdays);
-      $holyday = $this->scheduler_holidays->isHoliday($date);
+      $holiday = $this->scheduler_holidays->isHoliday($date);
 
       if ( $workday && !$holiday ) {
         return true;
