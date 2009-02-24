@@ -131,7 +131,7 @@ class timebalance extends atkNode
             $single_user = "";
 
         $ore_registrate = "
-                SELECT person.userid, person.firstname, person.lastname,
+                SELECT person.id, person.userid, person.firstname, person.lastname,
                     project.name AS project_name,
                     phase.name AS phase_name, hours.activitydate, sum(hours.time) AS time_spent,
                     (project.name = '__dipendenti' AND phase.name = 'malattia') AS malattia,
@@ -146,16 +146,16 @@ class timebalance extends atkNode
                 WHERE activitydate >= '$date_start'
                     AND activitydate <= '$date_end'
                     $single_user
-                GROUP BY person.firstname, person.lastname, person.userid,
+                GROUP BY person.id, person.firstname, person.lastname, person.userid,
                     hours.activitydate, malattia, ferie, d20
         ";
 
         $select = "
-SELECT userid, firstname, lastname, activitydate, SUM(time_worked) as time_worked,
+SELECT id, userid, firstname, lastname, activitydate, SUM(time_worked) as time_worked,
     SUM(time_malattia) as time_malattia, SUM(time_ferie) as time_ferie, SUM(time_d20) as time_d20,
     SUM(tickets) as tickets
     FROM (
-        SELECT userid, firstname, lastname, activitydate,
+        SELECT id, userid, firstname, lastname, activitydate,
             (NOT (malattia OR ferie OR d20)) * SUM(time_spent)/60 AS time_worked,
             malattia * SUM(time_spent)/60 AS time_malattia,
             ferie * SUM(time_spent)/60 AS time_ferie,
@@ -164,9 +164,9 @@ SELECT userid, firstname, lastname, activitydate, SUM(time_worked) as time_worke
             FROM (
                 $ore_registrate
             ) AS lavoro
-        GROUP BY userid, firstname, lastname, activitydate, malattia, ferie, d20
+        GROUP BY id, userid, firstname, lastname, activitydate, malattia, ferie, d20
     ) AS parts
-GROUP BY userid, firstname, lastname, activitydate;
+GROUP BY id, userid, firstname, lastname, activitydate;
 ";
         return array("date_start" => $date_start,
                      "date_end" => $date_end,
@@ -212,7 +212,8 @@ GROUP BY userid, firstname, lastname, activitydate;
         {
             if (!array_key_exists($r['userid'], $time_balance))
             {
-                $time_balance[$r['userid']] = array('fullname' => $r['firstname']." ".$r['lastname'],
+                $time_balance[$r['userid']] = array('id' => $r['id'],
+                                                    'fullname' => $r['firstname']." ".$r['lastname'],
                                                     'activity' => $alldays,
                                                     'tot_contract' => array_sum($workdays),
                                                     'tot_registro' => 0.0,
