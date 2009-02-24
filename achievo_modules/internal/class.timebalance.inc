@@ -77,7 +77,7 @@ function get_days_array($date_start, $date_end)
     return $days;
 }
 
-function f($float)
+function float2str($float)
 {
     return str_number_format($float, 2);
 }
@@ -270,11 +270,11 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
                 }
                 if ( array_key_exists($date, $workdays) ) {
-                    $content .= "<td align='right'>".f($activity['time_contract'])."</td>";
+                    $content .= "<td align='right'>".float2str($activity['time_contract'])."</td>";
                     $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'];
                     $ore_registro = min($ore_registro, $banca_ore);
                     $banca_ore -= $ore_registro;
-                    $content .= "<td align='right'>".f($ore_registro)."</td>";
+                    $content .= "<td align='right'>".float2str($ore_registro)."</td>";
                     $userdata['tot_registro'] += $ore_registro;
                 } else {
                     $content .= "<td align='right'>&nbsp</td>"; // time_contract
@@ -282,10 +282,10 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 }
                 if ($activity)
                 {
-                    $content .= "<td align='right'>".f($activity['time_worked'])."</td>";
-                    $content .= "<td align='right'>".f($activity['time_malattia'])."</td>";
-                    $content .= "<td align='right'>".f($activity['time_ferie'])."</td>";
-                    $content .= "<td align='right'>".f($activity['time_d20'])."</td>";
+                    $content .= "<td align='right'>".float2str($activity['time_worked'])."</td>";
+                    $content .= "<td align='right'>".float2str($activity['time_malattia'])."</td>";
+                    $content .= "<td align='right'>".float2str($activity['time_ferie'])."</td>";
+                    $content .= "<td align='right'>".float2str($activity['time_d20'])."</td>";
                     $content .= "<td align='right'>".$activity['tickets']."</td>";
                 }
                 else
@@ -300,26 +300,26 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             }
             $content .= $banca_head;
             $content .= "<tr><td>$userid</td><td>".$userdata['fullname']."</td><th>Totale</th>";
-            $content .= "<th align='right'>".f($userdata['tot_contract'])."</th>";
-            $content .= "<th align='right'>".f($userdata['tot_registro'])."</th>";
-            $content .= "<th align='right' title='".f($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
-                $content .= f($userdata['tot_worked'])."</th>";
-            $content .= "<th align='right'>".f($userdata['tot_malattia'])."</th>";
-            $content .= "<th align='right'>".f($userdata['tot_ferie'])."</th>";
-            $content .= "<th align='right' title='".f($userdata['tot_d20'])."'>";
-                $content .= f(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</th>";
+            $content .= "<th align='right'>".float2str($userdata['tot_contract'])."</th>";
+            $content .= "<th align='right'>".float2str($userdata['tot_registro'])."</th>";
+            $content .= "<th align='right' title='".float2str($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
+                $content .= float2str($userdata['tot_worked'])."</th>";
+            $content .= "<th align='right'>".float2str($userdata['tot_malattia'])."</th>";
+            $content .= "<th align='right'>".float2str($userdata['tot_ferie'])."</th>";
+            $content .= "<th align='right' title='".float2str($userdata['tot_d20'])."'>";
+                $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</th>";
             $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
             $content .= "</tr>\n";
             $content .= "<tr><td colspan='10'>$title<dl>\n";
             $content .= "<b>$userid:</b> ".$userdata['fullname']."<br>";
-            $content .= "<b>Ore Previste:</b> ".f($userdata['tot_contract'])."<br>";
-            $content .= "<b>Ore Registro:</b> ".f($userdata['tot_registro'])."<br>";
-            $content .= "<b>Ore Lavorate:</b> <a title='".f($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
-                $content .= f($userdata['tot_worked'])."</a><br>";
-            $content .= "<b>Malattia:</b> ".f($userdata['tot_malattia'])."<br>";
-            $content .= "<b>Ferie:</b> ".f($userdata['tot_ferie'])."<br>";
-            $content .= "<b>Develer20:</b> <a title='".f($userdata['tot_d20'])."'>";
-                $content .= f(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a><br>";
+            $content .= "<b>Ore Previste:</b> ".float2str($userdata['tot_contract'])."<br>";
+            $content .= "<b>Ore Registro:</b> ".float2str($userdata['tot_registro'])."<br>";
+            $content .= "<b>Ore Lavorate:</b> <a title='".float2str($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
+                $content .= float2str($userdata['tot_worked'])."</a><br>";
+            $content .= "<b>Malattia:</b> ".float2str($userdata['tot_malattia'])."<br>";
+            $content .= "<b>Ferie:</b> ".float2str($userdata['tot_ferie'])."<br>";
+            $content .= "<b>Develer20:</b> <a title='".float2str($userdata['tot_d20'])."'>";
+                $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a><br>";
             $content .= "<b>Tickets:</b> ".$userdata['tot_tickets']."<br>";
             
             $content .= "</dl></td></tr>\n";
