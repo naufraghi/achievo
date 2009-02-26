@@ -7,8 +7,6 @@
  * Author: Matteo Bertini <naufraghi@develer.com>
  */
 
-include_once (moduleDir("timestats")."class.hours.inc");
-
 //XML stuff da http://www.xml.com/pub/a/2003/03/19/dive-into-xml.html
 if (stristr($_SERVER[HTTP_ACCEPT], "application/xhtml+xml")) {
     header("Content-Type: application/xhtml+xml");
@@ -99,7 +97,7 @@ class timereg extends atkNode
         $hoursnode->preUpdate($record);
         $hoursnode->validate($record, "update");
 
-        $error = count($record['atkerror']) > 0;
+        $error = (count($record['atkerror']) > 0);
         foreach (array_keys($record) as $key) {
             $error = $error || (is_array($record[$key]) && count($record[$key]['atkerror']) > 0);
         }
