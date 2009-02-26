@@ -45,7 +45,6 @@
   $m_months_long  = Array(1 => "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december");
   $m_weekdays     = Array("sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday");
 ?>
-
 /* javascript month names and weekdays */
 var m_months_long  = Array(<?php for ($i = 1; $i <= 12; $i++) echo "'".atktext($m_months_long[$i],"atk")."'".($i < 12 ? "," : ""); ?>);
 var m_months_short = Array(<?php for ($i = 1; $i <= 12; $i++) echo "'".atktext($m_months_short[$i],"atk")."'".($i < 12 ? "," : ""); ?>);
