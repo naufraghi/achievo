@@ -106,7 +106,9 @@ class timereg extends atkNode
             echo make_xml("timereg", "Err", array(array("Err"=>print_r($record, True))), $bodykey="Err");
         } else {
             //FIXME: qua nasce un \n di troppo nell'output, ma non trovo la fonte
+            ob_start();
             $hoursnode->updateDb($record);
+            ob_end_clean();
             echo make_xml("timereg", "OK", array(array("action"=>"edit")));
         }
         exit;
