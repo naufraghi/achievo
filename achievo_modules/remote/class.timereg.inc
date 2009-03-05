@@ -64,7 +64,7 @@ class timereg extends atkNode
 
     function action_save()
     {
-        atkdebug("timereg Action save");
+        //atkdebug("timereg Action save");
         $hoursnode = &atkGetNode("timereg.hours");
         $hoursnode->m_postvars = $this->m_postvars; // Share postvars.
         $record = $hoursnode->updateRecord();
@@ -89,7 +89,7 @@ class timereg extends atkNode
 
     function action_edit()
     {
-        atkdebug("timereg Action edit");
+        //atkdebug("timereg Action edit");
         $hoursnode = &atkGetNode("timereg.hours");
         $hoursnode->m_postvars = $this->m_postvars; // Share postvars.
         $record = $hoursnode->updateRecord();
@@ -113,7 +113,7 @@ class timereg extends atkNode
 
     function action_delete()
     {
-        atkdebug("timereg Action delete");
+        //atkdebug("timereg Action delete");
         $hoursnode = &atkGetNode("timereg.hours");
         $hoursnode->m_postvars = $this->m_postvars; // Share postvars.
         //TODO: callHandler semplifica la delegazione, ma la gestione degli errori?

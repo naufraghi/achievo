@@ -19,7 +19,7 @@ class timereport extends atkNode
 
     function action_search()
     {
-        atkdebug("timereport Action search");
+        //atkdebug("timereport Action search");
         global $g_user;
 
         $db = &atkGetDb();
