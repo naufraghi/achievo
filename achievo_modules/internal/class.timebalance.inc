@@ -156,15 +156,14 @@ SELECT id, userid, firstname, lastname, activitydate, SUM(time_worked) as time_w
     SUM(tickets) as tickets
     FROM (
         SELECT id, userid, firstname, lastname, activitydate,
-            (NOT (malattia OR ferie OR d20)) * SUM(time_spent) AS time_worked,
-            malattia * SUM(time_spent) AS time_malattia,
-            ferie * SUM(time_spent) AS time_ferie,
-            d20 * SUM(time_spent) AS time_d20,
-            (NOT (malattia OR ferie OR d20)) * SUM(time_spent >= 5) AS tickets
-            FROM (
-                $ore_registrate
-            ) AS lavoro
-        GROUP BY id, userid, firstname, lastname, activitydate, malattia, ferie, d20
+            (NOT (malattia OR ferie OR d20)) * time_spent AS time_worked,
+            malattia * time_spent AS time_malattia,
+            ferie * time_spent AS time_ferie,
+            d20 * time_spent AS time_d20,
+            (NOT (malattia OR ferie OR d20)) * (time_spent >= 5) AS tickets
+        FROM (
+            $ore_registrate
+        ) AS lavoro
     ) AS parts
 GROUP BY id, userid, firstname, lastname, activitydate;
 ";
