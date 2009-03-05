@@ -133,7 +133,7 @@ class timebalance extends atkNode
 
         $ore_registrate = "
                 SELECT person.id, person.userid, person.firstname, person.lastname,
-                    hours.activitydate, sum(hours.time) AS time_spent,
+                    hours.activitydate, sum(hours.time)/60 AS time_spent,
                     (project.name = '__dipendenti' AND phase.name = 'malattia') AS malattia,
                     (project.name = '__dipendenti' AND phase.name = 'ferie') AS ferie,
                     (project.name LIKE 'd20_%') AS d20
@@ -156,11 +156,11 @@ SELECT id, userid, firstname, lastname, activitydate, SUM(time_worked) as time_w
     SUM(tickets) as tickets
     FROM (
         SELECT id, userid, firstname, lastname, activitydate,
-            (NOT (malattia OR ferie OR d20)) * SUM(time_spent)/60 AS time_worked,
-            malattia * SUM(time_spent)/60 AS time_malattia,
-            ferie * SUM(time_spent)/60 AS time_ferie,
-            d20 * SUM(time_spent)/60 AS time_d20,
-            (NOT (malattia OR ferie OR d20)) * SUM(time_spent >= 5*60) AS tickets
+            (NOT (malattia OR ferie OR d20)) * SUM(time_spent) AS time_worked,
+            malattia * SUM(time_spent) AS time_malattia,
+            ferie * SUM(time_spent) AS time_ferie,
+            d20 * SUM(time_spent) AS time_d20,
+            (NOT (malattia OR ferie OR d20)) * SUM(time_spent >= 5) AS tickets
             FROM (
                 $ore_registrate
             ) AS lavoro
