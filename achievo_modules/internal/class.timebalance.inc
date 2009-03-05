@@ -153,8 +153,8 @@ class timebalance extends atkNode
 
         $select = "
 SELECT id, userid, firstname, lastname, activitydate, SUM(time_worked) as time_worked,
-	SUM(time_malattia) as time_malattia, SUM(time_ferie) as time_ferie, SUM(time_permessi) as time_permessi,
-	SUM(time_d20) as time_d20, SUM(tickets) as tickets
+       SUM(time_malattia) as time_malattia, SUM(time_ferie) as time_ferie, SUM(time_permessi) as time_permessi,
+       SUM(time_d20) as time_d20, SUM(tickets) as tickets
     FROM (
         SELECT id, userid, firstname, lastname, activitydate,
             (NOT (malattia OR ferie OR permessi OR d20)) * time_spent AS time_worked,
@@ -221,6 +221,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                                                     'tot_worked' => 0.0,
                                                     'tot_malattia' => 0.0,
                                                     'tot_ferie' => 0.0,
+                                                    'tot_permessi' => 0.0,
                                                     'tot_d20' => 0.0,
                                                     'tot_tickets' => 0,
                                                    );
@@ -229,11 +230,13 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                                                                                 'time_worked' => floatval($r['time_worked']),
                                                                                 'time_malattia' => floatval($r['time_malattia']),
                                                                                 'time_ferie' => floatval($r['time_ferie']),
+                                                                                'time_permessi' => floatval($r['time_permessi']),
                                                                                 'time_d20' => floatval($r['time_d20']),
                                                                                 'tickets' => intval($r['tickets']));
             $time_balance[$r['userid']]['tot_worked'] += floatval($r['time_worked']);
             $time_balance[$r['userid']]['tot_malattia'] += floatval($r['time_malattia']);
             $time_balance[$r['userid']]['tot_ferie'] += floatval($r['time_ferie']);
+            $time_balance[$r['userid']]['tot_permessi'] += floatval($r['time_permessi']);
             $time_balance[$r['userid']]['tot_d20'] += floatval($r['time_d20']);
             $time_balance[$r['userid']]['tot_tickets'] += intval($r['tickets']);
             atkdebug("TimeBalance loop: ".var_export($r, 1));
@@ -241,7 +244,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         atkdebug("TimeBalance: ".var_export($time_balance, 1));
         // Tabelle banca ore
         $banca_head = "<tr><th>User</th><th>Nome</th><th>Giorno</th><th>Ore previste</th><th>Ore registro</th>
-                           <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Develer20</th><th>Tickets</th>
+                           <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Permessi</th><th>Develer20</th><th>Tickets</th>
                            </tr>\n";
         foreach ($time_balance as $userid => $userdata)
         {
@@ -272,7 +275,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 if ( array_key_exists($date, $workdays) ) {
                     $content .= "<td align='right'>".float2str($activity['time_contract'])."</td>";
                     if ($banca_ore > 0) {
-                        $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'];
+                        $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'] - $activity['time_permessi'];
                         $ore_registro = min($ore_registro, $banca_ore);
                     } else {
                         $ore_registro = 0.0;
@@ -289,11 +292,13 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $content .= "<td align='right'>".float2str($activity['time_worked'])."</td>";
                     $content .= "<td align='right'>".float2str($activity['time_malattia'])."</td>";
                     $content .= "<td align='right'>".float2str($activity['time_ferie'])."</td>";
+                    $content .= "<td align='right'>".float2str($activity['time_permessi'])."</td>";
                     $content .= "<td align='right'>".float2str($activity['time_d20'])."</td>";
                     $content .= "<td align='right'>".$activity['tickets']."</td>";
                 }
                 else
                 {
+                    $content .= "<td align='right'>&nbsp</td>";
                     $content .= "<td align='right'>&nbsp</td>";
                     $content .= "<td align='right'>&nbsp</td>";
                     $content .= "<td align='right'>&nbsp</td>";
@@ -310,11 +315,12 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $content .= float2str($userdata['tot_worked'])."</th>";
             $content .= "<th align='right'>".float2str($userdata['tot_malattia'])."</th>";
             $content .= "<th align='right'>".float2str($userdata['tot_ferie'])."</th>";
+            $content .= "<th align='right'>".float2str($userdata['tot_permessi'])."</th>";
             $content .= "<th align='right' title='".float2str($userdata['tot_d20'])."'>";
                 $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</th>";
             $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
             $content .= "</tr>\n";
-            $content .= "<tr><td colspan='10'>$title<dl>\n";
+            $content .= "<tr><td colspan='11'>$title<dl>\n";
             $content .= "<b>$userid:</b> ".$userdata['fullname']."<br>";
             $content .= "<b>Banca ore al ".$results["date_start"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_start'])."<br>";
             $content .= "<b>Banca ore al ".$results["date_end"].":</b> ".float2str($userdata['date_end']['balance']['balance'])."<br>";
@@ -324,6 +330,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $content .= float2str($userdata['tot_worked'])."</a><br>";
             $content .= "<b>Malattia:</b> ".float2str($userdata['tot_malattia'])."<br>";
             $content .= "<b>Ferie:</b> ".float2str($userdata['tot_ferie'])."<br>";
+            $content .= "<b>Permessi:</b> ".float2str($userdata['tot_permessi'])."<br>";
             $content .= "<b>Develer20:</b> <a title='".float2str($userdata['tot_d20'])."'>";
                 $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a><br>";
             $content .= "<b>Tickets:</b> ".$userdata['tot_tickets']."<br>";
