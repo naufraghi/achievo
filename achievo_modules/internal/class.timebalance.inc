@@ -114,7 +114,7 @@ class timebalance extends atkNode
 
         /* Accetta una data in ingresso oppure imposta l'intervallo all'ultimo mese appena concluso*/
         $last_month_start = mktime(0, 0, 0, date("m")-1, 1, date("Y"));
-        $last_month_end = mktime(0, 0, 0, date("m"), 0, date("Y"));
+        $last_month_end = mktime(0, 0, 0, date("m"), 1, date("Y"));
         $date_start = $this->m_postvars['date_start'];
         $date_end = $this->m_postvars['date_end'];
         if ($date_start == "")
