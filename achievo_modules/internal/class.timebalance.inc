@@ -184,7 +184,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $content .= session_form();
 
         $results = $this->get_timesummary();
-        $title = "TimeBalance: ".$results["date_start"]." - ".$results["date_end"];
+        $title = "TimeBalance: ".$results["date_start"]." - ".$results["date_end"]." (escluso)";
 
         $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
         $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
