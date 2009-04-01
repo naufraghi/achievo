@@ -69,7 +69,7 @@ function get_days_array($date_start, $date_end)
     $stop_date = date_create($date_end);
     $curr_date = date_create($date_start);
     $days = array();
-    while ($curr_date <= $stop_date)
+    while ($curr_date < $stop_date)
     {
         array_push($days, date_create($curr_date->format(DATE_ATOM)));
         $curr_date->modify("+1 day");
@@ -145,7 +145,7 @@ class timebalance extends atkNode
                     JOIN project ON phase.projectid = project.id
                     JOIN usercontract ON usercontract.userid = person.id
                 WHERE activitydate >= '$date_start'
-                    AND activitydate <= '$date_end'
+                    AND activitydate < '$date_end'
                     $single_user
                 GROUP BY person.id, person.userid, person.firstname, person.lastname,
                     hours.activitydate, malattia, ferie, d20
