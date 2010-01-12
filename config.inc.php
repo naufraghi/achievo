@@ -22,9 +22,9 @@
   // the database to use and the user/password.
   //
   $config_db["default"]["host"] = "localhost";
-  $config_db["default"]["db"]   = "achievo_test";
+  $config_db["default"]["db"]   = "achievo";
   $config_db["default"]["user"] = "achievo";
-  $config_db["default"]["password"] = "HaveANiceDay";
+  $config_db["default"]["password"] = "XXX";
   $config_db["default"]["charset"] = "utf8";
   $config_db["default"]["collate"] = "utf8_general_ci";
 
@@ -90,7 +90,7 @@
   // set up the entire system and enable it only when you need it.
   // (disable it by putting // in front of it)
   //
-  $config_administratorpassword = "SuperUpgrade";
+  //$config_administratorpassword = "superupgrade";
 
   // If you set $config_auth_dropdown to true, the login screen will contain
   // a list of available usernames. If you set it to false, there will be
@@ -240,7 +240,7 @@
   //
   // module("somemodule","../achievo_modules/somemodule/");
   
-  module("customer_stats","achievo_modules/customer_stats/");
+  // module("customer_stats","achievo_modules/customer_stats/");
   module("remote","achievo_modules/remote/");
   module("internal","achievo_modules/internal/");
 
