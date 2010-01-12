@@ -240,7 +240,7 @@
   //
   // module("somemodule","../achievo_modules/somemodule/");
   
-  // module("customer_stats","achievo_modules/customer_stats/");
+  module("customer_stats","achievo_modules/customer_stats/");
   module("remote","achievo_modules/remote/");
   module("internal","achievo_modules/internal/");
 
