@@ -1,11 +1,32 @@
 <?php
-
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage employee
+ *
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5077 $
+ * $Id: class.profile.inc 5077 2008-06-30 20:50:48Z sandy $
+ */
 useattrib("atkdummyattribute");
 useattrib("atknumberattribute");
 useattrib("atkprofileattribute");
-
+/**
+ * Class for managing profiles
+ * @package achievo
+ * @subpackage employee
+ */
 class profile extends atkNode
 {
+  /**
+   * Constructor
+   */
   function profile()
   {
     $this->atkNode("profile", NF_EDITAFTERADD|NF_NO_VIEW); // view disabled as long as profileattribute does not support display
@@ -19,6 +40,11 @@ class profile extends atkNode
     $this->setOrder("name");
   }
 
+  /**
+   * Descriptor template
+   *
+   * @return string
+   */
   function descriptor_def()
   {
     return "[name]";

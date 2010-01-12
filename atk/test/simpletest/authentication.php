@@ -3,7 +3,7 @@
      *	Base include file for SimpleTest
      *	@package	SimpleTest
      *	@subpackage	WebTester
-     *	@version	$Id: authentication.php,v 1.1 2005/03/24 00:05:34 ivo Exp $
+     *	@version	$Id: authentication.php 6354 2009-04-15 02:41:21Z mvdam $
      */
     /**
      *	include http class
@@ -100,7 +100,26 @@
          *    @access public
          */
         function isWithin($url) {
-            return (strpos($url->getBasePath(), $this->_root) === 0);
+            if ($this->_isIn($this->_root, $url->getBasePath())) {
+                return true;
+            }
+            if ($this->_isIn($this->_root, $url->getBasePath() . $url->getPage() . '/')) {
+                return true;
+            }
+            return false;
+        }
+        
+        /**
+         *    Tests to see if one string is a substring of
+         *    another.
+         *    @param string $part        Small bit.
+         *    @param string $whole       Big bit.
+         *    @return boolean            True if the small bit is
+         *                               in the big bit.
+         *    @access private
+         */
+        function _isIn($part, $whole) {
+            return strpos($whole, $part) === 0;
         }
     }
     

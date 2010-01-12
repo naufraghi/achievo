@@ -2,7 +2,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -11,15 +11,21 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: class.atkprofileattribute.js.php,v 5.2 2006/01/30 11:03:32 boy Exp $
+   * @version $Revision: 6168 $
+   * $Id: class.atkprofileattribute.js.php 6354 2009-04-15 02:41:21Z mvdam $
    */
-  
+
 ?>
 
+function profile_getForm()
+{
+  if (document.dialogform) return document.dialogform;
+  else return document.entryform;
+}
+
 function profile_checkAll(fieldname)
-{    
-  with (document.entryform)
+{
+  with (profile_getForm())
   {
     for(i=0; i<elements.length; i++)
     {
@@ -32,8 +38,8 @@ function profile_checkAll(fieldname)
 }
 
 function profile_checkNone(fieldname)
-{    
-  with (document.entryform)
+{
+  with (profile_getForm())
   {
     for(i=0; i<elements.length; i++)
     {
@@ -46,8 +52,8 @@ function profile_checkNone(fieldname)
 }
 
 function profile_checkInvert(fieldname)
-{    
-  with (document.entryform)
+{
+  with (profile_getForm())
   {
     for(i=0; i<elements.length; i++)
     {
@@ -61,8 +67,8 @@ function profile_checkInvert(fieldname)
 
 
 function profile_checkAllByValue(fieldname,fieldvalue)
-{    
-  with (document.entryform)
+{
+  with (profile_getForm())
   {
     for(i=0; i<elements.length; i++)
     {
@@ -75,8 +81,8 @@ function profile_checkAllByValue(fieldname,fieldvalue)
 }
 
 function profile_checkNoneByValue(fieldname,fieldvalue)
-{    
-  with (document.entryform)
+{
+  with (profile_getForm())
   {
     for(i=0; i<elements.length; i++)
     {
@@ -89,8 +95,8 @@ function profile_checkNoneByValue(fieldname,fieldvalue)
 }
 
 function profile_checkInvertByValue(fieldname,fieldvalue)
-{    
-  with (document.entryform)
+{
+  with (profile_getForm())
   {
     for(i=0; i<elements.length; i++)
     {
@@ -115,7 +121,7 @@ function profile_fixDivState(divName)
 {
   var divElement = get_object(divName);
   var inputElement = get_object("divstate['" + divName + "']");
-  
+
   if (divElement.style.display == 'none')
     inputElement.value = 'closed';
   else

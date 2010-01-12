@@ -2,7 +2,7 @@
     /**
      *	base include file for SimpleTest
      *	@package	SimpleTest
-     *	@version	$Id: options.php,v 1.1 2005/03/24 00:05:34 ivo Exp $
+     *	@version	$Id: options.php 6354 2009-04-15 02:41:21Z mvdam $
      */
     
     /**

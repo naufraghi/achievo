@@ -11,8 +11,8 @@
  * @copyright (c)2004 Ivo Jansch
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  *
- * @version $Revision: 1.5 $
- * $Id: function.atkdatefield.php,v 1.5 2007/02/22 14:12:44 lineke Exp $
+ * @version $Revision: 4682 $
+ * $Id: function.atkdatefield.php 6354 2009-04-15 02:41:21Z mvdam $
  */
 
 /**

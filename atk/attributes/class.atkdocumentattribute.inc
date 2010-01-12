@@ -11,8 +11,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing/ ATK open source license
    *
-   * @version $Revision: 1.5 $
-   * $Id: class.atkdocumentattribute.inc,v 1.5 2007/08/20 09:51:53 guido Exp $
+   * @version $Revision: 6309 $
+   * $Id: class.atkdocumentattribute.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   // Use the atkdummyattribute to extend from
@@ -46,9 +46,12 @@
      * Gets the display code for the document selector in the specified mode
      *
      * @param array $record The record that holds the value for this attribute.
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
      * @return string HTML code for selection control
      */
-    function edit($record, $mode)
+    function edit($record='', $fieldprefix='', $mode='')
     {
       return $this->documentSelector($record, $mode, false);
     }
@@ -85,7 +88,10 @@
     /**
      * Gets the display code for the document selector in the specified mode
      *
+     * @param array $record The record that contains this attribute's value
      * @param string $mode Name of the mode in which the document selector will be displayed
+     * @param boolean $addForm Do we need to add the form html code?
+     * 
      * @return string Display code for this attribute in the specified mode
      */
     function documentSelector($record, $mode = "", $addForm=true)

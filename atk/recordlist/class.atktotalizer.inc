@@ -11,8 +11,8 @@
    * @copyright (c)2003-2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.7 $
-   * $Id: class.atktotalizer.inc,v 1.7 2007/04/10 20:06:16 sandy Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atktotalizer.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -28,12 +28,25 @@
     var $m_node = NULL;
     var $m_columnConfig = NULL;
 
+    /**
+     * Constructor
+     *
+     * @param atkNode $node
+     * @param atkColumnConfig $columnConfig
+     * @return atkTotalizer
+     */
     function atkTotalizer(&$node, &$columnConfig)
     {
       $this->m_node = &$node;
       $this->m_columnConfig = &$columnConfig;
     }
 
+    /**
+     * Totalize the recordset
+     *
+     * @param array $rowset
+     * @return array
+     */
     function totalize($rowset)
     {
       $result = array();
@@ -83,6 +96,15 @@
       return $result;
     }
 
+    /**
+     * Totalize one row
+     *
+     * @param array $row
+     * @param array $totals
+     * @param string $fieldforsubtotal
+     * @param array $totalizers
+     * @return array
+     */
     function _subTotalRow($row, &$totals, $fieldforsubtotal, $totalizers)
     {
       $subtotalcols = array();
@@ -99,6 +121,14 @@
       return $this->_createSubTotalRowFromRow($row, $fieldforsubtotal, $subtotalcols);
     }
 
+    /**
+     * Create subtotal row from row
+     *
+     * @param array $row
+     * @param string $fieldname
+     * @param array $subtotalcolumns
+     * @return array
+     */
     function _createSubTotalRowFromRow($row, $fieldname, $subtotalcolumns)
     {
       // fix type

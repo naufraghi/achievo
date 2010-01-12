@@ -12,8 +12,8 @@
    * @copyright (c)2005 Ibuildings
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.5 $
-   * $Id: class.test_atkmocknode.inc,v 1.5 2006/07/31 14:59:29 guido Exp $
+   * @version $Revision: 3993 $
+   * $Id: class.test_atkmocknode.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

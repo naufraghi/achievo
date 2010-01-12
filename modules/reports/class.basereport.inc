@@ -15,8 +15,8 @@
    * @copyright (c) 2006 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision: 1.8 $
-   * $Id: class.basereport.inc,v 1.8 2007/09/10 16:54:30 yury Exp $
+   * @version $Revision: 4920 $
+   * $Id: class.basereport.inc 4920 2008-03-24 20:01:58Z sandy $
    */
 
   define("RT_STANDARD", 0);
@@ -30,7 +30,7 @@
    * @package achievo
    * @subpackage modules
    */
-  class basereport extends atkNode
+  abstract class basereport extends atkNode
   {
     /**
      * basereport constructor
@@ -177,7 +177,7 @@
 
       // Render a box around all elements and put them in an array
       $boxedblocks = array();
-      if (atkConfig("report_hide_parameters", false))
+      if (atkConfig::get("reports","report_hide_parameters", false))
         $boxedblocks[] = '<div class="displaynone">'.$ui->renderBox(array("title"=>$this->text('parameters'), "content"=>$parameterbar)).'</div>';
       else
         $boxedblocks[] = '<div class="contentblock">'.$ui->renderBox(array("title"=>$this->text('parameters'), "content"=>'<div class="content">'.$parameterbar.'</div>')).'</div>';
@@ -237,13 +237,9 @@
     /**
      * Abstract method, should be overridden to create the html content
      *
-     * @param unknown_type $filterrecord
+     * @param array $filterrecord
      */
-    function getContentElements($filterrecord)
-    {
-      atkerror("modules.reports.basereport->getContentElements needs to be overridden to generate content");
-      return array();
-    }
+    abstract function getContentElements($filterrecord);
 
   }
 

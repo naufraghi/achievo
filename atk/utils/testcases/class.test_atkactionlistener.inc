@@ -13,8 +13,8 @@
    * @copyright (c)2005 Ibuildings
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.4 $
-   * $Id: class.test_atkactionlistener.inc,v 1.4 2006/10/19 14:40:27 sandy Exp $
+   * @version $Revision: 4204 $
+   * $Id: class.test_atkactionlistener.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
 

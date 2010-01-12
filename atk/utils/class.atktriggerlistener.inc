@@ -11,8 +11,8 @@
    * @copyright (c)2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: class.atktriggerlistener.inc,v 5.2 2006/11/30 16:06:25 lineke Exp $
+   * @version $Revision: 4362 $
+   * $Id: class.atktriggerlistener.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

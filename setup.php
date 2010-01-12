@@ -62,9 +62,9 @@
    * an existing database.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   * @version $Revision: 1.23 $
+   * @version $Revision: 5677 $
    *
-   * $Id: setup.php,v 1.23 2008/01/17 22:56:03 sandy Exp $
+   * $Id: setup.php 5677 2009-10-13 17:49:49Z sandy $
    *
    */
 
@@ -72,7 +72,7 @@
   // validating the PHP configuration.
 
   // Some defines we need
-  define("REQUIRED_PHP", "5.0.0");
+  define("REQUIRED_PHP", "5.1.2");
   define("ACHIEVO_MIN_MEM","32");
 
   /**
@@ -275,9 +275,7 @@
   // the installer can install the database if needed. Here, we just check if PHP
   // was compiled with the correct database support.
 
-  $dbs = array("mysql"=>"mysql_pconnect",
-               "mysql41"=>"mysqli_connect",
-               "mysqli"=>"mysqli_connect",
+  $dbs = array("mysqli"=>"mysqli_connect",
                "oci8"=>"OCILogon",
                "oci9"=>"OCILogin",
                "pgsql"=>"pg_connect");

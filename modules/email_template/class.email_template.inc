@@ -1,14 +1,19 @@
 <?php
 /**
- * Email template class
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
  *
  * @package achievo
- * @subpackage modules
+ * @subpackage crm
  *
- * @author sandy <sandy@achievo.org>
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
  *
- * @version $Revision: 1.6 $
- * $Id: class.email_template.inc,v 1.6 2007/07/17 20:25:32 sandy Exp $
+ * @version $Revision: 5045 $
+ * $Id: class.email_template.inc 5045 2008-06-23 20:41:24Z sandy $
  */
 
 useattrib("atktextattribute");
@@ -17,6 +22,14 @@ useattrib("atkdummyattribute");
 useattrib("atkupdatestampattribute");
 useattrib("atkupdatedbyattribute");
 
+/**
+ * Class for sending email templates
+ * 
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage crm
+ * @since 1.3.0
+ */
 class email_template extends atkNode
 {
 
@@ -54,7 +67,7 @@ class email_template extends atkNode
    * @var string
    */
   var $m_from_name = "";
-  
+
   var $m_customReceiver = "";
 
   /**
@@ -84,6 +97,7 @@ class email_template extends atkNode
     $this->add(new atkUpdatedByAttribute("lastupdatedby",AF_HIDE_LIST),"history");
     $this->setTable("email_template");
     $this->setOrder("email_template.title");
+    $this->setDescriptorTemplate('[title]');
   }
 
   /**
@@ -100,21 +114,31 @@ class email_template extends atkNode
     return $handler->editPage($record,$locked);
   }
 
-  function descriptor_def()
-  {
-    return "[title]";
-  }
-
+  /**
+   * Set module name
+   *
+   * @param string $module Module name
+   */
   function setModule($module)
   {
     $this->m_module = $module;
   }
 
+  /**
+   * Set from email address
+   *
+   * @param string $email Email address
+   */
   function setFromEmail($email)
   {
     $this->m_from_email = $email;
   }
 
+  /**
+   * Set from name
+   *
+   * @param string $name Name
+   */
   function setFromName($name)
   {
     $this->m_from_name = $name;
@@ -132,8 +156,8 @@ class email_template extends atkNode
     if(count($codes)==0) return '';
 
     $ret="";
-    $ret.=atkText("You can use certain variables which get substituted with the data of the event.")."<br /><br />";
-    $ret.=atkText("Substitutions and their meanings:")."<br />";
+    $ret.=$this->text("You can use certain variables which get substituted with the data of the event.")."<br /><br />";
+    $ret.=$this->text("Substitutions and their meanings:")."<br />";
     foreach($codes as $code)
     {
       $ret.=$this->_getHelpLine($code);
@@ -151,7 +175,7 @@ class email_template extends atkNode
    */
   function _getHelpLine($code)
   {
-    return '<b>{$'.$code.'}</b>: '.atktext("help_".$code,$this->m_module).' - '.$this->m_module.'<br/ >';
+    return '<b>{$'.$code.'}</b>: '.$this->text("help_".$code).' - '.$this->text($this->m_module).'<br/ >';
   }
 
   /**
@@ -247,7 +271,13 @@ class email_template extends atkNode
     }
     return false;
   }
-  
+
+  /**
+   * Set customer receiver
+   *
+   * @param string $email Email
+   * @param string $username Username
+   */
   function setCustomerReceiver($email,$username)
   {
     $this->m_customReceiver = array("email"=>$email,"name"=>$username);
@@ -272,7 +302,7 @@ class email_template extends atkNode
       {
         $mail->AddAddress($this->m_customReceiver["email"],$this->m_customReceiver["name"]);
       }
-      else 
+      else
       {
         $mail->AddAddress($user["email"], $user["name"]);
       }

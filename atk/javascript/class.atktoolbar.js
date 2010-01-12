@@ -10,8 +10,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.1 $
-   * $Id: class.atktoolbar.js,v 5.1 2004/05/31 22:11:11 ivo Exp $
+   * @version $Revision: 1684 $
+   * $Id: class.atktoolbar.js 6354 2009-04-15 02:41:21Z mvdam $
    */
 
 function modifySelection(pre, post)

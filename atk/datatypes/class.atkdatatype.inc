@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.2 $
-   * $Id: class.atkdatatype.inc,v 1.2 2007/03/19 21:29:40 boy Exp $
+   * @version $Revision: 6318 $
+   * $Id: class.atkdatatype.inc 6541 2009-10-28 09:58:14Z peter $
    */
 
   /**
@@ -26,6 +26,7 @@
    * for converting one format into another and doing simple operations
    * on various datatypes.
    *
+   * @deprecated Scheduled for removal.
    * @author Boy Baukema <boy@achievo.org>
    * @package atk
    * @subpackage datatypes
@@ -35,14 +36,14 @@
     /**
      * Factory method, creates a new atkDatatype object.
      * Override this where possible!
+     * 
+     * @param array $arguments
      * @return atkDataType
      */
     public function create($arguments=array())
     {
-      $class=null;
-      eval("\$class = new ".get_class($this).
-           "(".implode(',',$arguments).")");
-      return $class;
+      $class = new ReflectionClass( get_class($this) );      
+      return $class->newInstanceArgs($arguments);
     }
     
     /**

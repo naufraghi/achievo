@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.1 $
-   * $Id: class.atktoolbar.inc,v 5.1 2004/05/12 22:31:53 ivo Exp $
+   * @version $Revision: 1648 $
+   * $Id: class.atktoolbar.inc 6410 2009-06-25 20:36:10Z sandy $
    */
    
   /**
@@ -58,7 +58,7 @@
      */
     function edit($record="", $fieldprefix="")
     {
-      global $config_atkroot, $g_theme;
+      global $config_atkroot;
       
       $theme = &atkTheme::getInstance();
 
@@ -72,7 +72,7 @@
       // TODO/FIXME:This is platform specific code and should not be here
       // I think is still needed for older platform version (M1, M2) 
       $res .= '&nbsp;<img src="'.$theme->iconPath("delimiter","toolbar").'" border="0">&nbsp;';
-      $res .= '<a href="javascript:popupSelection(\'pagesel.php\',\'pagesel\');" onmouseover="selectie=document.selection.createRange();"><img src="'.$iconpath.'link.gif" border="0" alt="Link"></a>';    
+      $res .= '<a href="javascript:popupSelection(\'pagesel.php\',\'pagesel\');" onmouseover="selectie=document.selection.createRange();"><img src="'.$theme->iconPath("link","toolbar").'" border="0" alt="Link"></a>';    
 
       return $res;
     }

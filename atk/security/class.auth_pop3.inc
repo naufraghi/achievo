@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.5 $
-   * $Id: class.auth_pop3.inc,v 5.5 2005/12/21 21:46:52 ivo Exp $
+   * @version $Revision: 6280 $
+   * $Id: class.auth_pop3.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -31,7 +31,16 @@
      * Validate user.
      * @param String $user the username
      * @param String $passwd the password
-     * @return boolean True if login is valid, false if not.
+     * @return int AUTH_SUCCESS - Authentication succesful
+     *             AUTH_MISMATCH - Authentication failed, wrong 
+     *                             user/password combination
+     *             AUTH_LOCKED - Account is locked, can not login
+     *                           with current username.
+     *             AUTH_ERROR - Authentication failed due to some 
+     *                          error which cannot be solved by 
+     *                          just trying again. If you return 
+     *                          this value, you *must* also 
+     *                          fill the m_fatalError variable.
      */
     function validateUser($user, $passwd)
     {

@@ -1,5 +1,28 @@
 <?php
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage scheduler
+ *
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5044 $
+ * $Id: class.schedulertools.inc 5044 2008-06-23 20:41:04Z sandy $
+ */
 
+/**
+ * Library of functions used for the scheduler
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage scheduler
+ * @since 1.3.0
+ */
 class schedulertools
 {
   /**
@@ -17,7 +40,7 @@ class schedulertools
 
     return $weekday;
   }
-  
+
   /**
      * Determine whether or not the passed year is a leap year.
      *
@@ -28,7 +51,7 @@ class schedulertools
     {
         return $y % 4 == 0 && ($y % 400 == 0 || $y % 100 != 0);
     }
-    
+
     /**
      * Calculate day of week (1=sunday, 2=monday etc...)
      *
@@ -41,18 +64,18 @@ class schedulertools
     {
       return date("w",mktime(12,0,0,$month,$day,$year))+1;
     }
-    
-    
+
+
   /**
    * Calculate the nth day
    *
-   * @param int $nth 1,2,3,4,5,-1 (last) 
+   * @param int $nth 1,2,3,4,5,-1 (last)
    * @param int $weekday Day number (1=sunday, 2=monday etc...)
    * @param int $month Month
    * @param int $year Year
    * @return int Day number
    */
-  function nthDay($nth,$weekday,$month,$year) 
+  function nthDay($nth,$weekday,$month,$year)
   {
     $daysOfMonthY = array(31,29,31,30,31,30,31,31,30,31,30,31); // Leapyear numbers
     $daysOfMonth =  array(31,28,31,30,31,30,31,31,30,31,30,31); // Non leapyear numbers
@@ -73,12 +96,12 @@ class schedulertools
   {
     return mktime(12,0,0,intval($item["startdate"]["month"]),intval($item["startdate"]["day"]),intval($item["startdate"]["year"]));
   }
-  
+
   /**
    * Returns the enddate of the item
    *
    * @param array $item Scheduler item
-   * @return int Timestamp or NULL 
+   * @return int Timestamp or NULL
    */
   function getItemEndDate($item)
   {
@@ -100,7 +123,7 @@ class schedulertools
     }
     return $enddate;
   }
-  
+
   /**
    * Get the dates for a recurring item for the given period
    *
@@ -117,23 +140,27 @@ class schedulertools
     $startdate = schedulertools::getItemStartDate($item);
     $enddate = schedulertools::getItemEndDate($item);
 
-    atkdebug("schedulertools::getDates -> RangeStart: $rangeStartDate | RangeEnd: $rangeEndDate | Startdate: ".date('Y-m-d',$startdate)." | Enddate: ".date('Y-m-d',$enddate));
-
     if($rangeStartDate!=NULL && $rangeEndDate!=NULL)
     {
       if(!is_null($enddate) && $rangeStartDate>date('Y-m-d',$enddate)) return array();
       if($rangeStartDate>date('Y-m-d',$startdate) && $rangeStartDate<=$enddate) $startdate = mktime(12,0,0,substr($rangeStartDate,5,2),substr($rangeStartDate,8,2),substr($rangeStartDate,0,4));
       if(($item['cyclus']['end_choice']==2 && $rangeEndDate<date('Y-m-d',$enddate) && $rangeEndDate>$startdate) || $item['cyclus']['end_choice']!=2) $enddate = mktime(12,0,0,substr($rangeEndDate,5,2),substr($rangeEndDate,8,2),substr($rangeEndDate,0,4));
     }
-    atkdebug("schedulertools::getDates -> (AFTER RANGE CHECK) RangeStart: $rangeStartDate | RangeEnd: $rangeEndDate | Startdate: ".date('Y-m-d',$startdate)." | Enddate: ".date('Y-m-d',$enddate));
-    
-    while(true)
+
+    if ($item["recur"] == "once")
+      $maxtimes = 1;
+    elseif ($item["cyclus"]["end_choice"] == 3)
+      $maxtimes = $item["cyclus"]["cyclus_times"] - intval($item["times"]);
+    else
+      $maxtimes = false;
+
+    atkdebug("MAXTIMES: $maxtimes");
+    while (($maxtimes === false) || ($validdates < $maxtimes))
     {
       $checkdate = $startdate+($datecounter*86400);
-      $unix_date = $checkdate;
       if($checkdate>$enddate) break;
       // Skip all months that we don't need for the yearly day/date events
-      if($item['recur']=="yearly" && date("n",$checkdate)!=$item["cyclus"]["yearly_month"] 
+      if($item['recur']=="yearly" && date("n",$checkdate)!=$item["cyclus"]["yearly_month"]
          && date("n",$checkdate)!=$item["cyclus"]["yearly_month2"]
         )
       {
@@ -142,26 +169,18 @@ class schedulertools
         $datecounter+=($number_of_days-$current_day);
         continue;
       }
-      
-      
+
       if(schedulertools::showItem($item,$checkdate,$startdate,$enddate))
       {
-        
         $dates[] = date("Y-m-d",$checkdate);
         $validdates++;
       }
       $datecounter++;
-      if($item["recur"]=="once" ||
-         ($item["cyclus"]["end_choice"]==3 &&
-          ($item["cyclus"]["cyclus_times"]-intval($item["times"])==$validdates))) break;
     }
-    atk_var_dump($item,"schedulertools::getDates() -> SchedulerItem");
-    atk_var_dump($dates,"schedulertools::getDates($rangeStartDate,$rangeEndDate)");
 
-    
     return $dates;
   }
-  
+
   /**
    * Show the current item
    *
@@ -172,8 +191,7 @@ class schedulertools
    * @return boolean Show the item or not
    */
   function showItem($item,$checkdate,$startdate,$enddate)
-  { 
-    $month_time = ceil(date("d",$checkdate)/7);
+  {
     $day = date("j",$checkdate);
     $month = date("n",$checkdate);
     $year = date("Y",$checkdate);
@@ -198,7 +216,7 @@ class schedulertools
   				 	$show_item = false;
   				}
         }
-        else 
+        else
         {
           $workdays = array(2,3,4,5,6);
           if(in_array(schedulertools::dayOfWeek($day,$month,$year),$workdays)) { $show_item=true;} else { $show_item = false; }
@@ -223,7 +241,7 @@ class schedulertools
           if($item["cyclus"]["monthly_day"]==$day)  { $show_item = true; } else { $show_item = false; }
           $every = $item['cyclus']['monthly_every'];
         }
-        else 
+        else
         {
           // xth weekday of x months
           $every = $item['cyclus']['monthly_every2'];
@@ -245,7 +263,7 @@ class schedulertools
         {
           if($item["cyclus"]["yearly_day"]==$day && $item["cyclus"]["yearly_month"]==$month)  { $show_item = true; } else { $show_item = false; }
         }
-        else 
+        else
         {
           /* xth weekday of month */
           $xth_day = schedulertools::nthDay($item["cyclus"]["yearly_month_time"],$item["cyclus"]["yearly_weekday_list"],$month,$year);
@@ -265,7 +283,7 @@ class schedulertools
       function assistantFor($userid)
       {
         static $assistantFor = null;
-        
+
         if(is_null($assistantFor))
         {
           $db = &atkGetDb();
@@ -296,7 +314,7 @@ class schedulertools
         return false;
 
       }
-      
+
   /**
    * Update recurring events for a given period
    *
@@ -305,7 +323,6 @@ class schedulertools
    */
   function updateRecurringEvents($startdate,$enddate,$rec=null)
   {
-    atkdebug("schedulertools::updateRecurringEvents($startdate, $enddate)");
     $db = &atkGetDb();
     atkimport("module.scheduler.utils.schedulertools");
     $tmp_startdate = mktime(0,0,0,substr($startdate,5,2),substr($startdate,8,2),substr($startdate,0,4));
@@ -313,9 +330,9 @@ class schedulertools
 
     if(!is_null($rec))
     {
-      $nrows = array($rec);      
+      $nrows = array($rec);
     }
-    else 
+    else
     {
       $scheduler = &atkGetNode("scheduler.scheduler");
       $condition = "scheduler_scheduler.recur!='once'
@@ -323,7 +340,7 @@ class schedulertools
                     AND ((cyclus.end_choice=1) OR
                          (cyclus.end_choice=2 AND cyclus.cyclus_enddate >='$startdate') OR
                          (cyclus.end_choice=3 AND (scheduler_scheduler.times is null OR cyclus.cyclus_times > scheduler_scheduler.times)))";
-      
+
       $nrows = $scheduler->selectDb($condition,"","",array('attendees','location','description','category','priority','private','nonblocking','notes','owner','ownerattendee','scheduler_cyclus.exceptions'));
     }
     for($i=0,$_i=count($nrows);$i<$_i;$i++)
@@ -334,7 +351,7 @@ class schedulertools
       {
         $startdate = date("Y-m-d",($rec["lastdate"]));
       }
-      else 
+      else
       {
         $startdate = date("Y-m-d",($rec["lastdate"]+DAY));
       }
@@ -342,7 +359,6 @@ class schedulertools
       if($endstamp<$tmp_enddate) $endstamp=$tmp_enddate;
       $enddate = date("Y-m-t",$endstamp);
       $endstamp = strtotime($enddate);
-      atkdebug("schedulertools::updateRecurringEvents -> after recalculating $endstamp = $enddate");
       $dates = schedulertools::getDates($rec,$startdate,$enddate);
       foreach($dates as $date)
       {
@@ -353,17 +369,15 @@ class schedulertools
         $startdate = mktime($rec["starttime"]["hours"],$rec["starttime"]["minutes"],$rec["starttime"]["seconds"],substr($date,5,2),substr($date,8,2),substr($date,0,4));
         $enddate = $startdate+$duration;
 
-        $sql = "INSERT INTO scheduler_dates (scheduler_id,startdate,enddate) VALUES ('$id','$startdate','$enddate')";
+        $sql = "INSERT IGNORE INTO scheduler_dates (scheduler_id,startdate,enddate) VALUES ('$id','$startdate','$enddate')";
         $db->query($sql);
       }
-      
-      atkdebug("schedulertools::updateRecurringEvents -> update scheduler item lastdate: $endstamp = ".date("Y-m-d",$endstamp));
       $sql = "UPDATE scheduler_scheduler SET lastdate = '$endstamp', times =  COALESCE(times,0)+".count($dates)." WHERE id='$id'";
       $db->query($sql);
       $db->commit();
     }
     return true;
-  }  
+  }
 }
 
 ?>

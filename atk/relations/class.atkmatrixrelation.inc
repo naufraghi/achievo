@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: class.atkmatrixrelation.inc,v 5.3 2007/03/23 11:12:30 guido Exp $
+   * @version $Revision: 6323 $
+   * $Id: class.atkmatrixrelation.inc 6478 2009-08-22 03:49:07Z marc $
    */
 
   /** flag(s) specific for atkMatrixRelation */
@@ -40,19 +40,17 @@
    var $m_destination2;
    var $m_fk2;
 
-/**
+   /**
     * Constructor
-    * @param $name                 matrix table
-    * @param $name1               row field name
-    * @param $destination1     row table
-    * @param $fk1                      forenkey in row table
-    * @param $name2               colum field name
-    * @param $destination2    colum table
-     * @param $fk2                     forenkey in colum table
-    * @param $flags                  AF_ACYCLIC if input must be acyclic
+    * @param string $name            Name of the matrix table
+    * @param string $name1           row field name
+    * @param string $destination1    row table
+    * @param string $fk1             foreignkey in row table
+    * @param string $name2           colum field name
+    * @param string $destination2    colum table
+    * @param string $fk2             foreignkey in colum table
+    * @param int    $flags           AF_MATRIX_ACYCLIC if input must be acyclic
     */
-
-    // 1 = row , 2 = col
     function atkMatrixRelation($name, $name1, $destination1, $fk1, $name2, $destination2, $fk2, $flags=0)
     {
       $this->atkRelation($name, $destination1, $flags);
@@ -65,13 +63,22 @@
       $this->m_fk2 = $fk2;
     }
 
-
+    /**
+     * Empty display function
+     *
+     * @param array $record
+     */
     function display($record)
     {
-
     }
 
-
+    /**
+     * Load the values of this relation
+     *
+     * @param atkDb $db The database object
+     * @param array $record
+     * @return array Array with values
+     */
     function load($db, $record)
     {
 
@@ -87,8 +94,17 @@
       return $checkedArray;
     }
 
-
-    function edit($record="")
+    /**
+     * Returns a piece of html code that can be used in a form to edit this
+     * attribute's value.
+     *
+     * @param array $record The record that holds the value for this attribute.
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
+     * @return String A piece of htmlcode for editing this attribute
+     */
+    function edit($record="", $fieldprefix="", $mode="")
     {
 
       $checkedArray = $record[$this->fieldName()];
@@ -107,7 +123,7 @@
       {
         $matrix_fields_row[$i] = $this->m_destInstance->descriptor($recordset[$i]);
 
-        $primaryKeyValue = split("'",$this->m_destInstance->primaryKey($recordset[$i]));
+        $primaryKeyValue = explode("'",$this->m_destInstance->primaryKey($recordset[$i]));
         $matrix_values_row[$i] = $primaryKeyValue[1];
       }
 
@@ -123,7 +139,7 @@
       {
         $matrix_fields_col[$i] = $this->m_destInstance->descriptor($recordset[$i]);
 
-        $primaryKeyValue = split("'",$this->m_destInstance->primaryKey($recordset[$i]));
+        $primaryKeyValue = explode("'",$this->m_destInstance->primaryKey($recordset[$i]));
         $matrix_values_col[$i] = $primaryKeyValue[1];
       }
 
@@ -192,10 +208,15 @@
       }
 
       return $form;
-  }
+    }
 
-
-    // check if the input is acyclic when flag is set
+    /**
+     * Validate this relation
+     * @todo Check if the input is acyclic when flag is set
+     *
+     * @param array $record The record that holds the value for this relation
+     * @param string $mode The mode we're in
+     */
     function validate(&$record, $mode)
     {
       if ($this->hasFlag(AF_MATRIX_ACYCLIC))
@@ -204,13 +225,23 @@
       }
     }
 
-
+    /**
+     * Check if the relation is empty
+     *
+     * @param array $notused
+     * @return bool false
+     */
     function isEmpty($notused)
     {
       return false;
     }
 
-
+    /**
+     * Delete the records before storage
+     *
+     * @param atkDb $db The database object
+     * @param array $record The record
+     */
     function delete_before_store($db, $record)
     {
       if ($this->m_fk1=="" && $this->m_fk2!="") // manybool
@@ -236,13 +267,20 @@
 
         for ($i=0;$i<count($recordset);$i++)
         {
-          $primaryKeyValue = split("'",$this->m_destInstance->primaryKey($recordset[$i]));
+          $primaryKeyValue = explode("'",$this->m_destInstance->primaryKey($recordset[$i]));
           $query = 'DELETE FROM '.$this->m_name.' WHERE '.$this->m_name1.' = '.$primaryKeyValue[1];
           $db->query($query);
         }
       }
     }
 
+    /**
+     * Store the value(s) of this relation
+     *
+     * @param atkDb $db The database object
+     * @param array $record The record
+     * @return bool true
+     */
     function store($db, $record)
     {
       $this->delete_before_store($db, $record);
@@ -253,7 +291,7 @@
       {
          while (list($key,$value)=each($matrixcheckbox))
          {
-            $phases = split('_',$key);
+            $phases = explode('_',$key);
             $query = 'INSERT INTO '.$this->m_name.' ('.$this->m_name1.','.$this->m_name2.') VALUES ('.$phases[0].','.$phases[1].')';
             $db->query($query);
          }

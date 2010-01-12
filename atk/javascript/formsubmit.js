@@ -10,14 +10,19 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: formsubmit.js,v 5.2 2004/10/09 16:47:18 sandy Exp $
+   * @version $Revision: 6176 $
+   * $Id: formsubmit.js 6354 2009-04-15 02:41:21Z mvdam $
    */
 
 function atkSubmit(target)
 {
   if(target=='-1') return;
-  document.entryform.atkescape.value = target;
+  
+  // Set ALL <input name="atkescape"> to target--for some reason
+  // there are multiple atkescape inputs on some pages, as it's
+  // possible to set the wrong one, which means atksession() in
+  // class.atksessionmanager.inc gets a blank atkescape.
+  $$('input[name="atkescape"]').each(function (n) { n.value = target; }); 
   
   // call global submit function, which doesn't get called automatically
   // when we call entryform.submit manually.

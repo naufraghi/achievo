@@ -3,8 +3,8 @@
    * @package atk
    * @subpackage javascript
    *
-   * @version $Revision: 5.1 $
-   * $Id: crossbrowser.js,v 5.1 2004/05/31 22:11:11 ivo Exp $
+   * @version $Revision: 1684 $
+   * $Id: crossbrowser.js 6354 2009-04-15 02:41:21Z mvdam $
    */
 
 // ---------------------------------------------------------------------------

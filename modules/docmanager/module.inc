@@ -1,28 +1,31 @@
 <?php
-  /**
-   * Docmanager module file
-   *
-   * @package achievo_modules
-   * @subpackage docmanager
-   *
-   * @author guido <guido@ibuildings.nl>
-   *
-   * @copyright (c) 2005 Ibuildings.nl BV
-   * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
-   *
-   * @version $Revision: 1.5 $
-   * $Id: module.inc,v 1.5 2007/05/22 08:06:04 guido Exp $
-   */
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage docmanager
+ *
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5462 $
+ * $Id: module.inc 5462 2009-02-22 22:58:43Z sandy $
+ */
 
   // Add the docmanager to any modules specified in the $config_docmanagernodes array
-  $modifiers = array_values(array_diff(array_merge($modifiers, atkconfig("docmanagernodes", array())), array("project.project")));
+  if(!is_array($modifiers)) $modifiers = array();
+  $modifiers = array_values(array_diff(array_merge($modifiers, atkconfig::get("docmanager","docmanagernodes", array())), array("project.project")));
 
   /**
-   * docmanager module class
+   * Module file for the menu items and security
    *
    * @author guido <guido@ibuildings.nl>
    * @package achievo_modules
    * @subpackage docmanager
+   * @since 1.3.0
    */
   class mod_docmanager extends achievoModule
   {
@@ -55,10 +58,16 @@
       $node->add(new documentManager("documents", AF_HIDE_LIST|AF_HIDE_SEARCH), "documents");
     }
 
+    /**
+     * Get modifier functions
+     *
+     * @param atkNode $node Node
+     * @return array
+     */
     function getModifierFunctions(&$node)
     {
       $modifierfunctions = parent::getModifierFunctions($node);
-      $docmanagernodes = atkconfig("docmanagernodes", array());
+      $docmanagernodes = atkconfig::get("docmanager","docmanagernodes", array());
       if (in_array($node->atknodetype(), $docmanagernodes) && ($node->atknodetype() != "project.project"))
         $modifierfunctions[] = "addDocumentManager";
       return $modifierfunctions;

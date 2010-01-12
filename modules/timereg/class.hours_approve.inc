@@ -12,8 +12,8 @@
 	 * @copyright (c) 2005 Ibuildings.nl BV
 	 * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
 	 *
-	 * @version $Revision: 1.21 $
-	 * $Id: class.hours_approve.inc,v 1.21 2008/05/21 13:05:45 guido Exp $
+	 * @version $Revision: 5654 $
+	 * $Id: class.hours_approve.inc 5654 2009-10-04 19:53:54Z sandy $
 	 */
 
   /**
@@ -94,6 +94,8 @@
 	  {
 	    // Read the hours_lock id
 	    $periodid = $this->m_postvars["periodid"];
+	    $viewdate = $this->m_postvars['viewdate'];
+        $viewuser = $this->m_postvars['viewuser'];
 
 	    // If the periodid isnt numeric, then throw an error, no action can be
       // taken so no buttons are added to the footer.
@@ -106,8 +108,9 @@
 	    // Retrieve the hours_lock record for the specified periodid
 	    $hourslocknode = &atkGetNode("timereg.hours_lock");
       $hourlocks = $hourslocknode->selectDb("hours_lock.id='".$periodid."'
-                                   AND (hours_lock.userid='".$this->m_user."'
+                                   AND (hours_lock.userid='".$viewuser."'
                                         OR hours_lock.userid IS NULL)");
+     atk_var_dump($hourlocks);
 
      // Don't display any buttons if there are no hourlocks found
       if (count($hourlocks)==0)
@@ -133,12 +136,16 @@
 	    {
 	      $output.= atkButton(atktext("approve"),
                             dispatch_url("timereg.hours_approve","approve",
-                                         array("periodid"=>$periodid)),
+                                         array("periodid"=>$periodid,
+                                               "viewuser"=>$viewuser,
+                                               "viewdate"=>$viewdate)),
                             SESSION_NESTED) . "&nbsp;&nbsp;";
 	    }
 	    $output.= atkButton(atktext("disapprove"),
                           dispatch_url("timereg.hours_approve","disapprove",
-                                       array("periodid"=>$periodid)),
+                                       array("periodid"=>$periodid,
+                                             "viewuser"=>$viewuser,
+                                             "viewdate"=>$viewdate)),
                           SESSION_NESTED);
 
 	    // Return the weekview including button
@@ -183,6 +190,8 @@
 	  {
 	    // Get the atkpage singleton instance
 	    $page = &atkpage::getInstance();
+        atk_var_dump($_SESSION,"ADMIN_ADMIN SESSION");
+	    atk_var_dump($this->m_postvars,"ADMIN_ADMIN POSTVARS");
 
 	    // Add the stylesheet to the page
 	    $this->addStyle("style.css");
@@ -621,6 +630,7 @@
 	  function action_approve(&$handler)
 	  {
       global $g_sessionManager;
+
       $viewdate = $this->m_postvars['viewdate'];
       $viewuser = $this->m_postvars['viewuser'];
       $periodid = $this->m_postvars['periodid'];
@@ -651,6 +661,8 @@
           // This lock will override the more general one.
           $hourlock['userid']['id'] = $viewuser;
           $hourslocknode->addDb($hourlock);
+          $periodid = $hourlock['id'];
+          $g_sessionManager->globalVar("periodid",$periodid);
         }
         else
         {

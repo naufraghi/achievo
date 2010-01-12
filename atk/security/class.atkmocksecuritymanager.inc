@@ -12,8 +12,8 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: class.atkmocksecuritymanager.inc,v 5.2 2006/10/10 12:41:56 peter Exp $
+   * @version $Revision: 6280 $
+   * $Id: class.atkmocksecuritymanager.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
   
   /** @internal include */
@@ -35,13 +35,32 @@
    */
   class atkMockSecurityManager extends atkSecurityManager 
   {
+    /**
+     * Set the nodepriviledges 
+     *
+     * @var array
+     */
     var $m_resultallowed = array();  
     
+    /**
+     * Set which privileges are allowed
+     *
+     * @param bool $result
+     * @param string $nodeprivilege
+     */
     function setAllowed($result, $nodeprivilege="all")
     {
       $this->m_resultallowed[$nodeprivilege] = $result;
     }
     
+    /**
+     * Check if the currently logged-in user has a certain privilege on a
+     * node.
+     * @param String $node The full nodename of the node for which to check
+     *                     access privileges. (modulename.nodename notation).
+     * @param String $privilege The privilege to check (atkaction).
+     * @return boolean True if the user has the privilege, false if not.
+     */
     function allowed($node, $privilege)
     {
       if (isset($this->m_resultallowed["all"])) return $this->m_resultallowed["all"];

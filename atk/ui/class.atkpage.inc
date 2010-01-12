@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.48 $
-   * $Id: class.atkpage.inc,v 5.48 2007/11/30 10:10:12 peter Exp $
+   * @version $Revision: 6323 $
+   * $Id: class.atkpage.inc 6509 2009-09-23 10:09:43Z jvdschraaf $
    */
 
   /**
@@ -102,6 +102,13 @@
      * @var Array
      */
     var $m_hiddenvars = array();
+    
+    /**
+     * Page title.
+     * 
+     * @var string
+     */
+    protected $m_title = '';
 
     /**
      * Retrieve the one-and-only atkPage instance.
@@ -116,6 +123,20 @@
         atkdebug("Created a new atkPage instance");
       }
       return $s_page;
+    }
+    
+    /**
+     * Constructor.
+     */
+    public function __construct()
+    {
+      // register default scripts
+      $this->register_script(atkconfig("atkroot")."atk/javascript/prototype/prototype.js");
+      $this->register_script(atkconfig("atkroot")."atk/javascript/prototype-ext.js");
+      $this->register_script(atkconfig("atkroot")."atk/javascript/scriptaculous/scriptaculous.js");
+      $this->register_script(atkconfig("atkroot")."atk/javascript/scriptaculous-ext.js");      
+      $this->register_script(atkconfig("atkroot")."atk/javascript/class.atktools.js");
+      $this->register_script(atkconfig("atkroot")."atk/javascript/atkbusy.js");            
     }
 
     /**
@@ -157,6 +178,17 @@
         }
       }
     }
+    
+    
+    /**
+     * Unregister all registered javascripts
+     *
+     */
+    function unregister_all_scripts()
+    {
+      $this->m_scriptfiles=array();
+    }
+    
 
     /**
      * Return all javascript files
@@ -239,6 +271,19 @@
         $this->m_stylesheets[$file] = $media;
       }
     }
+    
+    /**
+     * Unregister a Cascading Style Sheet.
+     *
+     * @param String $file  The (relative path and) filename of the stylesheet.
+     */
+    function unregister_style($file)
+    {
+      if (array_key_exists($file, $this->m_stylesheets))
+      {
+        unset($this->m_stylesheets[$file]);
+      }
+    }
 
     /**
      * Return all stylesheet files
@@ -289,18 +334,17 @@
      * Generate the HTML header (<head></head>) statement for the page,
      * including all scripts and styles.
      * @param String $title Title of the html page.
+     * @param String $extra_header HTML code of extra headers to add to the head section
      * @return String The HTML pageheader, including <head> and </head> tags.
      */
     function head($title, $extra_header="")
     {
       $res = "<head>\n  <title>$title</title>\n";
 
-      // $Name: achievo_1_3_4 $ is the CVS tag.
       $version = atkversion();
-      if ("\$Name: achievo_1_3_4 $"!="\$"."Name:  $") $version.=" ($Name: achievo_1_3_4 $)";
       $res.= '  <meta name="atkversion" content="'.$version.'" />'."\n";
 
-      $res.= '  <meta http-equiv="Content-Type" content="text/html; charset='.atktext("charset","atk").'" />'."\n";
+      $res.= '  <meta http-equiv="Content-Type" content="text/html; charset='.atkGetCharset().'" />'."\n";
       if ($extra_header != "") $res.= $extra_header."\n";
 
       $this->addScripts($res);
@@ -320,10 +364,10 @@
     /**
      * Adds javascripts from the member variables to HTML output
      * @param String $res Reference to the HTML output
+     * @param Bool $partial Is this a partial request or a complete request
      */
     function addScripts(&$res, $partial=false)
     {
-      
       $count_scriptcode = count($this->m_scriptcode['before']);
       if($count_scriptcode>0) $res .= '  <script type="text/javascript">'."\n";
       $res.= $this->renderScriptCode("before");
@@ -337,7 +381,6 @@
       }
       else 
       {
-        
         $files = '';
         for ($i = 0; $i < count($this->m_scriptfiles); $i++)
         {
@@ -346,7 +389,8 @@
         
         if (!empty($files))
         {
-          $res .= '<script type="text/javascript">'.$files.'</script>';
+          // prepend script files
+          $res = '<script type="text/javascript">'.$files.'</script>'.$res;
         }
       }
 
@@ -379,6 +423,12 @@
       return $res;
     }
 
+    /**
+     * Get the globalSubmit javascript code
+     *
+     * @param bool $partial Is this a partial request or a complete request
+     * @return String with javascript code
+     */
     function _getGlobalSubmitScriptCode($partial=false)
     {
       // global submit script can only be registered in the original request
@@ -402,6 +452,12 @@
       return $res;
     }
 
+    /**
+     * Get the globalLoad javascript code
+     *
+     * @param bool $partial Is this a partial request or a complete request
+     * @return String with javascript code
+     */
     function _getGlobalLoadScriptCode($partial=false)
     {
       $res = '';
@@ -410,16 +466,20 @@
         $res = "";
         if (!$partial)
         {
-          $res .= "    function globalLoad()\n";
-          $res .= "    {\n";
+          $res .= "function globalLoad()\n";
+          $res .= "{\n";
         }
 
         for ($i=0, $_i=count($this->m_loadscripts); $i<$_i; $i++)
         {
-          $res .= "      {$this->m_loadscripts[$i]}\n";
+          $res .= "{$this->m_loadscripts[$i]}\n";
         }
 
-        if (!$partial)  $res.= "    }\n";
+        if (!$partial)
+        {
+          $res.= "}\n";
+          $res .= "document.observe('dom:loaded', globalLoad);\n";
+        }
       }
       return $res;
     }
@@ -428,16 +488,34 @@
      * Add stylesheets and stylecodes to the HMTL output
      *
      * @param String $res Reference to the HTML output
+     * @param Bool $partial Is this a partial request or a complete request
      */
-    function addStyles(&$res)
+    function addStyles(&$res, $partial=false)
     {
-      foreach ($this->m_stylesheets as $file => $media)
+      if (!$partial)
       {
-        $res.='  <link href="'.$file.'" rel="stylesheet" type="text/css" media="'.$media.'" />'."\n";
+        foreach ($this->m_stylesheets as $file => $media)
+        {
+          $res.='  <link href="'.$file.'" rel="stylesheet" type="text/css" media="'.$media.'" />'."\n";
+        }
+  
+        for ($i = 0; $i < count($this->m_stylecode); $i++)
+          $res.= '<style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
       }
-
-      for ($i = 0; $i < count($this->m_stylecode); $i++)
-        $res.= '<style type="text/css"> '.$this->m_stylecode[$i].' </style>'."\n";
+      else 
+      {
+        $files = '';
+        foreach ($this->m_stylesheets as $file => $media)
+        {
+          $files .= "ATK.Tools.loadStyle('{$file}', '{$media}');\n";
+        }          
+        
+        if (!empty($files))
+        {
+          // prepend stylesheets
+          $res = '<script type="text/javascript">'.$files.'</script>'.$res;
+        }        
+      }
     }
 
     /**
@@ -479,28 +557,40 @@
       global $ATK_VARS;
 
       $res = '<body ';
-      if (count($this->m_loadscripts))
-      {
-        $res.='onload="globalLoad();" ';
-      }
       $res.= $extraprops.">\n";
       return $res;
     }
 
     /**
+     * Sets the page title.
+     * 
+     * @param string $title page title
+     */
+    public function setTitle($title)
+    {
+      $this->m_title = $title;
+    }
+    
+    /**
      * Render the complete page, including head and body.
      * @param String $title Title of the HTML page.
-     * @param boolean $flags Set to true to generate <body> tags. It is useful
-     *                      to set this to false only when rendering content
-     *                      that either already had its own <body></body>
-     *                      statement, or content that needs no body
-     *                      statements, like a frameset. (DEPRICATED !!)
-     * @param int $flags Flags for the render function
+     * @param bool|int $flags (bool) Set to true to generate <body> tags. It is useful
+     *                      	to set this to false only when rendering content
+     *                      	that either already had its own <body></body>
+     *                      	statement, or content that needs no body
+     *                      	statements, like a frameset. (DEPRICATED !!)
+     * 											  (int) Flags for the render function
      * @param string $extrabodyprops  Extra attributes to add to the <body> tag.
+     * @param string $extra_header HTML code of extra headers to add to the head section
      * @return String The HTML page, including <html> and </html> tags.
      */
-    function render($title, $flags=HTML_STRICT,$extrabodyprops="", $extra_header="")
+    function render($title=null, $flags=HTML_STRICT,$extrabodyprops="", $extra_header="")
     {
+      if ($title == null)
+      {
+        $title = $this->m_title;
+      }
+      
       $ui = &atkinstance('atk.ui.atkui');
       $theme = &atkinstance('atk.ui.atktheme');
 
@@ -539,8 +629,9 @@
      */
     function renderPartial()
     {
-      $result = $this->m_content;
+      $result = $this->m_content;     
       $this->addScripts($result, true);
+      $this->addStyles($result, true);      
       return $result;
     }
 
@@ -564,13 +655,6 @@
       return $page;
     }
 
-    /**
-     * Default constructor.
-     * @access private
-     */
-    function atkPage()
-    {
-    }
 
     /**
      * Check if the page is empty (no content).

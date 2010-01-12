@@ -19,8 +19,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 4.20 $
-   * $Id: dispatch.php,v 4.20 2007/03/22 15:49:51 guido Exp $
+   * @version $Revision: 5387 $
+   * $Id: dispatch.php 5387 2008-12-07 22:15:49Z sandy $
    */
 
   /**
@@ -38,7 +38,7 @@
   {
     // no nodetype passed, or session expired
 
-    $page = &atknew("atk.ui.atkpage");
+    $page = &atkinstance("atk.ui.atkpage");
     $ui = &atkinstance("atk.ui.atkui");
     $theme = &atkTheme::getInstance();
 

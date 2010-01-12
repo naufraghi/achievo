@@ -11,8 +11,8 @@
    * @copyright (c)2007 Sandy Pleyte <sandy@achievo.org>
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.1 $
-   * $Id: function.atkdispatchfile.php,v 1.1 2007/08/29 19:46:00 sandy Exp $
+   * @version $Revision: 5215 $
+   * $Id: function.atkdispatchfile.php 6354 2009-04-15 02:41:21Z mvdam $
    */
    
   /**

@@ -10,9 +10,9 @@
    *
    * @author Ivo Jansch <ivo@achievo.org>
    *
-   * @version $Revision: 1.5 $
+   * @version $Revision: 5515 $
    *
-   * $Id: graph.php,v 1.5 2006/04/05 15:26:23 guido Exp $
+   * $Id: graph.php 5515 2009-03-21 12:50:32Z sandy $
    *
    * This file is part of Achievo.
    *
@@ -35,7 +35,6 @@
   include_once("theme.inc");
 
   include_once(moduleDir("graph")."jpgraph/jpgraph.php");
-
   atksession("img", false);
   atksecure();
 

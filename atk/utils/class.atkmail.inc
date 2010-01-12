@@ -11,7 +11,7 @@
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision:
-   * $Id: class.atkmail.inc,v 1.3 2006/10/10 12:41:56 peter Exp $
+   * $Id: class.atkmail.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

@@ -18,8 +18,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.8 $
-   * $Id: atk.inc,v 5.8 2007/02/05 21:53:38 guido Exp $
+   * @version $Revision: 4609 $
+   * $Id: atk.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
    
   /**

@@ -1,16 +1,19 @@
 <?php
-
 /**
- * Module Calendar
- * Class scheduler_attendee
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
  *
- * This class makes it possible to add attendees to a schedule. These attendees can be employees and contacts.
- * That is why the relation is linked to person.
+ * @package achievo
+ * @subpackage scheduler
  *
- * $Id: class.scheduler_attendees.inc,v 1.9 2008/02/24 20:34:27 sandy Exp $
- * @author S. Pleyte  <sandy@achievo.org>
- * @version $Revision: 1.9 $
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
  *
+ * @version $Revision: 5044 $
+ * $Id: class.scheduler_attendees.inc 5044 2008-06-23 20:41:04Z sandy $
  */
 
 useattrib("atkboolattribute");
@@ -18,7 +21,13 @@ useattrib("atklistattribute");
 useattrib("atknumberattribute");
 userelation("atkmanytoonerelation");
 
-
+/**
+ * Class for managing scheduler attendees
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage scheduler
+ * @since 1.3.0
+ */
 class scheduler_attendees extends atkNode
 {
   function scheduler_attendees()
@@ -45,16 +54,16 @@ class scheduler_attendees extends atkNode
       $record["status"]="accepted";
     return true;
   }
-  
+
   function recordActions($rec,&$actions,&$mraactions)
   {
-    if ($rec["person_id"]["id"]==atkGetUserId()) 
+    if ($rec["person_id"]["id"]==atkGetUserId())
     {
       if($rec["status"]!="accepted") $actions["accept"]= session_url(dispatch_url($this->atknodetype(), "accept", array("scheduler_id"=>$rec["scheduler_id"],"person_id"=>$rec["person_id"]["id"])));
       if($rec["status"]!="rejected") $actions["reject"]= session_url(dispatch_url($this->atknodetype(), "reject", array("scheduler_id"=>$rec["scheduler_id"],"person_id"=>$rec["person_id"]["id"])));
     }
   }
-  
+
   function action_accept(&$handler,$record=array(),$mode="")
   {
     $this->updateUserStatus('accepted');
@@ -93,8 +102,6 @@ class scheduler_attendees extends atkNode
       //$rec['atkprimkey'] = $primkey;
       $rec['status'] = $status;
       $ret = $this->updateDb($rec,false);
-      atkdebug("SEND MAIL ?");
-      atk_var_dump($rec);
       if($rec["person_id"]["role"]=="employee")
       {
         $this->sendEmail("user_notification",$rec["scheduler_id"],$rec["person_id"]["id"],"date",$status,true);
@@ -102,19 +109,17 @@ class scheduler_attendees extends atkNode
     }
     return true;
   }
-  
-  
+
+
   function postAdd($record)
   {
-    atkdebug("scheduler_attendees::postAdd");
-    atk_var_dump($record,"ADD RECORD");
     // Only for employees
     if($record["person_id"]["role"]=="employee")
       $this->sendEmail("add_event",$record["scheduler_id"],$record["person_id"]["id"],"date","invited");
 
     return true;
   }
-  
+
   function postDelete($record)
   {
     if($record["person_id"]["role"]=="employee")
@@ -125,7 +130,7 @@ class scheduler_attendees extends atkNode
   /**
    * Send mail to user
    * @todo: Fix mail
-   * 
+   *
    * @param string $action
    * @param int $scheduler_id
    * @param int $person_id
@@ -136,7 +141,6 @@ class scheduler_attendees extends atkNode
    */
   function sendEmail($action,$scheduler_id,$person_id,$date,$trigger_action="",$sendtoowner=false)
   {
-    return true;
     $template = &atknew("modules.scheduler.scheduler_email_template");
     $template->initialize($action,$person_id);
     $template->loadData($action,$scheduler_id,$date,$trigger_action);

@@ -1,9 +1,30 @@
 <?php
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage timereg
+ *
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5467 $
+ * $Id: pim.inc 5467 2009-03-01 18:42:59Z sandy $
+ */
 
+  /**
+   * Render todays timeregistration of the current user for the PIM screen
+   *
+   * @return string
+   */
   function pimTimeReg()
   {
     global $g_user;
     $hoursnode = &getNode("timereg.hours");
+    $hoursnode->setTable("hoursbase");
 
     $pda = browserInfo::detectPDA();
     if ($pda) $nodetype = "timereg.hourspda";
@@ -15,7 +36,7 @@
 
     // Show only todays bookings, and only your own.
     $hoursnode->addFilter("activitydate",strftime("%Y-%m-%d"));
-    $hoursnode->addFilter("hours.userid",strtolower($g_user["id"]));
+    $hoursnode->addFilter($hoursnode->getTable().".userid",atk_strtolower($g_user["id"]));
 
     $recs = $hoursnode->selectDb();
 

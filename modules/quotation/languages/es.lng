@@ -5,7 +5,7 @@
   // Module: quotation
   // Language: Spanish (es)
   //
-  // Translated by:Dario
+  // Translated by:
   //   
   //
   // If you want to add a new language to achievo, please translate this
@@ -29,31 +29,31 @@
   "quotation_hideclosed" => "Ocultar presupuestos cerrados", 
   "quotation_issue_date" => "Fecha de presupuesto", 
   "quotation_mail" => "Correo electrónico", 
-  "quotation_method" => "Forma de entrega", 
-  "quotation_new" => "Sin entregar", 
-  "quotation_nr" => "Presupuesto", 
+  "quotation_method" => "Forma de entrega", //"Deliverymethod", // Missing string!!!
+  "quotation_new" => "Sin entregar", //"Undelivered", // Missing string!!!
+  "quotation_nr" => "Presupuesto", //"Quotation nr", // Missing string!!!
   "quotation_organization_id" => "Empresa", 
   "quotation_other" => "Otro", 
-  "quotation_owner" => "Responsable", 
-  "quotation_phone" => "Teléfono", 
-  "quotation_prepaid" => "Prepago", 
-  "quotation_prepaidcompleted" => "Prepago y completo", 
+  "quotation_owner" => "Responsable", //"Owner", // Missing string!!!
+  "quotation_phone" => "Teléfono", //"Per phone", // Missing string!!!
+  "quotation_prepaid" => "Prepago", //"Prepaid", // Missing string!!!
+  "quotation_prepaidcompleted" => "Prepago y completo", //"Prepaid and completed", // Missing string!!!
   "quotation_price" => "Precio", 
   "quotation_rejected" => "Rechazado", 
-  "quotation_reminder_daysexpired" => "Cantidad de días desde la fecha de vencimiento", 
-  "quotation_reminder_daysleft" => "Cantidad de días antes del vencimiento", 
-  "quotation_reminder_header" => "Este presupuesto aún está abierto", 
-  "quotation_reminder_summary" => "Detalles del presupuesto", 
-  "quotation_sent" => "Entregado sin respuesta", 
-  "quotation_set_accepted" => "Aceptado", 
-  "quotation_set_billed" => "Facturado", 
-  "quotation_set_called" => "Notificado", 
-  "quotation_set_completed" => "Completo",
-  "quotation_set_prepaid" => "Facturado (por adelantado)", 
-  "quotation_set_prepaidcompleted" => "Completo", 
-  "quotation_set_rejected" => "Rechazado", 
-  "quotation_set_sent" => "Entregado", 
-  "quotation_showall" => "Haga click aquí para ver todos los presupuestos.", 
+  "quotation_reminder_daysexpired" => "Cantidad de días desde la fecha de vencimiento", //"Number of days since the quotation expired", // Missing string!!!
+  "quotation_reminder_daysleft" => "Cantidad de días antes del vencimiento", //"Number of days before quotation will expire", // Missing string!!!
+  "quotation_reminder_header" => "Este presupuesto aún está abierto", //"This quotation is still open.", // Missing string!!!
+  "quotation_reminder_summary" => "Detalles del presupuesto", //"Details of the quotation", // Missing string!!!
+  "quotation_sent" => "Entregado sin respuesta", //"Delivered, no response yet", // Missing string!!!
+  "quotation_set_accepted" => "Aceptado", // Missing string!!!
+  "quotation_set_billed" => "Facturado", // Missing string!!!
+  "quotation_set_called" => "Notificado", //"Called", // Missing string!!!
+  "quotation_set_completed" => "Completo", // Missing string!!!
+  "quotation_set_prepaid" => "Facturado (por adelantado)", //"Billed (in advance)", // Missing string!!!
+  "quotation_set_prepaidcompleted" => "Completo", //"Completed", // Missing string!!!
+  "quotation_set_rejected" => "Rechazado", //"Rejected", // Missing string!!!
+  "quotation_set_sent" => "Entregado", //"Delivered", // Missing string!!!
+  "quotation_showall" => "Haga click aquí para ver todos los presupuestos.", //"Click here to show all quotations.", // Missing string!!!
 );
 
 ?>

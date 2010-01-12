@@ -1,6 +1,20 @@
 <?php
-
-// TODO: Timezone
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage scheduler
+ *
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5467 $
+ * $Id: class.scheduler_userpreferences.inc 5467 2009-03-01 18:42:59Z sandy $
+ */
 
   useattrib("atklistattribute");
   useattrib("atktimeattribute");
@@ -15,7 +29,16 @@
   userelation("atkmanytomanyrelation");
   userelation("atkmanyboolrelation");
   userelation("atkshuttlerelation");
-
+  
+  /**
+   * This class for managing the scheduler preferences of a user
+   * 
+   * @author Sandy Pleyte <sandy@achievo.org>
+   * @package achievo
+   * @subpackage scheduler
+   * @since 1.3.0
+   * @todo Support for timezones
+   */
   class scheduler_userpreferences extends atkNode
   {
     function scheduler_userpreferences()
@@ -150,10 +173,10 @@
     {
       $time = time();
       $datestyles = array (
-        "F d, Y"=> atktext(strtolower(date("F",$time))) . date(" d, Y",$time),
-        "d F, Y"=> date("d ",$time) . atktext(strtolower(date("F",$time))) . date(", Y",$time),
-        "d-F-Y"=> date("d-",$time) . atktext(strtolower(date("F",$time))) . date("-Y",$time),
-        "d-F-y"=> date("d-",$time) . atktext(strtolower(date("F",$time))) . date("-y",$time),
+        "F d, Y"=> atktext(atk_strtolower(date("F",$time))) . date(" d, Y",$time),
+        "d F, Y"=> date("d ",$time) . atktext(atk_strtolower(date("F",$time))) . date(", Y",$time),
+        "d-F-Y"=> date("d-",$time) . atktext(atk_strtolower(date("F",$time))) . date("-Y",$time),
+        "d-F-y"=> date("d-",$time) . atktext(atk_strtolower(date("F",$time))) . date("-y",$time),
         "m/d/Y"=> date("m/d/Y",$time),
         "m/d/y"=> date("m/d/y",$time),
         "m-d-Y"=> date("m-d-Y",$time),

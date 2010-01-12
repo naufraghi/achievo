@@ -1,19 +1,19 @@
 <?php
  /**
+  * This file is part of the Achievo distribution.
+  * Detailed copyright and licensing information can be found
+  * in the doc/COPYRIGHT and doc/LICENSE files which should be
+  * included in the distribution.
   * projecttpl_doctype node class file
   *
-  * @package achievo_modules
+  * @package achievo
   * @subpackage docmanager
   *
-  * @author ivo <ivo@ibuildings.nl>
-  * @author guido <guido@ibuildings.nl>
+  * @copyright (c)2008 Ibuildings B.V.
+  * @license http://www.achievo.org/licensing Achievo Open Source License
   *
-  * @copyright (c) 2005 Ibuildings.nl BV
-  * @license http://www.achievo.org/atk/licensing/ ATK open source license
-  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
-  *
-  * @version $Revision: 1.1 $
-  * $Id: class.projecttpl_doctype.inc,v 1.1 2007/03/19 22:01:04 sandy Exp $
+  * @version $Revision: 5078 $
+  * $Id: class.projecttpl_doctype.inc 5078 2008-06-30 21:22:57Z sandy $
   */
 
   /**

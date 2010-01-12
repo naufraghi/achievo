@@ -2,10 +2,10 @@
  /*  
   * Sends an email reminder if someone forget an offerte
   *
-  * @version $Revision: 1.2 $
+  * @version $Revision: 4894 $
   * @author Ivo Jansch <ivo@achievo.org>
   * 
-  * $Id: reminder.cron,v 1.2 2007/04/10 20:52:03 sandy Exp $
+  * $Id: reminder.cron 4894 2008-03-05 13:39:27Z guido $
   *
   */  
  

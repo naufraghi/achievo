@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: class.atkxmlhandler.inc,v 5.2 2006/04/12 21:04:18 ivo Exp $
+   * @version $Revision: 3582 $
+   * $Id: class.atkxmlhandler.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

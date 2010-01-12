@@ -6,9 +6,9 @@
  *
  * This class makes it possible to relate employees to a project in a certain role(s).
  *
- * $Id: class.project_personemployee.inc,v 1.9 2006/07/31 13:01:10 guido Exp $
+ * $Id: class.project_personemployee.inc 1800 2006-07-31 13:01:10Z guido $
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision: 1.9 $
+ * @version $Revision: 1800 $
  *
  */
 

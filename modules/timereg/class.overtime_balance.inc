@@ -1,4 +1,20 @@
 <?php
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage timereg
+ *
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5622 $
+ * $Id: class.overtime_balance.inc 5622 2009-09-18 21:36:37Z sandy $
+ */
+
 
   userelation("atkmanytoonerelation");
   useattrib("atktextattribute");
@@ -8,13 +24,22 @@
   useattrib("atknumberattribute");
   atkImport("modules.utils.dateutil");
 
+  /**
+   * Node for keeping track of the overtime balance
+   *
+   * @package achievo
+   * @subpackage timereg
+   */
   class overtime_balance extends atkNode
   {
+  	/**
+  	 * Constructor
+  	 */
     function overtime_balance()
     {
       $this->atkNode("overtime_balance");
       $this->add(new atkNumberAttribute("id",AF_AUTOKEY));
-      $this->add(new atkManyToOneRelation("userid", "employee.employee", AF_OBLIGATORY|AF_SEARCHABLE|AF_READONLY));
+      $this->add(new atkManyToOneRelation("userid", "employee.employeeselector", AF_OBLIGATORY|AF_SEARCHABLE|AF_READONLY));
       $this->add(new atkDateAttribute("day","","", 0, date("Y-m-d"), AF_SEARCHABLE|AF_OBLIGATORY));
       $this->add(new atkNumberAttribute("balance", AF_OBLIGATORY, 10,2));
       $this->add(new manualAttribute("manual", AF_HIDE, 1, 0));
@@ -26,24 +51,48 @@
       $this->scheduler_holidays = &atkGetNode("scheduler.scheduler_holidays");
     }
 
+    /**
+     * Delete overtime balance after an update
+     *
+     * @param array $rec
+     * @return boolean
+     */
     function postUpdate($rec)
     {
       $this->deleteBalance($rec["userid"]["id"], dateutil::arr2str($rec["day"], "Y-m-d"));
       return true;
     }
 
+    /**
+     * Delete overtime balance after adding a record
+     *
+     * @param array $rec
+     * @return boolean
+     */
     function postAdd($rec)
     {
       $this->deleteBalance($rec["userid"]["id"], dateutil::arr2str($rec["day"], "Y-m-d"));
       return true;
     }
 
+    /**
+     * Delete overtime balance after deleting a record
+     *
+     * @param array $rec
+     * @return boolean
+     */
     function postDel($rec)
     {
       $this->deleteBalance($rec["userid"]["id"], dateutil::arr2str($rec["day"], "Y-m-d"));
       return true;
     }
 
+    /**
+     * Create overtime link
+     *
+     * @param array $rec recorc
+     * @return string
+     */
     function getOvertimeLink($rec)
     {
       if ($rec["balance"]["balance"] != atktext("not_inserted")) $res = time_format(60*$rec["balance"]["balance"], true);
@@ -90,6 +139,13 @@
       return $res.($manual ? ' *' : '').' '.$deletelink;
     }
 
+    /**
+     * Get balance of a user on a specific day
+     *
+     * @param int $day Day
+     * @param int $userid User id
+     * @return int
+     */
     function getBalance($day, $userid)
     {
       $node = &atkGetNode("timereg.overtime_balance");
@@ -98,7 +154,7 @@
       $cnt_result = count($result);
       if (!$cnt_result)
       {
-        $startingpoint = atkconfig("timereg_overtime_balance_use_startingpoint",false);
+        $startingpoint = atkconfig::get("timereg","timereg_overtime_balance_use_startingpoint",false);
         if($startingpoint==="")
           return $this->getDummyBalance($day, $userid);
         else
@@ -126,9 +182,18 @@
         return $this->recalculateBalance(date("Y-m-d", $dayafter), $day, $userid, $result[0]["balance"]);
       }
       else if (count($result)) return $result[0];
-
+      return 0;
     }
 
+    /**
+     * Get Dummy balance
+     *
+     * @param int $day Day
+     * @param int $userid User id
+     * @param int $balance Balance
+     * @param int $id id
+     * @return int
+     */
     function getDummyBalance($day, $userid, $balance="", $id=0)
     {
       if ($balance === "") $res["balance"] = atktext("not_inserted"); else $res["balance"] = $balance;
@@ -164,7 +229,7 @@
     function addOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"addOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
-      if ( (strftime("%w", dateutil::str2stamp($day)) != 0) && (dateutil::str2str($day, 'd') != 1) ) return;
+      if ( (strftime("%w", dateutil::str2stamp($day)) != 0) && (dateutil::str2str($day, 'd') != 1) ) return; //lmancini: seconda clausola
       $db = &atkGetDb();
       $newid = $db->nextid("overtime_balance");
       $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
@@ -174,7 +239,7 @@ $this->debuglog(array("function"=>"addOvertimeBalance","userid"=>$userid, "day"=
     function saveOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
-      if ( (strftime("%w", dateutil::str2stamp($day)) != 0) && (dateutil::str2str($day, 'd') != 1) ) return;
+      if ( (strftime("%w", dateutil::str2stamp($day)) != 0) && (dateutil::str2str($day, 'd') != 1) ) return; //lmancini: pure qui
       $db = &atkGetDb();
       $sql = "UPDATE overtime_balance SET balance = $balance WHERE userid = '$userid' AND day = '$day'";
       $db->query($sql);
@@ -188,7 +253,7 @@ $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"
     function updateOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
-      if ( (strftime("%w", dateutil::str2stamp($day)) != 0) && (dateutil::str2str($day, 'd') != 1) ) return;
+      if ( (strftime("%w", dateutil::str2stamp($day)) != 0) && (dateutil::str2str($day, 'd') != 1) ) return; //lmancini: e anche qui
       $db = &atkGetDb();
       $recs = $db->getrows("SELECT id FROM overtime_balance WHERE userid = '$userid' AND day = '$day'");
       if (!count($recs))
@@ -279,8 +344,8 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       $sql = "SELECT uc_hours, startdate, enddate, WorkingDays
               FROM usercontract
               WHERE userid = '$userid'
-              AND startdate <= '$end'
-              AND (enddate >= '$begin' OR enddate IS NULL)
+	      AND startdate <= '$end'
+	      AND (enddate >= '$begin' OR enddate IS NULL)
               ORDER BY startdate"; /* FIXME: this order is required by enumWorkingDays
                                              to manage overlapping contracts: the latest wins */
       return $db->getRows($sql);
@@ -305,17 +370,31 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
 
     function enumWorkingDays($begin, $end, $userid, $format='Ymd')
     {
+      static $user_contracts = array();
+      
       // Convert the given begindate and enddate to "yyyymmdd" format so we can run calculations on them
       // in order to determine if a given date is earlier than, equal to or later than another date
       $begindate = dateutil::str2str($begin);
       $enddate = dateutil::str2str($end);
 
-      $contracts = $this->_getContracts($begin, $end, $userid);
-
+      // Get a list of contracts that intersects with the given begin and end dates. The list of contracts
+      // includes the amount of hours, the start- and enddate and the list of workdays for each contract.
+      if(!array_key_exists($userid,$user_contracts))
+      {
+        $contracts = $this->_getContracts($begin, $end, $userid);
+        $user_contracts[$userid]=$contracts;
+      }
+      else
+      {
+        $contracts = $user_contracts[$userid];
+      }
+      
       $workday_array = array();
       foreach ($contracts as $contract)
       {
-        // Get an array of working days that are specified with this contract
+        if($contract['startdate']>=$end || ($contract['enddate']<=$begin && $contract['enddate']!='')) continue;
+
+	// Get an array of working days that are specified with this contract
         $workdays = $this->getWorkDays($contract["WorkingDays"]);
         // If no workingdays are specified, assume the working hours are spread evenly over 7 days
         $numworkdays = (count($workdays) > 0) ? count($workdays) : 7;
@@ -373,7 +452,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
 
     function debuglog($params)
     {
-      if (!atkconfig("overtimebalancedebugging", false)) return;
+      if (!atkconfig::get("timereg","overtimebalancedebugging", false)) return;
       $logarr = $params;
       foreach(array("atknodetype", "atkaction", "atkselector") as $item)
         $logarr[$item]=$this->m_postvars[$item];

@@ -1,25 +1,34 @@
-<table border="0" cellspacing="0" cellpadding="2" width="100%">
-{if $index}
+<table border="0" cellspacing="0" cellpadding="2">
+{if $top}
+<tr>
+  <td align="left" valign="top" colspan="2">
+    {$top}
+  </td>
+</tr>
+{/if}
+{if $index || $editcontrol}
   <tr>
     <td align="left" valign="top">
-      {$index}
-    </td
+      {if $editcontrol}{$editcontrol}{/if} {if $index}{$index}{/if}
+    </td>
   </tr>
 {elseif $paginator || $limit}
   <tr>
     <td align="left" valign="middle">
-      {if $paginator}{$paginator}{/if}
-    </td
+      {if $editcontrol}{$editcontrol}{/if} {if $paginator}{$paginator}{/if}
+    </td>
     <td align="right" valign="middle">
       {if $limit}{$limit}{/if}
     </td>
   </tr>
 {/if}
+{if $list}
 <tr>
   <td align="left" valign="top" colspan="2">
     {$list}
-  </td
+  </td>
 </tr>
+{/if}
 {if $norecordsfound}
   <tr>
     <td align="left" valign="top">
@@ -31,10 +40,17 @@
   <tr>
     <td align="left" valign="middle">
       {if $paginator}{$paginator}{/if}
-    </td
+    </td>
     <td align="right" valign="middle">
       {if $summary}{$summary}{/if}
     </td>
   </tr>
+{/if}
+{if $bottom}
+<tr>
+  <td align="left" valign="top" colspan="2">
+    {$bottom}
+  </td>
+</tr>
 {/if}
 </table>

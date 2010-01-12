@@ -17,8 +17,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: lock.js.php,v 5.2 2007/04/10 20:06:15 sandy Exp $
+   * @version $Revision: 4845 $
+   * $Id: lock.js.php 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /** @internal some defines */

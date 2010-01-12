@@ -19,15 +19,17 @@ class timeDisplayAttribute extends atkAttribute
   }
 }
 
-function compare_by_field($a, $b, $field)
-{
-  if ($a[$field]==$b[$field])
-  {
-    // equal items are always sorted by week
-    if ($a["period"]==$b["period"]) return 0;
-    return ($a["period"] < $b["period"]) ? -1 : 1;
-  }
-  return ($a[$field] < $b[$field]) ? -1 : 1;
+if(!function_exists("compare_by_field")) {
+	function compare_by_field($a, $b, $field)
+	{
+	  if ($a[$field]==$b[$field])
+	  {
+	    // equal items are always sorted by week
+	    if ($a["period"]==$b["period"]) return 0;
+	    return ($a["period"] < $b["period"]) ? -1 : 1;
+	  }
+	  return ($a[$field] < $b[$field]) ? -1 : 1;
+	}
 }
 
 class weekreport extends atkNode
@@ -128,7 +130,7 @@ class weekreport extends atkNode
   function get_employee($user_id)
   {
     $db = &atkGetDb();
-    $sql = "SELECT * FROM person WHERE status='active' AND id='$user_id'";
+    $sql = "SELECT * FROM person WHERE status='active' AND id='".intval($user_id)."'";
     $record = $db->getrows($sql);
     return $record[0];
   }
@@ -457,7 +459,7 @@ class weekreport extends atkNode
       }    */
 
       $startdateatt = new atkDateAttribute("startdate","","", 0, date("Ymd"));
-      $enddateatt = new atkDateAttribute("enddate","","", 0, atkConfig("timereg_allowfuture", false) ? 0 : date("Ymd"));
+      $enddateatt = new atkDateAttribute("enddate","","", 0, atkConfig::get("timereg","timereg_allowfuture", false) ? 0 : date("Ymd"));
 
       $data[]= array(atktext("timespan"),$startdateatt->edit($dummyrec).' &nbsp;'.
                       atktext("until").
@@ -538,15 +540,16 @@ class weekreport extends atkNode
                   id, lastname, firstname
                 FROM
                   person
-                 ";
+                 WHERE role='employee' AND status='active' ";
       if ($employeeswitch=="supervisor" && $userid!="all")
       {
-        $query.= "WHERE supervisor = '".$userid."'";
+        $query.= "AND supervisor = '".$userid."' ";
       }
-      if ($employeeswitch=="name" && $userid!="all")
+      elseif ($employeeswitch=="name" && $userid!="all")
       {
-        $query.= "WHERE id = '".$userid."'";
+        $query.= "AND id = '".$userid."'";
       }
+
       $db = &atkGetDb();
       $persons = $db->getrows($query);
 
@@ -562,6 +565,8 @@ class weekreport extends atkNode
         foreach($persons as $person)
         {
           $weekdata[$weekstamp]["userdata"][$person["id"]]["name"] = $person["lastname"].", ".$person["firstname"];
+          if(!array_key_exists('contract',$weekdata[$weekstamp]["userdata"][$person["id"]]))
+            $weekdata[$weekstamp]["userdata"][$person["id"]]['contract']=0;
           $weekdata[$weekstamp]["userdata"][$person["id"]]["contract"] += ($balancenode->getContractHours($start_week, $end_week, $person["id"]) * 60);
         }
       }
@@ -587,7 +592,22 @@ class weekreport extends atkNode
         $weekdata[$key]["period"] = $key;
         $uid = $raw[$i]["userid"];
         $users_array[] = $uid;
+
         $workperiod = in_array($raw[$i]["workperiod"], $periodids) ? $raw[$i]["workperiod"] : "unknownperiod";
+
+        if(!array_key_exists($uid,$weekdata[$key]['userdata']))
+        {
+          $weekdata[$key]['userdata'][$uid] = array();
+        }
+
+        if(!array_key_exists($workperiod,$weekdata[$key]['userdata'][$uid]))
+          $weekdata[$key]['userdata'][$uid][$workperiod] = 0;
+        if(!array_key_exists($strdow[$dow],$weekdata[$key]['userdata'][$uid]))
+          $weekdata[$key]['userdata'][$uid][$strdow[$dow]] = 0;
+        if(!array_key_exists('overtimecompensation',$weekdata[$key]['userdata'][$uid]))
+          $weekdata[$key]['userdata'][$uid]['overtimecompensation']=0;
+        if(!array_key_exists('total',$weekdata[$key]['userdata'][$uid]))
+          $weekdata[$key]['userdata'][$uid]['total']=0;
 
         $weekdata[$key]["userdata"][$uid][$strdow[$dow]]          += $raw[$i]["time"];
         $weekdata[$key]["userdata"][$uid][$workperiod] += $raw[$i]["time"];
@@ -659,7 +679,7 @@ class weekreport extends atkNode
         $record["startdate"] = $data["startdate"];
         $record["enddate"] = $data["enddate"];
         $record["period"] = $data["period"];
-        $record["status"] = $data["status"];
+        $record["status"] = (array_key_exists('status',$data)?$data["status"]:'');
         if (is_array($data["userdata"]))
         {
           foreach($data["userdata"] as $user => $userdata)
@@ -672,15 +692,25 @@ class weekreport extends atkNode
             //count total hours of working periods
             for($i=0,$_i=count($periods);$i<$_i;$i++)
             {
-              $record[$periods[$i]["name"]] = $userdata[$periods[$i]["id"]];
-              $newtotal += ($periods[$i]["percentage"]/100) * $userdata[$periods[$i]["id"]];
+              if(array_key_exists($periods[$i]['id'],$userdata))
+              {
+                $value =  $userdata[$periods[$i]["id"]];
+              }
+              else
+              {
+                $value=0;
+              }
+              $record[$periods[$i]["name"]] = $value;
+              $newtotal += ($periods[$i]["percentage"]/100) * $value;
             }
-            $newtotal += $userdata["unknownperiod"];
-            if ($newtotal == 0) $newtotal = $userdata["total"];
+            if(array_key_exists('unknownperiod',$userdata))
+              $newtotal += $userdata["unknownperiod"];
+
+            if ($newtotal == 0 && array_key_exists('total',$userdata)) $newtotal = $userdata["total"];
             //subtract overtimecompensation hours from newtotal
-            $newtotal -= $userdata["overtimecompensation"];
-            $record["overtimecompensation"] = $userdata["overtimecompensation"];
-            $record["total"] = $userdata["total"];
+            $newtotal -= (array_key_exists('overtimecompensation',$userdata)?$userdata["overtimecompensation"]:0);
+            $record["overtimecompensation"] = (array_key_exists('overtimecompensation',$userdata)?$userdata["overtimecompensation"]:0);
+            $record["total"] = (array_key_exists('total',$userdata)?$userdata["total"]:0);
             $record["contract"] = $userdata["contract"];
             $record["overtime"] = $newtotal-$userdata["contract"];
 
@@ -692,13 +722,13 @@ class weekreport extends atkNode
                 $record[$col] = $userdata[$col];
             }
 
-            if ($userdata["status"]!="")
+            if (array_key_exists('status',$userdata) && $userdata["status"]!="")
             {
               $record["status"] = $userdata["status"];
             }
             else
             {
-              $record["status"] = $data["status"];
+              $record["status"] = (array_key_exists('status',$data)?$data["status"]:'');
             }
             if($record["status"]=="locked")
             {
@@ -716,7 +746,8 @@ class weekreport extends atkNode
             {
               for($i=0,$_i=count($strdow);$i<$_i;$i++)
               {
-                $record[$strdow[$i]] = $userdata[$strdow[$i]];
+                if(array_key_exists($strdow[$i],$userdata))
+                  $record[$strdow[$i]] = $userdata[$strdow[$i]];
               }
               $rldata[] = $record;
             }
@@ -747,7 +778,7 @@ class weekreport extends atkNode
     }
 
     //OVERTIMEBALANCEDEBUGGING START
-    if ($employeeswitch=="name" && $userid!="all" && atkConfig("overtimebalancedebugging") && atkConfig("debug") > 0)
+    if ($employeeswitch=="name" && $userid!="all" && atkConfig::get("timereg","overtimebalancedebugging") && atkConfig("debug") > 0)
     {
       $prestamp = date("Y-m-d", dateutil::str2stamp($rldata[0]["enddate"]) - (7 * ONEDAY));
       $prebalance = $balancenode->getBalance($prestamp, $userid);

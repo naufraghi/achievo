@@ -18,8 +18,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 4.27 $
-   * $Id: menu.php,v 4.27 2005/11/15 22:07:51 ivo Exp $
+   * @version $Revision: 5389 $
+   * $Id: menu.php 5389 2008-12-07 22:37:47Z sandy $
    */
 
   /**
@@ -36,9 +36,10 @@
   atkimport("atk.ui.atktheme");
   
   $output = &atkOutput::getInstance();
-  $page = &atknew("atk.ui.atkpage");
+  $page = &atkinstance("atk.ui.atkpage");
+  $page->unregister_all_scripts();
   $theme = &atkTheme::getInstance();  
-  $ui = &atknew("atk.ui.atkui");
+  $ui = &atkinstance("atk.ui.atkui");
 
 
   /* general menu stuff */

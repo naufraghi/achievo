@@ -1,7 +1,30 @@
 <?php
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage scheduler
+ *
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5467 $
+ * $Id: class.scheduler_dayview.inc 5467 2009-03-01 18:42:59Z sandy $
+ */
+
 atkimport("modules.scheduler.views.scheduler_view");
 
-
+/**
+ * Scheduler day view
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage scheduler
+ * @since 1.3.0
+ */
 class scheduler_dayview extends scheduler_view
 {
   var $m_view = "day";
@@ -21,7 +44,7 @@ class scheduler_dayview extends scheduler_view
   var $m_maxcols = 15;
   var $m_weekday_arr = array(1,2,4,8,16,32,64);
 
-  
+
 
   /**
    * Find a value in an Array
@@ -94,7 +117,6 @@ class scheduler_dayview extends scheduler_view
     */
    function _setMatrix($item)
    {
-     atk_var_dump($item,"SET MATRIX ITEM");
      $begin = $this->m_model->correct_time(date("H:i",$item["startdate"]),$this->m_userPrefs["timeschedule"]);
      $einde = $this->m_model->correct_time(date("H:i",$item["enddate"]),$this->m_userPrefs["timeschedule"],"up");
 
@@ -180,8 +202,6 @@ class scheduler_dayview extends scheduler_view
     }
 
     // normal appointments
-    atk_var_dump($this->m_itemMatrix,"ITEM MATRIX");
-    atk_var_dump($this->m_matrixInfo,"MATRIX INFO");
     $buff .= "<table border='0' cellpadding='1' cellspacing='0' width='100%'>\n";
     $lastHour="";
     $newHour=true;
@@ -282,15 +302,16 @@ class scheduler_dayview extends scheduler_view
 
       $buff .= "</tr>\n";
     }
-    $buff .= "</table>";
+    $buff.= "</table>";
+    $buff.= "<br>";
+    $buff.= $this->m_model->renderLegend();
     $buff.='</td><td width="150" valign="top">';
     $buff.=$this->getSideBar();
     $buff.="</td></tr></table>";
     $buff.="<br><br>\n";
-    $buff.= $this->m_model->renderLegend();
     return $buff;
   }
-  
+
   function getSideBar()
   {
     $buff=$this->m_model->_getSmallCalendar(substr($this->m_model->m_small_viewdate,8,2),substr($this->m_model->m_small_viewdate,5,2),substr($this->m_model->m_small_viewdate,0,4));
@@ -364,7 +385,7 @@ class scheduler_dayview extends scheduler_view
         }
      }
 
-     $this->m_viewTitle = "<b>".atkText(strtolower(date("l", mktime(0, 0, 0, $this->m_model->getMonth(), $this->m_model->getDay(), $this->m_model->getYear()))),"atk")." ".$this->m_model->getDay()."-".$this->m_model->getMonth()."-".$this->m_model->getYear()."</b>";
+     $this->m_viewTitle = "<b>".atkText(atk_strtolower(date("l", mktime(0, 0, 0, $this->m_model->getMonth(), $this->m_model->getDay(), $this->m_model->getYear()))),"atk")." ".$this->m_model->getDay()."-".$this->m_model->getMonth()."-".$this->m_model->getYear()."</b>";
 
      $this->m_model->getItems();
 

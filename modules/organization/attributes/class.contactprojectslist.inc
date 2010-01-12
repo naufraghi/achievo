@@ -11,8 +11,8 @@
    * @license http://www.achievo.org/atk/licensing/ ATK open source license
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision: 1.1 $
-   * $Id: class.contactprojectslist.inc,v 1.1 2006/08/01 13:25:25 guido Exp $
+   * @version $Revision: 1803 $
+   * $Id: class.contactprojectslist.inc 1803 2006-08-01 13:25:26Z guido $
    */
 
   /**

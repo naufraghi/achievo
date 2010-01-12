@@ -1,12 +1,12 @@
 <?php
  /*
-  * @version $Revision: 1.7 $
+  * @version $Revision: 4964 $
   * @Author Ivo Jansch <ivo@achievo.org>
   *
   * Sends an email reminder if someone did not block his week
   * in the previous week.
   *
-  * $Id: reminder_hoursnotblocked.cron,v 1.7 2008/05/21 13:05:45 guido Exp $
+  * $Id: reminder_hoursnotblocked.cron 4964 2008-05-30 09:49:19Z guido $
   *
   */
 

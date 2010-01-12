@@ -1,6 +1,28 @@
 <?php
-atkimport("modules.utils.dateutil");
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage scheduler
+ *
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5044 $
+ * $Id: class.calculateHoliday.inc 5044 2008-06-23 20:41:04Z sandy $
+ */
 
+/**
+ * Calculate holidays for a given year
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage scheduler
+ * @since 1.3.0
+ */
 class calculateHoliday
 {
   var $m_year = 0;

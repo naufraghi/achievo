@@ -19,8 +19,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.3 $
-   * $Id: debugger.php,v 1.3 2007/03/22 15:45:58 guido Exp $
+   * @version $Revision: 2124 $
+   * $Id: debugger.php 2124 2007-03-22 15:49:51Z guido $
    */
 
   /**

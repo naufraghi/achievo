@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.25 $
-   * $Id: class.atkoci8db.inc,v 5.25 2007/04/16 13:43:37 peter Exp $
+   * @version $Revision: 6323 $
+   * $Id: class.atkoci8db.inc 6458 2009-08-11 18:44:51Z peter $
    */
 
   /**
@@ -101,6 +101,8 @@
     /**
      * Translate a driver specific error to a generic ATK db error code.
      * @access private
+     * 
+     * @param Array $err Error code.
      * @return int One of the generic DB_* constants
      */
     function _translateError($err)
@@ -133,7 +135,7 @@
     /**
      * Enable/disable all foreign key constraints.
      *
-     * @param boolean $enable enable/disable foreign keys?
+     * @param bool $enable enable/disable foreign keys?
      */
     function toggleForeignKeys($enable)
     {
@@ -164,7 +166,7 @@
     /**
      * Set savepoint with the given name.
      *
-     * @param $name savepoint name
+     * @param string $name savepoint name
      * @abstract
      */
     function savepoint($name)
@@ -173,8 +175,11 @@
       $this->query('SAVEPOINT '.$name);
     }
 
-    /*
+    /**
      * Rollback the the current transaction.
+     * 
+     * @param String $savepoint
+     * @return Bool true 
      */
     function rollback($savepoint="")
     {
@@ -415,7 +420,7 @@
      *   $id = $db->nextid("employees");
      * </code>
      *
-     * @param $sequence The sequence name
+     * @param string $sequence The sequence name
      * @return int The next sequence value
      */
     function nextid($sequence)
@@ -620,7 +625,7 @@
     /**
      * This function checks in the database if a table exists.
      *
-     * @param String $tableName The name of the table to check.
+     * @param String $table The name of the table to check.
      * @return boolean True if the table exists, false if not.
      */
     function tableExists($table)
@@ -686,7 +691,18 @@
       if ($wildcard == true) $result = str_replace("%","%%",$result);
       return $result;
     }
-
+    
+    /**
+     * Retrieve this drivers' specific SQL implementation of a concat() function.
+     *
+     * @param array $fields
+     * @return unknown
+     */
+    public function func_concat($fields)
+    {
+      if(count($fields)==0 or !is_array($fields)) return '';
+      elseif(count($fields)==1) return $fields[0];
+      return implode('||',$fields);
+    }
   }
-
 ?>

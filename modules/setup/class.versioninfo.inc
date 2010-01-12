@@ -1,23 +1,37 @@
 <?php
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage setup
+ *
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5048 $
+ * $Id: class.versioninfo.inc 5048 2008-06-23 20:50:33Z sandy $
+ */
+
 
   /**
    * Node for keeping track of moduleversions.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   *
-   * @version $Revision: 1.1 $
-   *
-   * $Id: class.versioninfo.inc,v 1.1 2003/01/30 22:49:27 ivo Exp $
+   * @package achievo
+   * @subpackage setup
    */
   class versioninfo extends atkNode
   {
     function versioninfo()
     {
       $this->atkNode("versioninfo", NF_READONLY);
-      
+
       $this->add(new atkAttribute("module" , AF_PRIMARY, 50));
       $this->add(new atkAttribute("version", 0, 15));
-      
+
       $this->setTable("versioninfo");
     }
   }

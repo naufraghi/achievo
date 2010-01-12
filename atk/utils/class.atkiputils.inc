@@ -10,8 +10,8 @@
    * @copyright (c) 2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing/ ATK open source license
    *
-   * @version $Revision: 1.3 $
-   * $Id: class.atkiputils.inc,v 1.3 2007/03/19 10:08:34 guido Exp $
+   * @version $Revision: 4767 $
+   * $Id: class.atkiputils.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

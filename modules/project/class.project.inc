@@ -35,20 +35,21 @@
       $this->add(new atkNumberAttribute("id",AF_AUTOKEY));
 
       $this->add(new atkAttribute("abbreviation", AF_SEARCHABLE|AF_UNIQUE, 10));
-      $this->add(new atkAttribute("name",AF_UNIQUE|AF_OBLIGATORY|AF_SEARCHABLE, 200));
+      $this->add(new atkAttribute("name",AF_UNIQUE|AF_OBLIGATORY|AF_SEARCHABLE, array(200,75,50)));
 
       $this->add(new atkManyToOneRelation("project_category","project.project_category",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));
-      
-      $attr = &$this->add(new atkManyToOneRelation("coordinator","employee.employee",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));
+
+      $attr = &$this->add(new atkManyToOneRelation("coordinator","employee.employeeselector",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));
       $attr->setDestinationFilter("person.status='active'");
-      
-      $p_attr = &$this->add(new atkManyToOneRelation("master_project","project.project",AF_RELATION_AUTOCOMPLETE|AF_HIDE_LIST|AF_HIDE_ADD));
+      $attr->setAutoLinkDestination('employee.employee');
+
+      $p_attr = &$this->add(new atkManyToOneRelation("master_project","project.projectselector",AF_RELATION_AUTOCOMPLETE|AF_HIDE_LIST|AF_HIDE_ADD));
       $p_attr->addDestinationFilter("project.id<>[id] AND (project.master_project=0 OR project.master_project IS NULL)");
 
       $this->add(new atkManyToOneRelation("contract_id","organization.contracts",AF_HIDE_ADD|AF_HIDE_LIST));
       $this->add(new atkTextAttribute("description",TEXT_LARGE, AF_HIDE_LIST|AF_HIDE_ADD));
       $this->add(new atkAttribute("quotation_number", AF_HIDE_LIST|AF_HIDE_ADD));
-      $this->add(new atkNumberAttribute("fixed_price",AF_HIDE_LIST|AF_HIDE_ADD, 13, 2), "finance");
+      $this->add(new atkCurrencyAttribute("fixed_price",AF_HIDE_LIST|AF_HIDE_ADD, 13,"", 2), "finance");
 
       // If we are in project administration mode, we show all projects. Otherwise, we only
       // show active projects.
@@ -66,7 +67,7 @@
       	$this->add(new atkListAttribute("status",array("active","nonactive","archived"),array(),AF_HIDE|AF_LIST_NO_NULL_ITEM, 15));
         $this->addFilter("project.status='active'");
       }
-      if (($ATK_VARS['atkaction'] == "edit" || $ATK_VARS['atkaction'] == "update") && atkconfig("project_contact_obligatory"))
+      if (($ATK_VARS['atkaction'] == "edit" || $ATK_VARS['atkaction'] == "update") && atkconfig::get("project","project_contact_obligatory"))
       {
         $flags = AF_OBLIGATORY;
       }
@@ -76,7 +77,8 @@
       }
 
       // Add the organization relation
-      $this->add(new atkManyToOneRelation("customer", "organization.organization", AF_HIDE_LIST|AF_RELATION_AUTOLINK|AF_HIDE_ADD|AF_SEARCHABLE|AF_FORCE_LOAD), "", 500);
+      $this->add(new atkManyToOneRelation("customer", "organization.organizationselector", AF_HIDE_LIST|AF_RELATION_AUTOLINK|AF_HIDE_ADD|AF_SEARCHABLE|AF_FORCE_LOAD), "", 500)
+                 ->setAutoLinkDestination('organization.organization');
 
       $this->add(new atkOneToManyRelation("contacts","project.project_personcontact", "projectid", AF_HIDE_LIST|AF_CASCADE_DELETE|AF_HIDE_ADD|$flags));
 
@@ -103,7 +105,8 @@
       //$this->add($tmp, $tab);
 
       //all phases (including manyally added ones) are shown in this relation.
-      $this->add(new atkOneToManyRelation("phase","project.phase","projectid",AF_HIDE_LIST|AF_CASCADE_DELETE),"planning");
+      $p_attr = &$this->add(new atkOneToManyRelation("phase","project.phase","projectid",AF_HIDE_LIST|AF_CASCADE_DELETE),"planning");
+      $p_attr->setHeader("phaseLink");
 
       $this->add(new dependencyAttribute("dependencies",AF_HIDE_ADD|AF_HIDE_LIST|AF_BLANKLABEL|AF_HIDE_VIEW), "planning");
       $this->add(new projecttemplateAttribute("template","project.tpl_project", AF_HIDE_LIST|AF_HIDE_EDIT|AF_FORCE_LOAD|AF_HIDE_SEARCH|AF_HIDE_VIEW));
@@ -128,6 +131,7 @@
 
       $this->setOrder("project.abbreviation, project.name");
       $this->setIndex("name");
+      $this->setDescriptorTemplate('[abbreviation] [name]');
     }
 
     function graph_topprojects($params)
@@ -199,29 +203,35 @@
       return true;
     }
 
-    function getInitialProjectcode()
+    function getInitialProjectcode($record)
     {
-      return "";
-    }
-
-    function initial_values()
-    {
-      $projectnumbermodule = atkConfig('projectnumbermodule');
+      $projectnumbermodule = atkConfig::get("project", "projectcode_module", atkConfig('projectnumbermodule'));
       if (!empty($projectnumbermodule))
       {
         atkdebug("Getting alternative project code.");
-        $numberingmodule = &getModule($projectnumbermodule);
-        $initialprojectcode = $numberingmodule->getInitialProjectcode();
+        return getModule($projectnumbermodule)->getInitialProjectcode($record);
       }
       else
       {
         atkdebug("Getting projectcode.");
-        $initialprojectcode = $this->getInitialProjectcode();
+        $template = atkConfig::get("project", "projectcode_prefix", "");
+        $parser = new atkStringParser($template);
+        $projectcode = $parser->parse($record);
+        if (atkConfig::get("project", "projectcode_autonumber", false))
+        {
+          $result = $this->getDb()->getrows("SELECT abbreviation FROM project WHERE abbreviation LIKE '$prefix%' ORDER BY abbreviation DESC LIMIT 1");
+          $number = count($result) ? ((int)atk_substr($result[0]["abbreviation"], strlen($prefix)))+1 : 1;
+          $digits = atkConfig::get("project", "projectcode_autonumberdigits", 1);
+          $projectcode .= sprintf("%0".$digits."d", $number);
+        }
+        return $projectcode;
       }
-      
+    }
+
+    function initial_values()
+    {
       $nextyear = strtotime("+1 year");
-      return array("abbreviation" => $initialprojectcode,
-                   "startdate"=>array("year"=>date("Y"),
+      $rec = array("startdate"=>array("year"=>date("Y"),
                                       "month"=>date("m"),
                                       "day"=>date("d")),
                    "enddate"=>array("year"=>(date("Y",$nextyear)),
@@ -230,6 +240,8 @@
                    "timereg_limit"=>PRJ_TIMEREG_MEMBERS_ONLY,
                    "status"=>"active",
                    "coordinator"=>getUser());
+      $rec["abbreviation"] = $this->getInitialProjectcode($rec);
+      return $rec;
     }
 
     /**
@@ -318,8 +330,8 @@
     {
       $this->handleTemplateMatrix($rec);
 
-      $skel = atkconfig('project_dir_skel');
-      $dest = atkconfig('project_dir_destination');
+      $skel = atkconfig::get("project",'project_dir_skel');
+      $dest = atkconfig::get("project",'project_dir_destination');
 
     	if ($skel != '' && $dest != '' && is_dir($skel))
     	{
@@ -338,7 +350,7 @@
     	    $succes = true;
     	  }
 
-    	  $dirname = atkFileUtils::parseDirectoryName(atkconfig('project_dir_name_template'), $rec);
+    	  $dirname = atkFileUtils::parseDirectoryName(atkconfig::get("project",'project_dir_name_template'), $rec);
 
     	  if (atkFileUtils::copyDirRecursive($skel, $dest, $dirname) && $succes)
     	  {
@@ -348,7 +360,7 @@
 
     	    $body = sprintf(atktext("project_body"), $rec['abbreviation'], getcwd()."/".$dest."/".$dirname);
 
-    	    switch (atkconfig("project_formatmail"))
+    	    switch (atkconfig::get("project","project_formatmail",'htmlplain'))
     	    {
     	      default:
     	        break;
@@ -363,12 +375,12 @@
     	        break;
     	    }
 
-    	    $mailer->From = atkconfig("mail_sender", "achievo");
-    	    $mailer->AddAddress(atkconfig("project_sendto"));
+    	    $mailer->From = atkconfig::get("project","mail_sender", "achievo");
+    	    $mailer->AddAddress(atkconfig::get("project","project_sendto"));
     	    $mailer->Subject = atktext("project_subject").$rec['abbreviation'];
     	    $mailer->Body = $body;
     	    $mailer->Send();
-    	    atkdebug("Mail send to ".atkconfig("project_sendto")."?");
+    	    atkdebug("Mail send to ".atkconfig::get("project","project_sendto")."?");
     	  }
     	  else
     	    atkerror("No write permisson on destination: ".$dest);
@@ -388,11 +400,6 @@
       // Therefore NF_DELETED_FLAG should be realised for hours, projects and
       // employees.
       return true;
-    }
-
-    function fixed_price_edit($rec)
-    {
-      return $this->m_attribList["fixed_price"]->edit($rec)." ".atkconfig("currency_symbol");
     }
 
     function graph_phasetime($params, $raw=false)
@@ -613,8 +620,8 @@
       {
         // output nice monthnames
         $months = array("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct",  "nov", "dec");
-        $shortyear = substr($label, 2, 2);
-        $month = sprintf("%d", substr($label, 4, 2));
+        $shortyear = atk_substr($label, 2, 2);
+        $month = sprintf("%d", atk_substr($label, 4, 2));
         return atktext($months[$month-1])." '".$shortyear;
       }
       else
@@ -676,15 +683,15 @@
     /**
      * Are we in 'active' emps or 'archive' mode?
      */
-    function getView()
+    function getView($varname)
     {
-      global $g_sessionManager;
-      $view = $g_sessionManager->stackVar("view");
-      if ($view=="")
+      $sessionManager = &atkGetSessionManager();
+      $value = $sessionManager->stackVar($varname);
+      if ($value=="")
       {
-        $view = "active";
+        $value = "active";
       }
-      return $view;
+      return $value;
     }
 
     /**
@@ -696,13 +703,14 @@
      */
     function action_select(&$handler)
     {
-    	if (!$this->allowed("any_project"))
+    	if (!$this->_checkAnyProjectRight())
       {
 		  	$pids = implode(",", $this->get_user_projects());
-        if(!empty($pids))
-          $this->addFilter("project.id IN ($pids) OR project.timereg_limit = ".PRJ_TIMEREG_ALL_USERS);
+        $filter = "project.coordinator='".atkGetUserId()."' OR project.timereg_limit = ".PRJ_TIMEREG_ALL_USERS;
+		  	if(!empty($pids))
+          $this->addFilter($filter." OR project.id IN ($pids)");
         else
-          $this->addFilter("project.timereg_limit = ".PRJ_TIMEREG_ALL_USERS);
+          $this->addFilter($filter);
       }
       return $handler->action_select();
     }
@@ -730,7 +738,7 @@
 
     function action_admin(&$handler, $record=null)
     {
-      $view = $this->getView();
+      $view = $this->getView("view");
       if ($view=="active")
       {
         $this->addFilter("project.status","active");
@@ -739,7 +747,6 @@
       {
         $this->addFilter("project.status<>'active'");
       }
-
 
       // Access control
       if (!$this->allowed("any_project"))
@@ -777,7 +784,7 @@
 
     function adminFooter()
     {
-      $view = $this->getView();
+      $view = $this->getView("view");
 
       if ($view=="active")
       {
@@ -931,18 +938,26 @@
 
       $db->query($query);
     }
-    
+
+    /**
+     * If the current project is a master project, make it impossible to
+     * set a master project for this project by hiding the master_project
+     * field.
+     *
+     * @param Integer $id The project Id
+     */
     function _hideMasterProject($id)
     {
-      $rows = &$this->selectDb("project.master_project='$id'","","","",array('id'));
-      
+      $node = &newNode($this->atkNodeType());
+      $rows = &$node->selectDb("project.master_project='$id'","","","",array('id'));
+
       if(count($rows)>0)
       {
         $p_attr = &$this->getAttribute("master_project");
         $p_attr->addFlag(AF_HIDE);
       }
     }
-    
+
     function editPage(&$handler, $record, $locked=FALSE)
     {
       $this->_hideMasterProject($record['id']);
@@ -954,6 +969,86 @@
       $this->_hideMasterProject($record['id']);
       return $handler->viewPage($record, $locked);
     }
+
+    function _checkAnyProjectRight()
+    {
+      $sessionManager = &atkGetSessionManager();
+      $session = &atkSessionManager::getSession();
+      $prevlevel = atkPrevLevel() - ($this->isPartial() ? 1 : 0);
+      $session_prev = $session[$sessionManager->getNameSpace()]["stack"][atkStackID()][$prevlevel];
+      $prevnode = atkArrayNvl($session_prev,"atknodetype");
+      if(($prevnode == 'timereg.hours') || ($prevnode == 'reports.hoursurvey'))
+      {
+        //if we come from timereg or hoursurvey screen - check timereg right
+        $securityManager = &atkGetSecurityManager();
+        return $securityManager->allowed("timereg.hours", "any_project");
+      }
+      else return $this->allowed("any_project");
+    }
+
+    function phaseLink($record, $childrecords, $p_attr)
+    {
+      $page = $this->getPage();
+      $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkattribute.js');
+
+      $status = $this->getView("state");
+
+      if($status == 'active')
+      {
+        $url = addslashes(partial_url($this->atkNodeType(), "edit", "attribute.phase.refresh", array("state"=>"nonactive")));
+        $text = atktext("show_nonactive_phases");
+
+        $url1 = addslashes(partial_url($this->atkNodeType(), "edit", "attribute.phase.refresh", array("state"=>"all")));
+        $text1 = atktext("show_all_phases");
+      }
+      elseif($status == "nonactive")
+      {
+        $url = addslashes(partial_url($this->atkNodeType(), "edit", "attribute.phase.refresh", array("state"=>"active")));
+        $text = atktext("show_active_phases");
+
+        $url1 = addslashes(partial_url($this->atkNodeType(), "edit", "attribute.phase.refresh", array("state"=>"all")));
+        $text1 = atktext("show_all_phases");
+      }
+      else
+      {
+        $url = addslashes(partial_url($this->atkNodeType(), "edit", "attribute.phase.refresh", array("state"=>"nonactive")));
+        $text = atktext("show_nonactive_phases");
+
+        $url1 = addslashes(partial_url($this->atkNodeType(), "edit", "attribute.phase.refresh", array("state"=>"active")));
+        $text1 = atktext("show_active_phases");
+
+      }
+
+      $code = "ATK.Attribute.refresh('$url');";
+      $code1 = "ATK.Attribute.refresh('$url1');";
+
+      $link = '<a href="javascript:'.$code.'">'.$text.'</a>';
+      $link1 = '<a href="javascript:'.$code1.'">'.$text1.'</a>';
+      return $link." ".$link1;
+    }
+
+    function phase_edit($record, $fieldprefix, $mode)
+    {
+      $status = $this->getView("state");
+      $p_attr = &$this->getAttribute("phase");
+      if ($status == "active")
+      {
+        $p_attr->addDestinationFilter("phase.status='active'");
+      }
+      elseif($status == "nonactive")
+      {
+        $p_attr->addDestinationFilter("phase.status='nonactive'");
+      }
+      else
+      {
+        $p_attr->setDestinationFilter("");
+      }
+      $p_attr->setUseFilterForAddLink(false);
+      $p_attr->setUseFilterForEditLink(false);
+      return $p_attr->edit($record, $fieldprefix, $mode);
+    }
+
+
   }
 
 ?>

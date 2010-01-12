@@ -11,8 +11,8 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.7 $_COOKIE
-   * $id$
+   * @version $Revision: 6305 $
+   * $Id: class.atktagattribute.inc 6410 2009-06-25 20:36:10Z sandy $
    */
 
   /**
@@ -29,7 +29,9 @@
   atkimport("atk.attributes.atktextattribute");
 
   /**
-   * ...
+   * This attribute is used for adding tags to a node
+   * For example: This attribute can be used in a blog node
+   * for adding tags to the blogpost.
    *
    * @author Dennis Luitwieler <dennis@ibuildings.nl>
    * @package atk
@@ -46,11 +48,20 @@
     var $m_localKey = "";
     var $m_nonematching = array();
 
+    /**
+     * Constructor
+     *
+     * @param string $name
+     * @param string $destination
+     * @param string $destinationfield
+     * @param string $link
+     * @param int $mode
+     * @param int $flags
+     * @param int $size
+     * @return atkTagAttribute
+     */
     function atkTagAttribute($name, $destination, $destinationfield ,$link, $mode=TA_ADD, $flags=0, $size=0)
     {
-      $page = &atkinstance('atk.ui.atkpage');
-      $page->register_script(atkconfig("atkroot")."atk/javascript/class.atktagattribute.js");
-
       if ($size==0)
       {
         $size = $this->maxInputSize();
@@ -67,10 +78,24 @@
       /** @todo: add validation if flag OBLIGATORY is set. */
       /** @todo: add setDestinationFilter */
     }
+    
+    /**
+     * Fetch value.
+     * 
+     * @param array $vars post vars
+     * 
+     * @return string fetched value
+     */
+    public function fetchValue($vars)
+    {
+      $value = parent::fetchValue($vars);
+      return trim($value, ' ,');
+    }
 
     /**
      * Creates an instance of the node we are searching on and stores it
      * in a member variable ($this->m_destInstance)
+     * @return bool True if successful, false if not.
      */
     function createDestinationInstance()
     {
@@ -100,34 +125,68 @@
     }
 
 
+    /**
+     * Validate the input based on the current mode.
+     *
+     * @param Array $rec The record which holds the values to validate
+     * @param String $mode The mode we're in
+     * @return True on validation, False otherwise.
+     */
     function validate(&$rec, $mode)
     {
-      if (is_array($rec[$this->fieldName()]))
-      {
-        // Coming from selectscreen, no search necessary anymore.
-      }
-      else
-      {
-        $this->m_matches = $this->getMatches($rec[$this->fieldName()]);
+      $valid = true;
+      
+      // If coming from selectscreen, no search necessary anymore.
+      if (is_array($rec[$this->fieldName()]))      
+        return true;      
+      
+      $this->m_matches = $this->getMatches($rec[$this->fieldName()]);
+      $this->m_nonematching = $this->getNoneMatching();
 
-        if($this->m_mode == TA_ERROR)
+      foreach ($this->m_nonematching as $keyword)
+      {
+        if ($this->m_mode == TA_ERROR)
         {
-          foreach($this->m_matches as $keyword=>$res)
-          {
-            if (!count($res))
-            {
-              triggerError($rec,$this->fieldName(),"notallowed_new_defaulttag",sprintf($this->text("notallowed_new_defaulttag"),$keyword));
-              $this->m_nonematching[] = $keyword;
-            }
-          }
+          atkTriggerError($rec,$this,"notallowed_new_defaulttag",sprintf($this->text("notallowed_new_defaulttag"),$keyword));
+          $valid = false;
+        }
+        elseif($this->m_mode == TA_ADD && !$this->isValidKeyWord($keyword))
+        {
+          atkTriggerError($rec, $this, 'error_tag_illegalvalue', sprintf($this->text('error_tag_illegalvalue'), $keyword));
+          $valid = false;
         }
       }
-      return !count($this->m_nonematching);
+    
+      return $valid;
+    }
+    
+    /**
+     * A keyword field may not contain HTML or linefeeds
+     *     
+     * @param String $keyword
+     */
+    function isValidKeyWord($keyword)
+    {
+      $replaced = strip_tags(str_replace("\n",'', str_replace("\r\n",'',$keyword)));      
+      return (atk_strlen($keyword) == atk_strlen($replaced));    
     }
 
+    /**
+     * Returns a piece of html code that can be used in a form to edit this
+     * attribute's value.
+     *
+     * @param array $rec The record that holds the value for this attribute.
+     * @param String $prefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
+     * @return String A piece of htmlcode for editing this attribute
+     */
     function edit($rec="", $prefix="", $mode="")
     {
       atkdebug("edit of attribute '$this->fieldName()'");
+      
+      $page = &atkinstance('atk.ui.atkpage');
+      $page->register_script(atkconfig("atkroot")."atk/javascript/class.atktagattribute.js");
 
       if ($this->createDestinationInstance())
       {
@@ -147,6 +206,12 @@
       }
     }
 
+    /**
+     * Display default tags
+     *
+     * @param string $prefix
+     * @return string The HTML code to display the default tags
+     */
     function displayDefaultTags($prefix='')
     {
       $id = $this->getHtmlid($prefix);
@@ -179,6 +244,12 @@
       return $html;
     }
 
+    /**
+     * Refill record
+     *
+     * @param array $orgrec
+     * @return string
+     */
     function refillRecord($orgrec)
     {
       if(!$this->createLink())
@@ -220,12 +291,18 @@
     {
       if (is_array($record[$this->fieldName()]))
       {
-        return $html.$this->arrayToString($record[$this->fieldName()]);
+        return $this->arrayToString($record[$this->fieldName()]);
       }
 
-      return $html.nl2br(htmlspecialchars($record[$this->fieldName()]));
+      return nl2br(htmlspecialchars($record[$this->fieldName()]));
     }
 
+    /**
+     * Convert array to string
+     *
+     * @param array $array The array to convert
+     * @return string String representation of the array
+     */
     function arrayToString($array)
     {
       $values=array();
@@ -235,6 +312,7 @@
       }
       return implode(", ",$values);
     }
+    
     /**
      * The actual function that does the searching
      * @param String $searchstring The string to search for
@@ -253,14 +331,49 @@
           $token = trim($token);
           if($token!="")
           {
-            $selector = $this->m_destInstance->m_table.".".$this->m_destinationfield."='".escapeSQL($token)."'";
-            $result[$token] = $this->m_destInstance->selectDb($selector);
+            $result[$token] = $this->getDestinationRecords($token);            
           }
         }
       }
       return $result;
     }
+    
+    /**
+     * Get destination records
+     *
+     * @param mixed $token The value of the destinationfield to select
+     * @return array Array with records that match the token
+     */
+    function getDestinationRecords($token)
+    {
+      $selector = $this->m_destInstance->m_table.".".$this->m_destinationfield."='".escapeSQL($token)."'";
+      return $this->m_destInstance->selectDb($selector);
+    }
+    
+    /**
+     * Get the keywords that did not match. 
+     *
+     * @return array
+     */
+    function getNoneMatching()
+    {      
+      $no_match = array();
+      
+      //loop through all the matches for each keyword
+      foreach($this->m_matches as $keyword=>$matches)
+      {
+        $cnt_matches = count($matches);
+        //We remember the none-matching ones.
+        if(!$cnt_matches) $no_match[] = $keyword;
+      }
+      return $no_match;
+    }
 
+    /**
+     * Get default tags from the database
+     *
+     * @return array Array with default tag records
+     */
     function _getDefaultTags()
     {
       if($this->createDestinationInstance())
@@ -270,6 +383,14 @@
       return array();
     }
 
+    /**
+     * Store the value of this attribute
+     *
+     * @param atkDb $db The database object
+     * @param array $rec The record to store
+     * @param string $mode The mode we're in
+     * @return bool True if succesfull, false if not
+     */
     function store($db, $rec, $mode)
     {
       $resultset = array();
@@ -323,9 +444,10 @@
         foreach($no_match as $keyword)
         {
           $defaultsRec[$this->m_destinationfield] = $keyword;
-
+          
+          
           //if one keyword could not be added, stop adding them.
-          if(!$this->m_destInstance->addDb($defaultsRec))
+          if(!$this->m_destInstance->validate($defaultsRec, 'add') || !$this->m_destInstance->addDb($defaultsRec))
           {
             atkdebug("could not add default keyword");
             return false;
@@ -343,7 +465,6 @@
       }
 
       /** we only support a primary key of one field */
-
       //store matches
       foreach($resultset as $res)
       {
@@ -377,12 +498,12 @@
       }
 
       return true;
-    }
-
+    }   
+    
     /**
      * load function
-     * @param $notused
-     * @param $record
+     * @param atkDb $notused
+     * @param array $record
      */
     function load($notused, $record)
     {
@@ -394,14 +515,58 @@
       return array();
     }
 
+    /**
+     * Dummy implementation
+     *
+     */
     function addToQuery() {}
+    
+    /**
+     * Dummy implementation
+     *
+     */
     function hide() {}
+    
+    /**
+     * Dummy implementation
+     *
+     */
     function search() {}
+    
+    /**
+     * Dummy implementation
+     *
+     */
     function getSearchModes() { return array();}
+    
+    /**
+     * Dummy implementation
+     *
+     */
     function searchCondition() {}
+    
+    /**
+     * Dummy implementation
+     *
+     */
     function getSearchCondition() {}
+    
+    /**
+     * Dummy implementation
+     *
+     */
     function fetchMeta() {}
+    
+    /**
+     * Dummy implementation
+     *
+     */
     function dbFieldSize() {}
+    
+    /**
+     * Dummy implementation
+     *
+     */
     function dbFieldType() {}
 
     /**
@@ -506,9 +671,9 @@
 
     /**
      * Checks if a key is not an array
-     * @param $key   field containing the key values
-     * @param $field field to return if an array
-     * @return value of $field
+     * @param array $key   field containing the key values
+     * @param string $field field to return if an array
+     * @return mixed value of $field
      */
     function checkKeyDimension($key, $field="id")
     {
@@ -519,5 +684,3 @@
       return $key;
     }
   }
-
-?>

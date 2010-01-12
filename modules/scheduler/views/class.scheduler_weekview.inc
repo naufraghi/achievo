@@ -1,6 +1,30 @@
 <?php
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage scheduler
+ *
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5462 $
+ * $Id: class.scheduler_weekview.inc 5462 2009-02-22 22:58:43Z sandy $
+ */
+
 atkimport("modules.scheduler.views.scheduler_view");
 
+/**
+ * scheduler week view
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage scheduler
+ * @since 1.3.0
+ */
 class scheduler_weekview extends scheduler_view
 {
   var $m_weekdates = array();
@@ -26,14 +50,15 @@ class scheduler_weekview extends scheduler_view
 
     $currentUrl = atkSelf()."?view=week&viewdate=".date("Y-m-d");
 
-    atkimport("modules.scheduler.utils.weeknumber");
+		atkimport('modules.utils.dateutil');
     $weeknumberFull = $this->m_model->getWeekNumber($this->m_model->getDay(),$this->m_model->getMonth(),$this->m_model->getYear(),true);
-    $this->m_weeknumber = $weeknumberFull["weeknumber"];
+    $this->m_weeknumber = $this->m_model->getWeekNumber($this->m_model->getDay(),$this->m_model->getMonth(),$this->m_model->getYear());
     $this->m_viewTitle = "<b>";
-    if($this->m_userPrefs["showweeknumbers"]==true) $this->m_viewTitle.= atktext("week")."&nbsp;".$this->m_weeknumber.", ";
-    $this->m_viewTitle.= date("d-m-Y",$weeknumberFull["firstweekstart"])." - ".date("d-m-Y",$weeknumberFull["firstweekend"])."</b>";
-
-    return href($prevUrl, $prevImg)."&nbsp;".href($nextUrl, $nextImg)."&nbsp;".href($currentUrl,atktext("currentweek",'scheduler'));
+    if(dateutil::isISO8601()) $this->m_viewTitle.= atktext("week")."&nbsp;".$this->m_weeknumber.", ";
+		$this->m_viewTitle.= dateutil::stamp2str($this->m_weekdates[1]['stamp'],atktext('date_format_view')). ' - '.
+		                     dateutil::stamp2str($this->m_weekdates[7]['stamp'],atktext('date_format_view')).'</b>';
+		
+    return href($prevUrl, $prevImg)."&nbsp;".href($nextUrl, $nextImg)."&nbsp;".href($currentUrl,atktext("currentweek","scheduler"));
 
   }
   /**
@@ -71,7 +96,7 @@ class scheduler_weekview extends scheduler_view
     $weekday = array();
     $alldayItems = $this->m_model->getAlldayItems();
     $appointmentItems = $this->m_model->getAppointmentItems();
-    
+
     for ($i=1;$i<=7;$i++)
     {
       $text  = atktext($this->m_weekdates[$i]["day"])." (".substr($this->m_weekdates[$i]["date"],8,2)."-".substr($this->m_weekdates[$i]["date"],5,2).")";
@@ -152,6 +177,8 @@ class scheduler_weekview extends scheduler_view
 
 
               </table>
+              <br>
+              '.$this->m_model->renderLegend().'
               </td>
               <td width=150 valign="top">';
     $buff.=$this->m_model->_getSmallCalendar(substr($this->m_model->m_small_viewdate,8,2),substr($this->m_model->m_small_viewdate,5,2),substr($this->m_model->m_small_viewdate,0,4));
@@ -165,7 +192,7 @@ class scheduler_weekview extends scheduler_view
              </tr>
              </table>
              <br><br>
-             '.$this->m_model->renderLegend();
+             ';
 
 
     return $buff;
@@ -177,38 +204,12 @@ class scheduler_weekview extends scheduler_view
   */
   function _render()
   {
-    if ($this->m_model->m_viewdate!="")
-    {
-      $viewtime = mktime(12,12,0,$this->m_model->getMonth(),$this->m_model->getDay(),$this->m_model->getYear());
-    }
-    else
+    if (empty($this->m_model->m_viewdate))
     {
       $this->m_model->m_viewdate = date("Y-m-d");
-      $viewtime = time();
     }
-    $weekday  = strftime("%w",$viewtime);
-
-    //if ($weekday==0) $weekday=7;
-    $weeknumberFull = $this->m_model->getWeekNumber($this->m_model->getDay(),$this->m_model->getMonth(),$this->m_model->getYear(),true);
-    $startdate = $weeknumberFull["firstweekstart"];
-    $enddate = $weeknumberFull["firstweekend"];
-    
-    for ($i=0; $i<=6;$i++)
-    {
-      $this->m_weekdates[$i+1]['date']  = date("Y-m-d" ,$startdate+(86400*$i));
-      $this->m_weekdates[$i+1]['day']   = strtolower(date("D" ,$startdate+(86400*$i)));
-      $this->m_weekdates[$i+1]['stamp'] = $startdate+(86400*$i);
-    }
-    // Add 0 and 8 for navigation
-    $this->m_weekdates[0]['date']  = date("Y-m-d" ,$startdate-86400);
-    $this->m_weekdates[0]['day']   = strtolower(date("D" ,$startdate-86400));
-    $this->m_weekdates[0]['stamp'] = $startdate-86400;
-    $this->m_weekdates[8]['date']  = date("Y-m-d" ,$enddate+86400);
-    $this->m_weekdates[8]['day']   = strtolower(date("D" ,$enddate+86400));
-    $this->m_weekdates[8]['stamp'] = $enddatee+86400;
-    
-    
-    atk_var_dump($this->m_weekdates,"WEEK DATES");
+		atkimport("module.timereg.timeregutils");
+    $this->m_weekdates = TimeregUtils::getWeekDates($this->m_model->m_viewdate,false);		
     $this->m_model->getItems($this->m_weekdates[1]['date'],$this->m_weekdates[7]['date']);
 
     // get scheduler Legend and Item colors

@@ -60,7 +60,11 @@ class atkDGLimit extends atkDGComponent
       $options[] = array('title' => $value, 'value' => $value, 'current' => $current);
     }   
     
-    $options[] = array('title' => $this->text('all'), 'value' => -1, 'current' => $limit == -1);
+    //Add 'show all' option.
+    if ($this->getOption('showAll', false))
+    {
+      $options[] = array('title' => $this->text('all'), 'value' => -1, 'current' => $limit == -1);
+    }
     
     return $options;
   }    
@@ -74,7 +78,7 @@ class atkDGLimit extends atkDGComponent
   {
     $values = $this->getValues();
     
-    if ($this->getGrid()->getCount() <= $values[0])
+    if ($this->getGrid()->getCount() <= $values[0] || $this->getGrid()->isEditing())
     {
       return '';
     }

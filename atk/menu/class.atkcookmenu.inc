@@ -11,8 +11,8 @@
    * @copyright (c)2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.4 $
-   * $Id: class.atkcookmenu.inc,v 5.4 2007/08/30 00:01:39 ivo Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkcookmenu.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -32,7 +32,21 @@
    */
   class atkcookmenu extends atkModernMenu
   {
+    /**
+     * Constructor
+     *
+     * @return atkcookmenu
+     */
+    function atkcookmenu()
+    {
+      $this->m_height = "22";
+    }   
 
+    /**
+     * Get the menu
+     *
+     * @return string The menu
+     */
     function getMenu()
     {
       global $g_menu;
@@ -72,6 +86,12 @@
 
     }
 
+    /**
+     * Get the javascript menu items
+     *
+     * @param array $menuitems
+     * @param string $menu_javascript
+     */
     function getJavascriptMenuItems($menuitems,&$menu_javascript)
     {
       foreach($menuitems as $item)

@@ -12,8 +12,8 @@
    * @access private
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.1 $
-   * $Id: class.test_atkurlvault.inc,v 1.1 2007/08/29 18:23:10 ivo Exp $
+   * @version $Revision: 5212 $
+   * $Id: class.test_atkurlvault.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

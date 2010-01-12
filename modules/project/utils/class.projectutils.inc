@@ -26,9 +26,16 @@
      */
     function getActivityCount()
     {
-      $db = &atkGetDb();
-      $result = $db->getrows("SELECT count(*) as activitycount FROM activity");
-      return $result[0]['activitycount'];
+      $cache = atkcache::getInstance();
+      $activityCount = $cache->get('activityCount');
+      if(!$activityCount)
+      {
+        $db = &atkGetDb();
+        $result = $db->getrows("SELECT count(id) as activitycount FROM activity");
+        $cache->set('activityCount',$result[0]['activitycount'],DAY);
+        $activityCount = $result[0]['activitycount'];
+      }
+      return $activityCount;
     }
   }
 ?>

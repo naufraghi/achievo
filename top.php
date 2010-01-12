@@ -18,8 +18,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 4.41 $
-   * $Id: top.php,v 4.41 2007/04/10 20:52:02 sandy Exp $
+   * @version $Revision: 5389 $
+   * $Id: top.php 5389 2008-12-07 22:37:47Z sandy $
    */
 
   /**
@@ -34,7 +34,8 @@
 
   require("theme.inc");
 
-  $page = &atknew("atk.ui.atkpage");
+  $page = &atkinstance("atk.ui.atkpage");
+  $page->unregister_all_scripts();
   $ui = &atkinstance("atk.ui.atkui");
   $theme = &atkTheme::getInstance();
   $output = &atkOutput::getInstance();
@@ -66,7 +67,7 @@
                               "centerpiece_links" => $centerpiecelinks,
                               "searchpiece" => $searchpiece,
                               "title" => $title,
-                              "user" => $g_user["name"],
+                              "user" => $username,
                               "username"=>$username,
                         ),
                         "top");

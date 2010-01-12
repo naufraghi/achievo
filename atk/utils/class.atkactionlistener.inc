@@ -12,8 +12,8 @@
    * @copyright (c)2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.4 $
-   * $Id: class.atkactionlistener.inc,v 1.4 2006/09/19 09:04:00 patrick Exp $
+   * @version $Revision: 4122 $
+   * $Id: class.atkactionlistener.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

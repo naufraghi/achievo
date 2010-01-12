@@ -1,19 +1,19 @@
 <?php
   /**
-   * Node file for the document class
+   * This file is part of the Achievo distribution.
+   * Detailed copyright and licensing information can be found
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
+   * included in the distribution.
+   * projecttpl_doctype node class file
    *
-   * @package achievo_modules
+   * @package achievo
    * @subpackage docmanager
    *
-   * @author lineke <lineke@ibuildings.nl>
-   * @author ivo <ivo@ibuildings.nl>
-   * @author guido <guido@ibuildings.nl>
+   * @copyright (c)2008 Ibuildings B.V.
+   * @license http://www.achievo.org/licensing Achievo Open Source License
    *
-   * @copyright (c) 2005 Ibuildings.nl BV
-   * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
-   *
-   * @version $Revision: 1.2 $
-   * $Id: class.document.inc,v 1.2 2007/04/30 20:54:43 sandy Exp $
+   * @version $Revision: 5078 $
+   * $Id: class.document.inc 5078 2008-06-30 21:22:57Z sandy $
    */
 
   // Load used files and attribute classes
@@ -48,7 +48,7 @@
       $this->add(new atkAttribute("id", AF_AUTOKEY));
       $this->add(new atkAttribute("documentcode", AF_UNIQUE));
       $this->add(new atkAttribute("name", AF_OBLIGATORY));
-      $this->add(new documentFileAttribute("filename",atkconfig("documentpath", "documents/"),atkconfig("docmanager_localdocumentpath"),true,AF_FILE_POPUP|AF_OBLIGATORY));
+      $this->add(new documentFileAttribute("filename",atkconfig::get("docmanager","documentpath", "documents/"),atkconfig::get("docmanager","docmanager_localdocumentpath"),true,AF_FILE_POPUP|AF_OBLIGATORY));
       $this->add(new atkAttribute("owner",AF_READONLY|AF_HIDE_ADD|AF_HIDE_EDIT));
       $this->add(new atkAttribute("master", AF_HIDE|AF_FORCE_LOAD));
       $this->add(new atkNumberAttribute("master_id", AF_HIDE|AF_FORCE_LOAD));
@@ -90,6 +90,11 @@
              );
     }
 
+    /**
+     * Create filename for documents
+     *
+     * @return string
+     */
     function getInitialDocumentcode()
     {
       // Document initial filename generator module
@@ -191,7 +196,7 @@
 
       $tempfilename = isset($this->m_postvars["filename"]) ? $this->m_postvars["filename"] : $this->getFilenameForGeneratedFile($documenttype, $record);
 
-      if (((!isset($this->m_postvars["filename"])) && (atkConfig::get("docmanager", "documentgenerateaskfilename", true))) || (file_exists(atkconfig("documentpath", "documents/") . $tempfilename)))
+      if (((!isset($this->m_postvars["filename"])) && (atkConfig::get("docmanager", "documentgenerateaskfilename", true))) || (file_exists(atkconfig::get("docmanager","documentpath", "documents/") . $tempfilename)))
       {
 
         $theme = &atkTheme::getInstance();
@@ -216,7 +221,7 @@
         $content.= session_form();
         $content.= '<table name="entryform" id="entryform" cellspacing="0">';
         $content.= '<tr><td colspan="2" class="fieldlabel"><b>' . atktext("give_new_filename", "docmanager") . '</b></td></tr>';
-        if ((isset($this->m_postvars["filename"])) && (file_exists(atkconfig("documentpath", "documents/") . $this->m_postvars["filename"])))
+        if ((isset($this->m_postvars["filename"])) && (file_exists(atkconfig::get("docmanager","documentpath", "documents/") . $this->m_postvars["filename"])))
         {
           $content.= '<tr><td colspan="2" style="color: #ee0000" class="fieldlabel">' . atktext("filename_already_in_use", "docmanager") . '</td></tr>';
         }
@@ -245,7 +250,7 @@
       // Determine the location of the template and the destination document
       $from = $documenttype["template"]["tmpfile"];
       $filenameattribute = &$this->getAttribute("filename");
-      $to = $filenameattribute->customdir($record, atkconfig("documentpath", $filenameattribute->defaultdir($record, "dir"))) . $tempfilename;
+      $to = $filenameattribute->customdir($record, atkconfig::get("docmanager","documentpath", $filenameattribute->defaultdir($record, "dir"))) . $tempfilename;
 
       // Initialize the filename attribute value
       $record["filename"] = $documenttype["template"];
@@ -261,7 +266,7 @@
 
       // If the template document shouldn't be parsed using the documentwriter,
       // then just copy it
-      if (atkConfig("docmanager_dontusedocumentwriter", false))
+      if (atkConfig::get("docmanager","docmanager_dontusedocumentwriter", false))
       {
 
         // Just copy the template document

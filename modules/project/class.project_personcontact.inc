@@ -6,9 +6,9 @@
  *
  * This class makes it possible to relate contacts to a project in a certain role(s).
  *
- * $Id: class.project_personcontact.inc,v 1.16 2007/03/19 22:17:16 sandy Exp $
+ * $Id: class.project_personcontact.inc 2106 2007-03-19 22:17:16Z sandy $
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision: 1.16 $
+ * @version $Revision: 2106 $
  *
  */
 

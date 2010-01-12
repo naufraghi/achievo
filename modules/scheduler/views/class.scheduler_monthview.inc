@@ -1,6 +1,30 @@
 <?php
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage scheduler
+ *
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5467 $
+ * $Id: class.scheduler_monthview.inc 5467 2009-03-01 18:42:59Z sandy $
+ */
+
 atkimport("modules.scheduler.views.scheduler_view");
 
+/**
+ * Scheduler month view
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage scheduler
+ * @since 1.3.0
+ */
 class scheduler_monthview extends scheduler_view
 {
    var $m_view = "month";
@@ -24,9 +48,9 @@ class scheduler_monthview extends scheduler_view
     $nextUrl  = atkSelf()."?view=month&viewdate=$nextTime";
     $nextImg  ='<img src="'.$theme->imgPath("arrow_right.gif","scheduler").'" border=0 width=16 height=16 title="'.atktext("next_month","scheduler").'" alt="'.atktext("next_month","scheduler").'">';
 
-    $this->m_viewTitle = "<b>".atktext(strtolower(date("F", mktime(0,0,0,$this->m_model->getMonth(),1,$this->m_model->getYear()))))." ".$this->m_model->getYear()."</b>";
+    $this->m_viewTitle = "<b>".atktext(atk_strtolower(date("F", mktime(0,0,0,$this->m_model->getMonth(),1,$this->m_model->getYear()))))." ".$this->m_model->getYear()."</b>";
     $theme = &atktheme::getInstance();
-    
+
     return href($prevUrl, $prevImg)."&nbsp;".href($nextUrl, $nextImg)."&nbsp;".href($thisUrl, atktext("current_month","scheduler"));
 
   }
@@ -42,14 +66,10 @@ class scheduler_monthview extends scheduler_view
     $year = $this->m_model->getYear();
     $user = &atkGetUser();
 
-    $days = array();
-    $days[0] = atkText("sun");
-    $days[1] = atkText("mon");
-    $days[2] = atkText("tue");
-    $days[3] = atkText("wed");
-    $days[4] = atkText("thu");
-    $days[5] = atkText("fri");
-    $days[6] = atkText("sat");
+    atkimport("modules.utils.dateutil");
+    $days = dateutil::short_daylist();
+    for($i=0;$i<=6;$i++)
+      $days[$i] = atkText($days[$i],"atk");
     // On what day does our calendar start (0 sunday or 1 monday)
     $daystart= ($user["startday"]!=""?$user["startday"]:0);
 
@@ -72,12 +92,12 @@ class scheduler_monthview extends scheduler_view
     $first_day_of_month = date("w", mktime(0,0,0,$month,1,$year));
 
     $tmp = $this->_view_header();
-    
+
     $tmp.='<table width="100%">
              <tr>
               <td valign="top">';
     $tmp.='<table border="0" cellpadding="0" cellspacing="0" width="100%">';
-    $tmp.='<tr style="background-color: #DDDDDD;"><td width="40">'.atkText("week",'scheduler').'</td>';
+    $tmp.='<tr style="background-color: #DDDDDD;"><td width="40">'.atktext('week','scheduler').'</td>';
 
     $day_number = $daystart;
     for ($i=0;$i<7;$i++)
@@ -92,7 +112,8 @@ class scheduler_monthview extends scheduler_view
     if ($cellcount < 0) $cellcount = 7 + $cellcount;
     $bg_color="#FFFFFF";
     $tmp.='<tr style="background-color: '.$bg_color.'; height: 100px;">';
-    $week_number =$this->m_model->getWeekNumber(2,$month,$year);
+		
+    $week_number =$this->m_model->getWeekNumber(1,$month,$year);
 
     $date = $year."-".sprintf("%02d",$month)."-".sprintf("%02d",1);
     $tmp.='<td style="border: 1px solid #000000;"><i>'.href(atkSelf()."?view=week&viewdate=".$date,$week_number,SESSION_DEFAULT,false,'title="'.atktext("weekview","scheduler").'"').'</i>&nbsp;</td>';
@@ -104,6 +125,7 @@ class scheduler_monthview extends scheduler_view
     $current_day = date("d");
     $current_month = date("m");
     $current_year = date("Y");
+    $schedulerItemObj = atkInstance("module.scheduler.utils.scheduleritem");
     for ($i=1;$i<=$days_in_month;$i++)
     {
      	$date = $year."-".sprintf("%02d",$month)."-".sprintf("%02d",$i);
@@ -112,7 +134,7 @@ class scheduler_monthview extends scheduler_view
     	{
     	  if($bg_color=="#FFFFFF") { $bg_color="#EEEEEE"; } else { $bg_color="#FFFFFF"; }
     		$tmp.="</tr><tr style=\"background-color: $bg_color; height: 100px;\">\n";
-    		$week_number++;
+        $week_number =$this->m_model->getWeekNumber($i,$month,$year);
     		$tmp.='<td style="border: 1px solid #000000;"><i>'.href(atkSelf()."?view=week&viewdate=".$date,sprintf("%02d",$week_number),SESSION_DEFAULT,false,'title="'.atktext("weekview","scheduler").'"').'</i>&nbsp;</td>';
     		$cellcount=0;
     	}
@@ -130,9 +152,9 @@ class scheduler_monthview extends scheduler_view
 
       // Todo: Get HolidayTitle
       $holiday_title = "";
-    		
+
     	$tmp.='<td align="left" valign="top" style="border: 1px solid #000000;">[&nbsp;'.href(atkSelf()."?view=day&viewdate=".$date,$i,'','','class="'.$class.'"'.$holiday_title).'&nbsp;]&nbsp;';
-    	$addicon = '<img src="'.$theme->imgPath("add.gif","scheduler").'" border="0" width="15" height="15" title="'.atktext("additem").'" alt="'.atktext("additem").'">';
+    	$addicon = '<img src="'.$theme->imgPath("add.gif","scheduler").'" border="0" width="15" height="15" title="'.atktext("additem", "scheduler").'" alt="'.atktext("additem", "scheduler").'">';
     	$tmp.=href(atkSelf()."?atkaction=add&atknodetype=scheduler.scheduler&viewdate=".$date,$addicon,SESSION_NESTED).'<br>';
       if($this->m_userPrefs["showlunarphases"])
       {
@@ -140,13 +162,11 @@ class scheduler_monthview extends scheduler_view
     	  $moonphase = $this->getMoonPhaseIcon($timestamp);
         $tmp.=($moonphase!=""?"$moonphase":"");
       }
-      $schedulerItemObj = null;
     	// Allday appointments
     	if(array_key_exists($date,$this->m_model->m_allDayItems) && is_array($this->m_model->m_allDayItems[$date]))
     	{
     	  for($j=0;$j<count($this->m_model->m_allDayItems[$date]);$j++)
     	  {
-    	    if(is_null($schedulerItemObj)) $schedulerItemObj = &atkinstance("module.scheduler.utils.scheduleritem");
     	    $tmp.=$schedulerItemObj->render($this->m_model->m_allDayItems[$date][$j],true,$date,true);
     	  }
     	}
@@ -155,7 +175,6 @@ class scheduler_monthview extends scheduler_view
     	{
     	  for($j=0;$j<count($this->m_model->m_appointmentItems[$date]);$j++)
     	  {
-    	    if(is_null($schedulerItemObj)) $schedulerItemObj = &atkinstance("module.scheduler.utils.scheduleritem");
     	    $tmp.=$schedulerItemObj->render($this->m_model->m_appointmentItems[$date][$j],true,$date,true);
     	  }
     	}
@@ -170,7 +189,8 @@ class scheduler_monthview extends scheduler_view
 
     $tmp.='</tr>';
     $tmp.='</table>';
-    $tmp.='<td width=150 valign="top">';
+    $tmp.='<br>'.$this->m_model->renderLegend();
+    $tmp.='</td><td width=150 valign="top">';
     $tmp.=$this->m_model->_getSmallCalendar(substr($this->m_model->m_small_viewdate,8,2),substr($this->m_model->m_small_viewdate,5,2),substr($this->m_model->m_small_viewdate,0,4));
     $tmp.="<br>";
     $next_date = date("Y-m-d",mktime(12,0,0,substr($this->m_model->m_small_viewdate,5,2)+1,substr($this->m_model->m_small_viewdate,8,2),substr($this->m_model->m_small_viewdate,0,4)));
@@ -181,7 +201,7 @@ class scheduler_monthview extends scheduler_view
     $tmp.='  </td>
              </tr>
              </table><br><br>
-             '.$this->m_model->renderLegend();
+             ';
     return $tmp;
   }
 

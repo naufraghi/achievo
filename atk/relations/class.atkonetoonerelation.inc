@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.43 $
-   * $Id: class.atkonetoonerelation.inc,v 5.43 2007/11/28 12:01:38 harrie Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkonetoonerelation.inc 6489 2009-08-31 18:28:07Z peter $
    */
 
   /**
@@ -31,7 +31,9 @@
   define("AF_ONETOONE_ERROR",           AF_SPECIFIC_2);
 
   /**
-   * Invisibly integrate a onetoonerelation as if the fields where part of the current node.
+   * Invisibly integrate a onetoonerelation as if the fields where part of the current node.  
+   * If the relation is integrated, no divider is drawn, and the section heading is suppressed.
+   * (Integration does not affect the way data is stored or manipulated, only how it is displayed.)
    */
   define("AF_ONETOONE_INTEGRATE",       AF_SPECIFIC_3);
 
@@ -40,6 +42,13 @@
    */
   define("AF_ONETOONE_LAZY",            AF_SPECIFIC_4);
 
+  /**
+   * Respects tab/sections that have been assigned to this attribute instead of using the
+   * tabs assigned for the attributes in the destination node. This flag is only useful in
+   * integration mode.
+   */
+  define("AF_ONETOONE_RESPECT_TABS",  AF_SPECIFIC_5);  
+  
   /**
    * @internal Include the base class.
    */
@@ -91,7 +100,8 @@
      *
      * @param String $name The unique name of the attribute. In slave mode,
      *                     this corresponds to the foreign key field in the
-     *                     database table.
+     *                     database table.  (The name is also used as the section 
+     *                     heading.)
      * @param String $destination the destination node (in module.nodename
      *                            notation)
      * @param String $refKey In master mode, this specifies the foreign key
@@ -126,18 +136,18 @@
       {
         return null;
       }
-      
+
       $myrecord = $record[$this->fieldName()];
 
       if ($this->createDestination() && is_array($myrecord))
       {
         $result = $this->m_destInstance->descriptor($myrecord);
       }
-      else 
+      else
       {
         $result = $this->text('none');
       }
-      
+
       return $result;
     }
 
@@ -152,6 +162,11 @@
     {
     }
 
+    /**
+     * Set the initial values of this attribute
+     *
+     * @return array Array with initial values
+     */
     function initialValue()
     {
       if ($this->m_initialValue!==null) return parent::initialValue();
@@ -181,6 +196,7 @@
      * @param String $tablename The name of the table of this attribute
      * @param String $fieldaliasprefix Prefix to use in front of the alias
      *                                 in the query.
+     * @param Array $rec The record that contains the value of this attribute.
      * @param int $level Recursion level if relations point to eachother, an
      *                   endless loop could occur if they keep loading
      *                   eachothers data. The $level is used to detect this
@@ -283,6 +299,7 @@
      * Construct the filter statement for filters that are set for the
      * destination node (m_destinationFilter).
      * @access private
+     * @param string $fieldaliasprefix
      * @return String A where clause condition.
      */
     function getDestinationFilterCondition($fieldaliasprefix="")
@@ -377,6 +394,18 @@
     }
 
     /**
+     * Initialize this destinations attribute sizes.
+     */
+    function fetchMeta()
+    {
+      if ($this->hasFlag(AF_ONETOONE_INTEGRATE))
+      {
+        $this->createDestination();
+        $this->getDestination()->setAttribSizes();
+      }
+    }
+
+    /**
      * Convert values from an HTML form posting to an internal value for
      * this attribute.
      *
@@ -405,7 +434,7 @@
       }
     }
 
-    /*
+    /**
      * Determine the storage type of this attribute.
      *
      * With this method, the attribute tells the framework whether it wants
@@ -425,7 +454,15 @@
      */
     function storageType($mode)
     {
-      if ($this->m_refKey!="")
+      // Mode specific storage type.
+      if (isset($this->m_storageType[$mode]) && $this->m_storageType[$mode] !== null)
+        return $this->m_storageType[$mode];
+        
+      // Global storage type (key null is special!)
+      else if (isset($this->m_storageType[null]) && $this->m_storageType[null] !== null)
+        return $this->m_storageType[null];
+      
+      else if ($this->m_refKey!="")
       {
         // foreign key is in destination node, so we must store the
         // destination AFTER we stored the master record.
@@ -441,7 +478,7 @@
       }
     }
 
-      /*
+    /**
      * Determine the load type of this attribute.
      *
      * With this method, the attribute tells the framework whether it wants
@@ -461,14 +498,14 @@
      */
     function loadType($mode)
     {
-      if ($this->hasFlag(AF_ONETOONE_LAZY))
-      {
+      if (isset($this->m_loadType[$mode]) && $this->m_loadType[$mode] !== null)
+        return $this->m_loadType[$mode];
+      else if (isset($this->m_loadType[null]) && $this->m_loadType[null] !== null)
+        return $this->m_loadType[null];      
+      else if ($this->hasFlag(AF_ONETOONE_LAZY))
         return POSTLOAD|ADDTOQUERY;
-      }
       else
-      {
         return ADDTOQUERY;
-      }
     }
 
     /**
@@ -477,6 +514,7 @@
      * @param atkDb $db The database used by the node.
      * @param array $record The master record which has the detail records
      *                      embedded.
+     * @param string $mode The mode we're in ("add", "edit", "copy")
      * @return boolean true if store was successful, false otherwise.
      */
     function store(&$db, &$record, $mode)
@@ -490,7 +528,7 @@
           // we put the vars in the postvars, because there is information
           // like atkorgkey in it that is vital.
           // but we restore the postvars after we're done updating
-	         $oldpost = $this->m_destInstance->m_postvars;
+           $oldpost = $this->m_destInstance->m_postvars;
           $this->m_destInstance->m_postvars = $vars;
           $res = $this->m_destInstance->updateDb($vars);
           $this->m_destInstance->m_postvars = $oldpost;
@@ -523,7 +561,7 @@
         }
       }
     }
-    
+
     /**
      * Needs update?
      *
@@ -532,9 +570,9 @@
      */
     function needsUpdate($record)
     {
-      return $this->m_forceupdate || 
-             (parent::needsUpdate($record) && 
-              $this->createDestination() && 
+      return $this->m_forceupdate ||
+             (parent::needsUpdate($record) &&
+              $this->createDestination() &&
               !$this->m_destInstance->hasFlag(NF_READONLY));
     }
 
@@ -667,11 +705,11 @@
      *
      * This is a framework method, it should never be called directly.
      *
-     * @param String $mode     the edit mode ("add" or "edit")
-     * @param array  $arr      pointer to the edit array
-     * @param array  $defaults pointer to the default values array
-     * @param array  $error    pointer to the error array
-     * @param String $prefix   the fieldprefix
+     * @param String $mode     		the edit mode ("add" or "edit")
+     * @param array  $arr     		pointer to the edit array
+     * @param array  $defaults 		pointer to the default values array
+     * @param array  $error    		pointer to the error array
+     * @param String $fieldprefix the fieldprefix
      */
     function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
     {
@@ -707,11 +745,11 @@
             $attrNames = $this->m_destInstance->getAttributeNames();
             foreach ($attrNames as $attrName)
             {
-              $attr = &$this->m_destInstance->getAttribute($attrName);  
+              $attr = &$this->m_destInstance->getAttribute($attrName);
               $attr->addFlag(AF_READONLY);
             }
-          }             
-          
+          }
+
           /* we first check if the record doesn't already exist */
           if (isset($defaults[$this->fieldName()]) && !empty($defaults[$this->fieldName()]))
           {
@@ -764,28 +802,44 @@
            * same name as the relation we don't display a label
            * TODO FIXME
            */
+          if(!is_array($arr['fields'])) $arr['fields']=array();
           if (!$this->hasFlag(AF_ONETOONE_INTEGRATE) && !$this->hasFlag(AF_NOLABEL) && !(count($a["fields"]) == 1 && $a["fields"][0]["name"] == $this->m_name))
           {
             /* separator and name */
-            $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs);
-            $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs);
+            if ($arr['fields'][count($arr['fields'])-1]['html']!=='-') $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
+            $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
           }
-          if(!is_array($arr['fields'])) $arr['fields']=array();
+          
           if (is_array($a["fields"]))
           {
-
+            // in non-integration mode we move all the fields to the one-to-one relations tabs/sections
+            if (!$this->hasFlag(AF_ONETOONE_INTEGRATE) || $this->hasFlag(AF_ONETOONE_RESPECT_TABS))
+            {
+              foreach (array_keys($a['fields']) as $key)
+              {
+                $a['fields'][$key]['tabs'] = $this->m_tabs;
+                $a['fields'][$key]['sections'] = $this->getSections();
+              }
+            }
+                        
             $arr["fields"] = array_merge($arr["fields"], $a["fields"]);
           }
 
           if (!$this->hasFlag(AF_ONETOONE_INTEGRATE) && !$this->hasFlag(AF_NOLABEL) && !(count($a["fields"]) == 1 && $a["fields"][0]["name"] == $this->m_name))
           {
             /* separator */
-            $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs);
+            $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
+          }
+
+          $fields = $arr['fields'];
+          foreach ($fields as &$field)
+          {
+            $field['attribute']='';
           }
         }
       }
     }
-    
+
     /**
      * Adds the attribute's view / hide HTML code to the view array.
      *
@@ -801,7 +855,7 @@
     function addToViewArray($mode, &$arr, &$defaults)
     {
       if ($this->hasFlag(AF_HIDE_VIEW)) return;
-      
+
       /* we first check if there is no display override method, if there
        * is this method has the same behaviour as the atkAttribute's method
        */
@@ -818,21 +872,19 @@
 
         $record = $defaults[$this->fieldName()];
         $a = $this->m_destInstance->viewArray($mode, $record, false);
-        
+
         /* editable fields, if AF_NOLABEL is specified or if there is just 1 field with the
          * same name as the relation we don't display a label
          * TODO FIXME
          */
+        if (!is_array($arr['fields'])) $arr['fields']=array();
         if (!$this->hasFlag(AF_ONETOONE_INTEGRATE) && !$this->hasFlag(AF_NOLABEL) && !(count($a["fields"]) == 1 && $a["fields"][0]["name"] == $this->m_name))
         {
           /* separator and name */
-          $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs);
-          $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs);
+          if ($arr['fields'][count($arr['fields'])-1]['html']!=='-') $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
+          $arr["fields"][] = array("line"=>"<b>".atktext($this->m_name, $this->m_ownerInstance->m_module, $this->m_ownerInstance->m_type)."</b>", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
         }
-        
-        if (!is_array($arr['fields'])) 
-          $arr['fields']=array();
-          
+
         if (is_array($a["fields"]))
         {
           $arr["fields"] = array_merge($arr["fields"], $a["fields"]);
@@ -841,10 +893,10 @@
         if (!$this->hasFlag(AF_ONETOONE_INTEGRATE) && !$this->hasFlag(AF_NOLABEL) && !(count($a["fields"]) == 1 && $a["fields"][0]["name"] == $this->m_name))
         {
           /* separator */
-          $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs);
+          $arr["fields"][] = array("html"=>"-", "tabs"=>$this->m_tabs,'sections'=>$this->getSections());
         }
-      }      
-    }    
+      }
+    }
 
     /**
      * Check if a record has an empty value for this attribute.
@@ -876,7 +928,7 @@
       if ($this->hasFlag(AF_ONETOONE_ERROR)&&($mode!="add" || !$this->hasFlag(AF_HIDE_ADD)))
       {
         if ($this->createDestination())
-	      {
+        {
           $this->m_destInstance->validate($record[$this->fieldName()], $mode, array($this->m_refKey));
 
           // only add 'atkerror' record when 1:1 relation contains error
@@ -884,7 +936,7 @@
           {
             $record["atkerror"] = array_merge((array)$record["atkerror"], (array)$record[$this->fieldName()]["atkerror"]);
           }
-	      }
+        }
       }
     }
 
@@ -987,19 +1039,11 @@
         // integrated version, don't add ourselves, but add all columns from the destination.
         if ($this->createDestination())
         {
+          $prefix = $fieldprefix.$this->fieldName()."_AE_";
           foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
           {
             $p_attrib = &$this->m_destInstance->getAttribute($attribname);
-            $pref = $fieldprefix . "_AE_" .$this->fieldName();
-            $p_attrib->addToListArrayHeader($action, $arr, $pref, $flags, $atksearch[$this->fieldName()], $atkorderby);
-
-            $fieldPointer = &$arr["search"][$pref.$p_attrib->fieldName()];
-            $fieldPointer =
-              str_replace(
-                "atksearch[".$p_attrib->fieldName()."]",
-                "atksearch_" . $pref . "[" . $p_attrib->fieldName()."]",
-                $fieldPointer
-              );
+            $p_attrib->addToListArrayHeader($action, $arr, $prefix, $flags, $atksearch[$this->fieldName()], $atkorderby);
           }
         }
       }
@@ -1044,14 +1088,23 @@
       }
     }
 
-    function searchCondition(&$query, $table, $value, $searchmode)
-    {
-      $this->getSearchCondition($query, $table, $value, $searchmode);
-    }
-
+    /**
+     * Creates a searchcondition for the field,
+     * was once part of searchCondition, however,
+     * searchcondition() also immediately adds the search condition.
+     *
+     * @param atkQuery $query     The query object where the search condition should be placed on
+     * @param String $table       The name of the table in which this attribute
+     *                              is stored
+     * @param mixed $value        The value the user has entered in the searchbox
+     * @param String $searchmode  The searchmode to use. This can be any one
+     *                              of the supported modes, as returned by this
+     *                              attribute's getSearchModes() method.
+     * @return String The searchcondition to use.
+     */
     function getSearchCondition(&$query, $table, $value, $searchmode)
     {
-      if (is_array($value))
+      if ($this->createDestination() && is_array($value))
       {
         // we are a relation, so instead of hooking ourselves into the
         // query, hook the attributes in the destination node onto the query
@@ -1059,9 +1112,10 @@
         {
           // if we aren't searching for anything in this field, there is no need
           // to look any further:
-          if (!$val) continue;
+          if ($val==="" || $val===null) continue;
 
           $p_attrib = &$this->m_destInstance->m_attribList[$key];
+
           if (is_object($p_attrib))
           {
             if ($this->m_refKey && $this->createDestination())
@@ -1076,9 +1130,9 @@
 
               // we need to left join the destination table into the query
               // (don't worry ATK won't add it when it's already there)
-              $query->addJoin($new_table,$new_table,($this->getJoinCondition()),false);
+              $query->addJoin($new_table,$new_table,($this->getJoinCondition($query)),false);
             }
-            $p_attrib->searchCondition($query,$new_table,$val,$searchmode);
+            $p_attrib->searchCondition($query,$new_table,$val,$this->getChildSearchMode($searchmode, $p_attrib->formName()));
           }
           else
           {
@@ -1088,7 +1142,7 @@
             $p_attrib = &$this->m_ownerInstance->m_attribList[$key];
             if (is_object($p_attrib))
             {
-              $p_attrib->searchCondition($query,$p_attrib->getTable($key),$val,$searchmode);
+              $p_attrib->searchCondition($query,$p_attrib->getTable($key),$val,$this->getChildSearchMode($searchmode, $p_attrib->formName()));
             }
             else atkdebug("Field $key was not found in this relation (this is very weird)");
           }
@@ -1131,11 +1185,15 @@
     /**
      * Returns the condition which can be used when calling atkQuery's addJoin() method
      * Joins the relation's owner with the destination
+     * 
+     * @param atkQuery $query The query object
+     * @param string $tablename The name of the table
+     * @param string $fieldalias The field alias
      * @return  string  condition the condition that can be pasted into the query
      */
     function getJoinCondition(&$query, $tablename="",$fieldalias="")
     {
-      $condition = $this->m_ownerInstance->m_table . "." . $this->fieldName();
+      $condition  = $this->m_ownerInstance->m_table . "." . $this->fieldName();
       $condition .= "=";
       $condition .= $this->m_destInstance->m_table . "." . $this->m_destInstance->primaryKeyField();
       return $condition;
@@ -1146,6 +1204,14 @@
      * attributes hook themselves into the fieldlist instead of hooking the relation
      * in it.
      * For original documentation for this method, please see the atkAttribute class
+     * 
+     * @param array   $fields            The array containing fields to use in the
+     *                                   extended search
+     * @param atkNode $node              The node where the field is in
+     * @param array   $record            A record containing default values to put
+     *                                   into the search fields.
+     * @param array   $fieldprefix       search / mode field prefix
+     * @param array   $currentSearchMode current search mode
      */
     function addToSearchformFields(&$fields, &$node, &$record, $fieldprefix = "", $currentSearchMode=array())
     {
@@ -1154,20 +1220,14 @@
 
       if ($this->hasFlag(AF_ONETOONE_INTEGRATE) && $this->createDestination())
       {
+        $prefix = $fieldprefix.$this->fieldName()."_AE_";
         foreach (array_keys($this->m_destInstance->m_attribList) as $attribname)
         {
           $p_attrib = &$this->m_destInstance->m_attribList[$attribname];
 
           if (!$p_attrib->hasFlag(AF_HIDE_SEARCH))
           {
-            // TODO: This is an ugly way to make sure date attributes are changed as well
-            //       Furthermore it does nothing to save the javascript functionality
-            //       (which completely breaks) in searching a onetoone something like a 'searchname' should
-            //       be implemented and used.
-            if (method_exists($p_attrib, "atkDateAttribute"))
-              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName()."_AE_", $currentSearchMode[$this->fieldName()]);
-            else
-              $p_attrib->addToSearchformFields($fields,$node,$record[$this->fieldName()], "_AE_".$this->fieldName(), $currentSearchMode[$this->fieldName()]);
+            $p_attrib->addToSearchformFields($fields, $node, $record[$this->fieldName()], $prefix, $currentSearchMode[$this->fieldName()]);
           }
         }
       }
@@ -1176,14 +1236,20 @@
         parent::addToSearchformFields($fields,$node,$record, $fieldprefix, $currentSearchMode);
       }
     }
-    
+
+    /**
+     * Convert the internal value to the database value
+     *
+     * @param array $rec The record that holds the value for this attribute
+     * @return mixed The database value
+     */
     function value2db($rec)
     {
       if (is_array($rec)&&isset($rec[$this->fieldName()]))
-      {        
+      {
         if (is_array($rec[$this->fieldName()]))
           return $this->escapeSQL($rec[$this->fieldName()][$this->m_destInstance->primaryKeyField()]);
-        else 
+        else
           return $rec[$this->fieldName()];
       }
       return NULL;

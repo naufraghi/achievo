@@ -13,8 +13,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License 2
    *
-   * @version $Revision: 1.8 $
-   * $Id: test.php,v 1.8 2007/06/27 06:17:18 guido Exp $
+   * @version $Revision: 2271 $
+   * $Id: test.php 2271 2007-06-27 06:17:18Z guido $
    */
 
   /**

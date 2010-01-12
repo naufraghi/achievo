@@ -1,17 +1,19 @@
 <?php
   /**
-   * relatedDocument class file
+   * This file is part of the Achievo distribution.
+   * Detailed copyright and licensing information can be found
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
+   * included in the distribution.
+   * projecttpl_doctype node class file
    *
-   * @package achievo_modules
+   * @package achievo
    * @subpackage docmanager
    *
-   * @author guido <guido@ibuildings.nl>
+   * @copyright (c)2008 Ibuildings B.V.
+   * @license http://www.achievo.org/licensing Achievo Open Source License
    *
-   * @copyright (c) 2005 Ibuildings.nl BV
-   * @license http://www.achievo.org/atk/licensing/ ATK open source license
-   *
-   * @version $Revision: 1.2 $
-   * $Id: class.relateddocument.inc,v 1.2 2007/08/21 12:30:43 guido Exp $
+   * @version $Revision: 5078 $
+   * $Id: class.relateddocument.inc 5078 2008-06-30 21:22:57Z sandy $
    */
 
   // Use the atkdummyattribute to extend from
@@ -124,7 +126,7 @@
       {
       	return $this->text("no_document_templates_found");
       }
-      
+
       // Button counter
       static $cnt=0;
       $buttoncounter = ++$cnt;

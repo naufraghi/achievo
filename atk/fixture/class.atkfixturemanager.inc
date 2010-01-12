@@ -12,8 +12,8 @@
    * @copyright (c)2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.6 $
-   * $Id: class.atkfixturemanager.inc,v 1.6 2007/10/23 14:58:34 peter Exp $
+   * @version $Revision: 6309 $
+   * $Id: class.atkfixturemanager.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -59,7 +59,7 @@
      * Register fixture loader.
      *
      * @param string $class ATK class path
-     * @param mixed  array of extension names (without dot) this loader supports
+     * @param mixed $extensions array of extension names (without dot) this loader supports
      */
     function registerLoader($class, $extensions)
     {
@@ -221,7 +221,7 @@
     /**
      * Save fixture data to the database in the given table.
      *
-     * @param array  $database database name
+     * @param atkDb  $database database instance
      * @param string $table    table name
      * @param array  $data     fixture data
      *
@@ -241,7 +241,14 @@
 
         foreach($record as $field => $value)
         {
-          $query->addField($field, $value);
+          if ($value === null)
+          {
+            $query->addField($field, 'null', '', '', false);
+          }
+          else
+          {
+            $query->addField($field, $value);
+          }
         }
 
         if (!$query->executeInsert())

@@ -18,8 +18,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 4.4 $
-   * $Id: app.php,v 4.4 2007/08/02 17:49:27 guido Exp $
+   * @version $Revision: 5348 $
+   * $Id: app.php 5348 2008-11-08 12:40:58Z sandy $
    */
 
   /**
@@ -34,8 +34,14 @@
   $output='<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">';
   $output.="\n<html>\n <head>\n";
   $output.='  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset='.atktext("charset","","atk").'">';
-  $output.="\n  <title>".atktext('app_title')."</title>\n </head>\n";
-
+  $output.="\n  <title>".getAchievoTitle()."</title>\n";
+  $favico = atkconfig("defaultfavico");
+  if ($favico!="")
+  {
+    $output.= '  <link rel="icon" href="'.$favico.'" type="image/x-icon" />'."\n";
+    $output.= '  <link rel="shortcut icon" href="'.$favico.'" type="image/x-icon" />'."\n";
+  }
+  $output.="\n</head>\n"; 
   atkimport("atk.menu.atkmenu");
   atkimport("atk.utils.atkframeset");
 

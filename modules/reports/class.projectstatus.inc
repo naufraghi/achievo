@@ -10,8 +10,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision: 1.10 $
-   * $Id: class.projectstatus.inc,v 1.10 2007/04/10 20:52:03 sandy Exp $
+   * @version $Revision: 4920 $
+   * $Id: class.projectstatus.inc 4920 2008-03-24 20:01:58Z sandy $
    */
 
   /**
@@ -278,7 +278,11 @@
          $data[] = array(atktext("total"), "", time_format($total_initial), time_format($total_current), time_format($total_time), $this->diffToHtml($total_diff));
 
          $tr = &atknew("atk.utils.atktablerenderer");
-         $output.= $tr->render($data, TBL_DATA|TBL_FOOTER, "recordlist")."<br/>";
+         $tr->setColAlignment(2,TBL_RIGHT);
+         $tr->setColAlignment(3,TBL_RIGHT);
+         $tr->setColAlignment(4,TBL_RIGHT);
+         $tr->setColAlignment(5,TBL_RIGHT);
+         $output.= "<br>".$tr->render($data, TBL_DATA|TBL_FOOTER, "recordlist")."<br/>";
       }
 
       // Render a box around the generated output

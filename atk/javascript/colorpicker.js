@@ -10,8 +10,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.1 $
-   * $Id: colorpicker.js,v 5.1 2004/05/31 22:11:11 ivo Exp $
+   * @version $Revision: 6170 $
+   * $Id: colorpicker.js 6354 2009-04-15 02:41:21Z mvdam $
    */
 
 function picker(a,color)
@@ -38,19 +38,21 @@ function remoteUpdate(a, imgPrefix)
 {
   var formname = "document.entryform."+a+".value";
   var color    = eval(formname);
-  var formname = "opener.document.entryform."+a+".value='"+color+"'";
+  var formname = "opener.document.getElementById('"+a+"').value='"+color+"'";
   var example  = opener.document.getElementById("example_"+a);
-  var img      = eval("opener.document.entryform.img_"+a);
+  var img      = eval("opener.document.getElementById('img_"+a+"')");
 
   if (color != "")
   {
     img.src = imgPrefix+"select_color_on.gif"; 
     img.alt = color;
+    img.style.backgroundColor = color;
   }
   else
   {
     img.src = imgPrefix+"select_color_off.gif";
     img.alt = "Geen kleur geselecteerd";
+    img.style.backgroundColor = '#FFFFFF';
   }
 
   eval(formname);

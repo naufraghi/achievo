@@ -14,8 +14,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License 2
    *
-   * @version $Revision: 1.3 $
-   * $Id: class.achievowebtestcase.inc,v 1.3 2005/10/13 12:18:59 guido Exp $
+   * @version $Revision: 1129 $
+   * $Id: class.achievowebtestcase.inc 1129 2005-10-13 12:18:59Z guido $
    */
 
   require_once(atkconfig("atkroot") . "atk/test/simpletest/web_tester.php");

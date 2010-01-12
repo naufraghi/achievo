@@ -1,9 +1,29 @@
 <?php
-
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage timereg
+ *
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5209 $
+ * $Id: class.workperiod.inc 5209 2008-08-17 16:50:38Z sandy $
+ */
   useattrib("atktimeattribute");
   useattrib("atknumberattribute");
   useattrib("atkboolattribute");
-
+  
+  /**
+   * Node for administrating workperiods
+   *
+   * @package achievo
+   * @subpackage timereg
+   */
   class workperiod extends atkNode
   {
     function workperiod()

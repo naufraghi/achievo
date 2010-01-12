@@ -1,4 +1,19 @@
 <?php
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage graph
+ *
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5467 $
+ * $Id: class.datagraphattribute.inc 5467 2009-03-01 18:42:59Z sandy $
+ */
 
   useattrib("graph.graphattribute");
 
@@ -16,23 +31,8 @@
    * a graph is plotted based on the supplied input data.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   *
-   * @version $Revision: 1.11 $
-   *
-   * $Id: class.datagraphattribute.inc,v 1.11 2007/02/06 14:46:32 ivo Exp $
-   *
-   * This file is part of Achievo.
-   *
-   * Achievo is free software; you can redistribute it and/or modify
-   * it under the terms of the GNU General Public License as published by
-   * the Free Software Foundation; either version 2 of the License, or
-   * (at your option) any later version.
-   *
-   * Achievo is distributed in the hope that it will be useful,
-   * but WITHOUT ANY WARRANTY; without even the implied warranty of
-   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   * GNU General Public License for more details.
-   *
+   * @package achievo
+   * @subpackage graph
    */
   class dataGraphAttribute extends graphAttribute
   {
@@ -91,6 +91,8 @@
 
   /**
    * Plotter companion class for dataGraphAttribute.
+   * @package achievo
+   * @subpackage graph
    */
   class dataGraphAttributePlotter
   {
@@ -99,6 +101,8 @@
      * Called by the graph.php image wrapper, to perform the actual plot.
      *
      * Do not call directly. Internal framework use only, as they say.
+     * @param array $postvars Postvars
+     * @return string
      */
     function plot($postvars)
     {
@@ -149,11 +153,17 @@
         }
       }
 
-      $funcname = $graphtype."Plot";      
+      $funcname = $graphtype."Plot";
       return $this->$funcname($data);
 
     }
 
+    /**
+     * Bar plotter
+     *
+     * @param array $data Graph data
+     * @return boolean
+     */
     function barPlot($data)
     {
       usegraph("bar");
@@ -162,8 +172,8 @@
       $title = key($data);
 
       // Setup the basic parameters for the graph
-      $graphwidth   = atkconfig("graph_width",550);
-      $graphheight  = round($graphwidth / 650 * 250);
+      $graphwidth   = atkconfig::get("graph","graph_width",750);
+      $graphheight  = round($graphwidth / 750 * 300);
 
       $datay=array_values($dataset);
       $datax=array_keys($dataset);
@@ -184,12 +194,12 @@
 
       // Setup title
       $graph->title->Set($title);
-      $graph->title->SetFont(FF_VERDANA,FS_BOLD,14);
+      $graph->title->SetFont(FF_FREESANS,FS_BOLD,14);
       //$graph->subtitle->Set("(Axis at top)");
 
       // Setup X-axis
       $graph->xaxis->SetTickLabels($datax);
-      $graph->xaxis->SetFont(FF_VERDANA,FS_NORMAL,12);
+      $graph->xaxis->SetFont(FF_FREESANS,FS_NORMAL,12);
 
       // Some extra margin looks nicer
       $graph->xaxis->SetLabelMargin(5);
@@ -203,7 +213,7 @@
       $graph->yaxis->SetLabelAlign('center','bottom');
       $graph->yaxis->SetLabelAngle(60);
       $graph->yaxis->SetLabelFormat('%d');
-      $graph->yaxis->SetFont(FF_VERDANA,FS_NORMAL,12);
+      $graph->yaxis->SetFont(FF_FREESANS,FS_NORMAL,12);
 
       // We don't want to display Y-axis
       //$graph->yaxis->Hide();
@@ -218,7 +228,7 @@
 
       // We want to display the value of each bar at the top
       $bplot->value->Show();
-      $bplot->value->SetFont(FF_ARIAL,FS_BOLD,12);
+      $bplot->value->SetFont(FF_FREESANS,FS_BOLD,12);
       $bplot->value->SetAlign('left','center');
       $bplot->value->SetColor("black","darkred");
       $bplot->value->SetFormat(atktext("currencysymbol","atk","","","",true).' %.0f');
@@ -234,14 +244,20 @@
 
     }
 
+    /**
+     * Line plotter
+     *
+     * @param array $data Graph data
+     * @return boolean
+     */
     function linePlot($data)
     {
       usegraph("line");
 
       $defcolors = array('red', 'blue', 'green', 'yellow', 'black');
 
-      $graphwidth   = atkconfig("graph_width",650);
-      $graphheight  = round($graphwidth / 650 * 250);
+      $graphwidth   = atkconfig::get("graph","graph_width",750);
+      $graphheight  = round($graphwidth / 750 * 300);
 
       $graph        = new  Graph($graphwidth,$graphheight,"auto");
 
@@ -254,7 +270,7 @@
       $graph->SetScale("textlin");
 
       // Use built in font
-      $graph->title->SetFont(FF_FONT1,FS_BOLD);
+      $graph->title->SetFont(FF_FREESANS,FS_BOLD);
 
       $xlabels = array_keys(reset($data));
       $graph->xaxis->SetTickLabels($xlabels);
@@ -292,6 +308,12 @@
 
     }
 
+    /**
+     * Pie plotter
+     *
+     * @param array $data Data for the graph
+     * @return boolean
+     */
     function piePlot($data)
     {
       usegraph("pie");
@@ -301,8 +323,8 @@
       $dataset = reset($data);
       $title = key($data);
 
-      $graphwidth = atkconfig("graph_width",550);
-      $graphheight = round($graphwidth / 550 * 250);
+      $graphwidth = atkconfig::get("graph","graph_width",750);
+      $graphheight = round($graphwidth / 750 * 300);
 
       $graph = new PieGraph($graphwidth,$graphheight,"auto");
 
@@ -314,13 +336,20 @@
       $graph->title->Set(atktext($title));
 
       // Use built in font
-      $graph->title->SetFont(FF_FONT1,FS_BOLD);
+      $graph->title->SetFont(FF_FREESANS,FS_BOLD);
 
       // Create a plot
       $p1 = new PiePlot(array_values($dataset));
 
       $p1->setCenter(0.26,0.5);
-      $p1->SetLegends(array_keys($dataset));
+      $legends = array_keys($dataset);
+      for($i=0,$_i=count($legends);$i<$_i;$i++)
+      {
+        if(atk_strlen($legends[$i])>45)
+          $legends[$i] = atk_substr($legends[$i],0,45)."...";
+      }
+
+      $p1->SetLegends($legends);
 
       $graph->Add($p1);
 

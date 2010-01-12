@@ -12,8 +12,8 @@
    * @copyright (c)2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.11 $
-   * $Id: function.atktext.php,v 1.11 2006/08/30 19:33:49 ivo Exp $
+   * @version $Revision: 5798 $
+   * $Id: function.atktext.php 6472 2009-08-21 18:34:22Z peter $
    */
 
   /**
@@ -57,7 +57,7 @@
 
    // parse the rest of the params in the string
    atkimport("atk.utils.atkstringparser");
-   $parser = &new atkStringParser($str);
+   $parser = new atkStringParser($str);
    return $parser->parse($params);
   }
 

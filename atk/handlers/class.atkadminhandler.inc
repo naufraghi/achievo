@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.36 $
-   * $Id: class.atkadminhandler.inc,v 5.36 2007/10/12 10:00:02 peter Exp $
+   * @version $Revision: 6310 $
+   * $Id: class.atkadminhandler.inc 6541 2009-10-28 09:58:14Z peter $
    */
 
   /**
@@ -38,12 +38,12 @@
      */
     function action_admin()
     {
-      if (isset($this->m_partial) && $this->m_partial!="")
+      if (!empty($this->m_partial))
       {
         $this->partial($this->m_partial);
         return;
-      }      
-      
+      }
+
       $page = &$this->getPage();
       $res = $this->renderAdminPage();
       $page->addContent($this->m_node->renderActionPage("admin", $res));
@@ -52,6 +52,8 @@
     /**
      * Sets the action session status for actions in the recordlist.
      * (Defaults to SESSION_NESTED).
+     * 
+     * @param Integer $sessionStatus The sessionstatus (for example SESSION_REPLACE)
      */
     function setActionSessionStatus($sessionStatus)
     {
@@ -61,7 +63,6 @@
     /**
      * Render the adminpage, including addpage if necessary
      *
-     * @param array $record
      * @return array with result of adminPage and addPage
      */
     function renderAdminPage()
@@ -86,6 +87,7 @@
      *
      * The implementation delegates drawing of the form to the atkAddHandler.
      *
+     * @param array $record The record 
      * @return String A box containing the add page.
      */
     function addPage($record=NULL)
@@ -111,19 +113,19 @@
     function adminPage($actions="")
     {
       $ui = &$this->getUi();
-      
-      $vars = array("title"=>$this->m_node->actionTitle('admin'),
+
+      $vars = array("title"=>$this->m_node->actionTitle($this->getNode()->m_action),
                     "content"=>$this->renderAdminList());
-      
+
       if ($this->getRenderMode() == 'dialog')
       {
         $output = $ui->renderDialog($vars);
       }
-      else 
+      else
       {
         $output = $ui->renderBox($vars);
       }
-      
+
       return $output;
     }
 
@@ -135,109 +137,129 @@
      */
     function renderAdminList($actions="")
     {
-      $node = &$this->m_node;
-      $node->addStyle("style.css");
+      $this->getNode()->addStyle("style.css");
 
-      $recordlistcache = $this->getRecordlistCache();
-      $cached = "";
-      if ($node->hasFlag(NF_CACHE_RECORDLIST) && $recordlistcache)
+      atkimport('atk.datagrid.atkdatagrid');
+      $grid = atkDataGrid::create($this->getNode(), 'admin');
+      
+      if (is_array($actions))
       {
-        $cached = $recordlistcache->getCache();
+        $grid->setDefaultActions($actions);
+      }
+      
+      $this->modifyDataGrid($grid, atkDataGrid::CREATE);
+
+      if ($this->redirectToSearchAction($grid))
+      {
+        return '';
       }
 
-      if ($cached)
-      {
-        atkdebug("Using recordlist cache: {$recordlistcache->m_cacheid}");
-        return $cached;
-      }
-
-      $ui = &$this->getUi();
-      $output = "";
-      if (is_object($ui))
-      {
-        $params = array();
-
-        // When there's a lot of data, records will be spread across multiple
-        // pages.
-        if (!isset($node->m_postvars['atklimit'])) $node->m_postvars['atklimit']=atkconfig("recordsperpage");
-        if (!isset($node->m_postvars['atkstartat'])) $node->m_postvars['atkstartat']=0;
-
-        $columnConfig = &$node->getColumnConfig();
-
-        $atkfilter = atkArrayNvl($node->m_postvars, 'atkfilter', "");
-        $recordset = $node->selectDb($atkfilter,
-                                     $columnConfig->getOrderByStatement(),
-                                     array("offset" => $node->m_postvars['atkstartat'], "limit" => $node->m_postvars['atklimit']),
-                                     $node->m_listExcludes,
-                                     "",
-                                     "admin");
-
-        //if the startat var is to big to get results back
-        if(count($recordset) == 0 && $node->m_postvars['atkstartat'] != 0)
-        {
-          $node->m_postvars['atkstartat'] = 0;
-          $recordset = $node->selectDb($atkfilter,
-                                     $node->m_postvars['atkorderby'],
-                                     array("offset" => $node->m_postvars['atkstartat'], "limit" => $node->m_postvars['atklimit']),
-                                     $node->m_listExcludes,
-                                     "",
-                                     "admin");
-        }
-
-
-        // check for search-action (if search returns only one record!)
-        if (isset($node->m_postvars["atksearch"]) && is_array($node->m_postvars['atksearch'])
-            && count($node->m_postvars['atksearch']) > 0 && is_array($node->m_search_action) && count($recordset) == 1)
-        {
-          for ($i = 0, $_i = count($node->m_search_action); $i < $_i; $i++)
-            if ($node->allowed($node->m_search_action[$i], $recordset[$i]))
-            {
-              $node->redirect(atkSessionManager::sessionUrl(atkSelf().'?atknodetype='.$node->atkNodeType().
-                              '&atkaction='.$node->m_search_action[$i].
-                              '&atkselector='.rawurlencode($node->primaryKey($recordset[0])),
-                               SESSION_REPLACE));
-              break;
-            }
-        }
-
-        $params["header"] = $this->invoke("adminHeader");
-
-        if ($this->getHeaderLinks()) $params["header"].= $this->getHeaderLinks();
-
-        // create index and navigation bar
-        $navigator = &atknew("atk.utils.atknavigator");
-        if ($node->m_index != "")
-        {
-          $params["index"] = $navigator->buildIndex($node, (count($recordset)>0?$recordset[0][$node->m_index]:""));
-        }
-
-        $navigation = $navigator->getNavigationUrls($node, "admin");
-
-        if ($navigation)
-        {
-          if (isset($params["index"])) $params["index"].="<br />";
-          $params["navbar"] = $navigator->buildNavigation($node, "admin", $navigation);
-        }
-
-        if(!is_array($actions))
-        {
-          $actions = $node->defaultActions("admin");
-        }
-        $recordlist = &atknew("atk.recordlist.atkrecordlist");
-        $recordlist->setActionSessionStatus($this->m_actionSessionStatus);
-        $flags = atkRecordList::convertFlags($node->getFlags());
-        $params["list"] = $recordlist->render($node, $recordset, $actions, $flags, "", "", $navigation);
-
-        $params["footer"] = $this->invoke("adminFooter");
-
-        $output = $ui->renderList("admin", $params);
-
-        if ($node->hasFlag(NF_CACHE_RECORDLIST))
-        {
-          $recordlistcache->writeCache($output, $recordlist->m_actionloader);
-        }
-      }
+      $params = array();
+      $params["header"] = $this->invoke("adminHeader").$this->getHeaderLinks();
+      $params["list"] = $grid->render();
+      $params["footer"] = $this->invoke("adminFooter");
+      $output = $this->getUi()->renderList("admin", $params);
       return $output;
+    }
+
+    /**
+     * Update the admin datagrid.
+     *
+     * @return string new grid html
+     */
+    public function partial_datagrid()
+    {
+      atkimport('atk.datagrid.atkdatagrid');
+      try
+      {
+      $grid = atkDataGrid::resume($this->getNode());
+      
+      $this->modifyDataGrid($grid, atkDataGrid::RESUME);      
+      }
+      catch (Exception $e)
+      {
+        $grid = atkDataGrid::create($this->getNode());
+
+        $this->modifyDataGrid($grid, atkDataGrid::CREATE);
+      }
+
+      if ($this->redirectToSearchAction($grid))
+      {
+        return '';
+      }
+
+      return $grid->render();
+    }
+     
+    /**
+     * Modify grid.
+     * 
+     * @param atkDataGrid $grid grid
+     * @param int         $mode CREATE or RESUME
+     */
+    protected function modifyDataGrid(atkDataGrid $grid, $mode)
+    {    
+      $method = 'modifyDataGrid';
+      if (method_exists($this->getNode(), $method))
+      {
+        $this->getNode()->$method($grid, $mode);
+      }
+    }
+
+    /**
+     * If a search action has been defined and a search only returns one result
+     * the user will be automatically redirected to the search action.
+     *
+     * @param atkDataGrid $grid data grid
+     * @return boolean redirect active?
+     */
+    protected function redirectToSearchAction($grid)
+    {
+      $node = $this->getNode();
+      $search = $grid->getPostvar('atksearch');
+
+      // check if we are searching and a search action has been defined
+      if (!is_array($search) || count($search) == 0 || !is_array($node->m_search_action) || count($node->m_search_action) == 0)
+      {
+        return false;
+      }
+
+      // check if there is only a single record in the result
+      $grid->loadRecords();
+      if ($grid->getCount() != 1)
+      {
+        return false;
+      }
+
+      $records = $grid->getRecords();
+
+      foreach ($node->m_search_action as $action)
+      {
+        if (!$node->allowed($action, $records[0]))
+        {
+          continue;
+        }
+
+        // reset search so we can back to the normal admin screen if we want
+        $grid->setPostvar('atksearch', array());
+
+        $url = session_url(dispatch_url($node->atkNodeType(), $action, array('atkselector' => $node->primaryKey($records[0]))), SESSION_NESTED);
+
+        if ($grid->isUpdate())
+        {
+          atkimport('atk.utils.atkjson');
+          $script = 'document.location.href = '.atkJSON::encode($url).';';
+          $node->getPage()->register_loadscript($script);
+        }
+        else
+        {
+          $node->redirect($url);
+        }
+
+        return true;
+      }
+
+      return false;
     }
 
     /**
@@ -268,6 +290,11 @@
       return "";
     }
 
+    /**
+     * Get the importlink to add to the admin header
+     *
+     * @return String HTML code with link to the import action of the node (if allowed)
+     */
     function getImportLink()
     {
       $link = "";
@@ -278,25 +305,41 @@
       return $link;
     }
 
+    /**
+     * Get the exportlink to add to the admin header
+     *
+     * @return String HTML code with link to the export action of the node (if allowed)
+     */
     function getExportLink()
     {
       $link = "";
-      if ($this->m_node->allowed("view")&& $this->m_node->hasFlag(NF_EXPORT))
+      if ($this->m_node->allowed("view") && $this->m_node->allowed("export") && $this->m_node->hasFlag(NF_EXPORT))
       {
-        $link.= href(dispatch_url($this->m_node->atkNodeType(), "export"), atktext("export", "atk", $this->m_node->m_type), SESSION_NESTED);
+        $filter = '';    
+        if(count($this->m_node->m_fuzzyFilters) > 0)
+        {
+          $filter = implode(' AND ', $this->m_node->m_fuzzyFilters); 
+        }
+
+        $link.= href(dispatch_url($this->m_node->atkNodeType(), "export", array('atkfilter'=>$filter)), atktext("export", "atk", $this->m_node->m_type), SESSION_NESTED);
       }
       return $link;
     }
 
+    /**
+     * Get the add link to add to the admin header
+     *
+     * @return String HTML code with link to the add action of the node (if allowed)
+     */
     function getAddLink()
     {
 			if (!$this->m_node->hasFlag(NF_NO_ADD) && $this->m_node->allowed("add"))
 			{
-				$label = atktext("link_".$this->m_node->m_type."_add", $this->m_node->m_module, "", "", "", true);
+				$label = $this->m_node->text("link_".$this->m_node->m_type."_add", null, "", "", true);
         if (empty($label))
         {
           // generic text
-          $label = atktext(getNodeType($this->m_node->m_type),$this->m_node->m_module,$this->m_node->m_type)." ".atktext("add","atk","");
+          $label = $this->m_node->text($this->m_node->m_type)." ".atktext("add","atk","");
         }
 
         atkimport('atk.handlers.atkaddorcopyhandler');
@@ -311,6 +354,8 @@
 
 					atkimport('atk.ui.atkdialog');
 					$dialog = new atkDialog($this->m_node->atkNodeType(), $action, 'dialog');
+					$dialog->setModifierObject($this->m_node);
+					$dialog->setSessionStatus(SESSION_PARTIAL);
 					$onClick = $dialog->getCall();
 
 					return '
@@ -328,6 +373,11 @@
 			return "";
     }
 
+    /**
+     * Get all links to add to the admin header
+     *
+     * @return String String with the HTML code of the links (each link separated with |)
+     */
     function getHeaderLinks()
     {
       $links = array();
@@ -339,7 +389,7 @@
       if ($exportlink!="") $links[] = $exportlink;
       return implode(" | ", $links);
     }
-    
+
     /**
      * Dialog handler.
      */
@@ -349,7 +399,7 @@
       $result = $this->renderAdminPage();
       return $this->m_node->renderActionPage("admin", $result);
     }
-    
+
     /**
      * Attribute handler.
      *

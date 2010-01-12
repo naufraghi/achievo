@@ -13,8 +13,8 @@
    * @copyright (c)2007 Ibuildings.nl BV
    * @license see doc/LICENSE
    *
-   * @version $Revision: 1.2 $
-   * $Id: class.atkyaml.inc,v 1.2 2007/08/30 08:08:05 ivo Exp $
+   * @version $Revision: 5798 $
+   * $Id: class.atkyaml.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

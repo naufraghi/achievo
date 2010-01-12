@@ -1,11 +1,31 @@
 <?php
 
-if (false)
-{
+  /**
+   * This file is part of the Achievo ATK distribution.
+   * Detailed copyright and licensing information can be found
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
+   * included in the distribution.
+   *
+   * @package atk
+   * @subpackage testcases
+   *
+   * @copyright (c)2008 Ibuildings.nl BV
+   * @license http://www.achievo.org/atk/licensing ATK Open Source License
+   *
+   * @version $Revision: 6065 $
+   */
+
+/**
+ * @internal
+ */
+
 atkimport('atk.datagrid.atkdatagrid');
 
 /**
  * Tests for the atkDataGrid class.
+ * @internal
+ * @package atk
+ * @subpackage testcases
  */
 class test_atkDataGrid extends atkTestCase
 {
@@ -163,9 +183,5 @@ class test_atkDataGrid extends atkTestCase
     $this->assertEqual(84, $grid->getCount());        
   }
 }
-}
-else
-{
-  class test_atkdatagrid extends atkTestCase {}
-}
 ?>
+

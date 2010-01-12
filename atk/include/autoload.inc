@@ -11,45 +11,44 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.3 $
-   * $Id: autoload.inc,v 1.3 2007/03/25 17:58:01 peter Exp $
+   * @version $Revision: 6236 $
+   * $Id: autoload.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
-  
-  if (atkconfig('autoload_classes', true))
+
+  /**
+   * The autoloader, autoloads classes that PHP can't find.
+   * PHP 5 only.
+   *
+   * @param string $classname The name of the class PHP can't find
+   */
+  function ATK_autoload($classname)
   {
-    atkimport('atk.utils.atkclassloader');
-    
     /**
-     * The autoloader, autoloads classes that PHP can't find.
-     * PHP 5 only.
+     * We exempt some external libraries from autoloading because
+     * they create a loop by checking for their own existance
+     * in the following manner:
      *
-     * @param string $classname The name of the class PHP can't find
+     * if (!class_exists('Smarty'))
+     * {
+     *   class Smarty
+     *   ....
+     * }
+     *
+     * This fraks up the autoloader.
+     * If anyone has a better way to prevent this, please be my guest...
      */
-    function __autoload($classname)
+    if (!empty($classname) && !in_array($classname,array('Smarty','Services_JSON','pear','PEAR_Error')))
     {
-      /**
-       * We exempt some external libraries from autoloading because 
-       * they create a loop by checking for their own existance 
-       * in the following manner:
-       * 
-       * if (!class_exists('Smarty'))
-       * {
-       *   class Smarty
-       *   ....
-       * }
-       * 
-       * This fraks up the autoloader.
-       * If anyone has a better way to prevent this, please be my guest...
-       */
-      if (!in_array($classname,array('Smarty','Services_JSON','pear','PEAR_Error')))
+      atkwarning("AUTOLOAD TRIGGERED BY {$classname}");
+      $classpath = atkClassLoader::findClass($classname);
+
+      if ($classpath && atkimport($classpath))
       {
-        $classpath = atkClassLoader::findClass($classname);
-        
-        if ($classpath && atkimport($classpath)) 
-        {
-          atkdebug("Autoloaded: ".$classname);
-        } 
+        atkdebug("Autoloaded: ".$classname);
       }
     }
   }
+
+  spl_autoload_register('ATK_autoload');
+
 ?>

@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.5 $
-   * $Id: class.atkdhtmlmenu.inc,v 5.5 2006/01/16 10:29:20 guido Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkdhtmlmenu.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -28,12 +28,21 @@
   {
     var $m_height;
 
+    /**
+     * Constructor
+     *
+     * @return atkDhtmlMenu
+     */
     function atkDhtmlMenu()
     {
       $this->m_height = "50";
     }
 
-
+    /**
+     * Render the menu
+     *
+     * @return string The rendered menu
+     */
     function render()
     {
 
@@ -145,21 +154,41 @@
       return $string;
     }
 
+    /**
+     * Get the menu height
+     *
+     * @return int The height of the menu
+     */
     function getHeight()
     {
       return $this->m_height;
     }
 
+    /**
+     * Get the menu position
+     *
+     * @return int Menu is positioned at the top
+     */
     function getPosition()
     {
       return MENU_TOP;
     }
 
+    /**
+     * Is this menu scrollable?
+     *
+     * @return int Menu is not scrollable
+     */
     function getScrollable()
     {
       return MENU_UNSCROLLABLE;
     }
 
+    /**
+     * Is this menu multilevel?
+     *
+     * @return int This menu is not multilevel
+     */
 		function getMultilevel()
 		{
 			return MENU_NOMULTILEVEL;

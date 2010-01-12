@@ -1,15 +1,27 @@
 <?php
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage scheduler
+ *
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision: 5044 $
+ * $Id: class.scheduler_notes.inc 5044 2008-06-23 20:41:04Z sandy $
+ */
 
 /**
- * Module Calendar
- * Class schedule_notes
- *
  * This class makes it possible to add notes to a schedule.
- *
- * $Id: class.scheduler_notes.inc,v 1.5 2008/02/08 22:55:22 sandy Exp $
- * @author S. Pleyte  <sandy@achievo.org>
- * @version $Revision: 1.5 $
- *
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage scheduler
+ * @since 1.3.0
  */
 
 useattrib("atkdateattribute");

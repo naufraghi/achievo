@@ -11,8 +11,8 @@
    * @copyright (c)2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.6 $
-   * $Id: class.atkfrontcontroller.inc,v 1.6 2008/01/18 12:07:17 harrie Exp $
+   * @version $Revision: 6323 $
+   * $Id: class.atkfrontcontroller.inc 6504 2009-09-17 07:40:11Z harrie $
    */
 
   /**
@@ -71,7 +71,6 @@
      * Dispatch request. Find the right controller, let it handle the request
      * and return it's result.
      *
-     * @param string $uri controller request uri
      * @param array $vars custom variables, will be merged with the request variables
      *                    and overwrite existing (request) variables with the same name
      *                    unless $merge is set to false
@@ -83,10 +82,14 @@
     {
       $parent = self::getCurrent();
 
+      // UriParam can be used to change the default key value of the uri in url's and forms.
+      // This is useful to have multiple controllers on one page.
+      $uriParam = (isset($vars['uri_param'])) ? $vars['uri_param'] : "uri";
+
       // If this is the root controller we first look if a request variable named URI
       // is set, if so we use this URI, else we fallback to the custom (default) URI. If
       // this is a nested controller, we should always respect the custom given URI.
-      $uri = $parent == null && isset($_REQUEST['uri']) ? $_REQUEST['uri'] : $vars['uri'];
+      $uri = $parent == null && isset($_REQUEST[$uriParam]) ? $_REQUEST[$uriParam] : $vars[$uriParam];
 
       if ($merge)
       {
@@ -97,6 +100,7 @@
         else
         {
           $request = $_REQUEST;
+          unset($request['uri_param']);
         }
 
         $vars = array_merge($request, $vars);
@@ -114,6 +118,21 @@
     }
 
     /**
+     * Returns the parts from the uri like
+     * module, controller and action
+     *
+     * @param string $uri
+     * @return array array(module,controller,action)
+     */
+    protected static function uriParts($uri)
+    {
+      if ($uri{0} == '/')
+        $uri = substr($uri, 1);
+
+      return explode('/', $uri);
+    }
+
+    /**
      * Create controller based on the given URI.
      *
      * @param string $uri uri string
@@ -122,10 +141,7 @@
      */
     protected static function create($uri, $parent=NULL)
     {
-      if ($uri{0} == '/')
-        $uri = substr($uri, 1);
-
-      list($module, $name, $action) = explode('/', $uri);
+      list($module, $name, $action) = self::uriParts($uri);
 
       if ($action == NULL)
         $action = 'index';
@@ -188,6 +204,8 @@
      *
      * @param string $module module name
      * @param string $name   controller name
+     * @param string $action
+     * @param atkFrontController $parent 
      */
     protected function __construct($module, $name, $action, $parent = NULL)
     {
@@ -267,7 +285,7 @@
      *
      * @return string controller name
      */
-    protected function getName()
+    protected function getname()
     {
       return $this->m_name;
     }
@@ -296,6 +314,8 @@
      * Add response header. (Will only be outputted when
      * renderPartial or renderContent is called for the
      * root controller).
+     * 
+     * @param string $header The header to add
      */
     protected function addHeader($header)
     {
@@ -340,7 +360,7 @@
      *
      * @return atkTmpFile
      */
-    private function getActionCacheFile()
+    protected function getActionCacheFile()
     {
       atkimport('atk.utils.atktmpfile');
       $path = 'frontcontrollers/'.$this->m_module.'/'.$this->m_name.'/'.$this->m_action;
@@ -352,7 +372,7 @@
     /**
      * Is this action cached?
      */
-    private function isActionCached()
+    protected function isActionCached()
     {
       // action is never cached
       if (!in_array($this->m_action, $this->m_cacheableActions)) return false;
@@ -364,7 +384,7 @@
     /**
      * Load from action cache.
      */
-    private function loadFromActionCache()
+    protected function loadFromActionCache()
     {
       $file = $this->getActionCacheFile();
 
@@ -381,7 +401,7 @@
     /**
      * Store current action results in cache.
      */
-    private function storeInActionCache()
+    protected function storeInActionCache()
     {
       // action is never cached
       if (!in_array($this->m_action, $this->m_cacheableActions)) return;
@@ -403,7 +423,7 @@
     /**
      * Register styles and scripts using the bridge.
      */
-    private function registerStylesAndScripts()
+    protected function registerStylesAndScripts()
     {
       foreach ($this->m_styleSheets as $entry)
         $this->m_bridge->registerStyleSheet($entry['file'], $entry['media']);
@@ -484,6 +504,11 @@
 
           echo $this->m_result;
 
+          if (!isset($this->m_contentType) || $this->m_contentType == 'text/html')
+          {
+             atkimport("atk.utils.atkdebugger");
+            echo atkDebugger::getInstance()->renderDebugAndErrorMessages();
+          }
           die;
         }
       }
@@ -503,11 +528,11 @@
      */
     protected function getActionMethod()
     {
-      $methodName = str_replace('_', '', $this->m_action).'Action';
-      if (!method_exists($this, $methodName))
+      $methodname = str_replace('_', '', $this->m_action).'Action';
+      if (!method_exists($this, $methodname))
         throw new Exception("Action method not found!");
 
-      $method = new ReflectionMethod(get_class($this), $methodName);
+      $method = new ReflectionMethod(get_class($this), $methodname);
       if (!$method->isPublic())
         throw new Exception("Action method is not public!");
 
@@ -539,7 +564,7 @@
     /**
      * Handle exception.
      *
-     * @param $exception exception
+     * @param Exception $exception exception
      */
     protected function handleException($exception)
     {
@@ -619,6 +644,8 @@
 
     /**
      * Is template variable set?
+     * 
+     * @param string $name 
      */
     public function __isset($name)
     {
@@ -737,7 +764,19 @@
      */
     protected function buildUrl($uri, $vars)
     {
-      return $this->m_bridge->buildUrl($uri, $vars);
+      $vars[$this->getUriParam()] = $uri;
+      return $this->m_bridge->buildUrl($vars);
+    }
+
+    /**
+     * Returns the correct key value for the uri in forms and url's
+     * Defaults to 'uri'
+     *
+     * @return string uri_key
+     */
+    protected function getUriParam()
+    {
+      return isset($this->request->uri_param) ? $this->request->uri_param : 'uri';
     }
 
     /**
@@ -790,17 +829,18 @@
       $action = isset($params['action']) ? $params['action'] : NULL;
       $vars = isset($params['vars']) ? $params['vars'] : array();
 
+
       unset($params['controller']);
       unset($params['action']);
       unset($params['vars']);
 
       $uri = $this->uri($controller, $action);
-      $vars = array_merge($vars, $params, array('uri' => $uri));
+      $vars = array_merge($vars, $params, array($this->getUriParam() => $uri));
 
       $result = '';
       foreach ($vars as $name => $value)
       {
-        $value = htmlentities($value);
+        $value = atk_htmlentities($value);
         $result .= "<input type=\"hidden\" name=\"{$name}\" value=\"{$value}\">\n";
       }
 
@@ -828,7 +868,7 @@
     /**
      * Smarty partial function, render partial template.
      *
-     * @param $params parameters
+     * @param array $params parameters
      * @param Smarty $smarty smarty instance
      * @return string rendered partial
      */
@@ -855,6 +895,7 @@
      * @param string $controller controller name (uses current if empty)
      * @param string $action action name (uses current if empty and controller isn't changed, uses index if empty and other controller)
      * @param array $vars request vars
+     * @param bool $force Force redirect?
      * @return string url
      */
     protected function redirect($controller=NULL, $action=NULL, $vars=array(), $force=FALSE)
@@ -902,7 +943,10 @@
      */
     protected function registerStyleSheet($file, $media='all')
     {
-      $this->m_styleSheets[] = array('file' => $file, 'media' => $media);
+      if (is_object($this->m_parent))
+        $this->m_parent->registerStyleSheet($file,$media);
+      else
+        $this->m_styleSheets[] = array('file' => $file, 'media' => $media);
     }
 
     /**
@@ -912,7 +956,10 @@
      */
     protected function registerStyleCode($code)
     {
-      $this->m_styleCodes[] = array('code' => $code);
+      if (is_object($this->m_parent))
+        $this->m_parent->registerStyleCode($code);
+      else
+        $this->m_styleCodes[] = array('code' => $code);
     }
 
     /**
@@ -922,7 +969,10 @@
      */
     protected function registerScriptFile($file)
     {
-      $this->m_scriptFiles[] = array('file' => $file);
+      if (is_object($this->m_parent))
+        $this->m_parent->registerScriptFile($file);
+      else
+        $this->m_scriptFiles[] = array('file' => $file);
     }
 
     /**
@@ -932,7 +982,10 @@
      */
     protected function registerScriptCode($code)
     {
-      $this->m_scriptCodes[] = array('code' => $code);
+      if (is_object($this->m_parent))
+        $this->m_parent->registerScriptCode($code);
+      else
+        $this->m_scriptCodes[] = array('code' => $code);
     }
 
     /**
@@ -994,6 +1047,7 @@
         $this->registerStyleSheet(moduleDir($this->m_module)."styles/{$this->m_name}.js");
       }
 
+
       $this->m_partial = $partial;
       $this->m_result = $this->_render($template, $vars, $partial);
       $this->m_rendered = true;
@@ -1046,15 +1100,16 @@
     }
 
     /**
-     * Render template.
+     * Transform the template to use to a filename
      *
-     * @param string $template template name
-     * @param array $vars template variables
-     * @param boolean $partial render partial?
+     * example: getFileForTemplate('tekno'): module/controller/tekno.tpl
      *
-     * @return string rendered template
+     * @param string $template
+     * @param array $vars
+     * @param bool   $partial
+     * @return string Filename for the template
      */
-    protected function _render($template, $vars, $partial)
+    protected function getFileForTemplate($template, $vars, $partial=false)
     {
       if ($template{0} != '/')
       {
@@ -1066,7 +1121,21 @@
         $template = implode('/', array_slice($parts, 0, count($parts) - 1)).'/'.($partial ? '_' : '').$parts[count($parts) - 1];
       }
 
-      $template = "{$template}.tpl";
+      return "{$template}.tpl";
+    }
+
+    /**
+     * Render template.
+     *
+     * @param string $template template name
+     * @param array $vars template variables
+     * @param boolean $partial render partial?
+     *
+     * @return string rendered template
+     */
+    protected function _render($template, $vars, $partial)
+    {
+      $template = $this->getFileForTemplate($template, $vars, $partial);
 
       /* @var $smarty Smarty */
       $smarty = atkinstance('atk.ui.atksmarty');
@@ -1074,11 +1143,9 @@
       $oldVars = $smarty->get_template_vars();
       $oldSerials = $smarty->_cache_serials;
       $oldCaching = $smarty->caching;
-      $oldForceCompile = $smarty->force_compile;
 
       $smarty->assign($vars);
       $smarty->caching = false;
-      $smarty->force_compile = true;
 
       $result = $smarty->fetch($this->getTemplatePath($template));
 
@@ -1090,7 +1157,6 @@
         $result = $smarty->fetch($layoutTemplatePath);
       }
 
-      $smarty->force_compile = $oldForceCompile;
       $smarty->caching = $oldCaching;
       $smarty->_cache_serials = $oldSerials;
       $smarty->assign($oldVars);
@@ -1103,6 +1169,6 @@
      */
     public function __toString()
     {
-      return (!$this->isRoot() ? $this->getParent()->__toString().'/' : '').$this->getName();
+      return (!$this->isRoot() ? $this->getParent()->__toString().'/' : '').$this->getname();
     }
   }

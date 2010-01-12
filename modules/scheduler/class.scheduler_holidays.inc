@@ -1,15 +1,19 @@
 <?php
-
 /**
- * Module Calendar
- * Class schedule_holidays
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
  *
- * This class makes it possible to schedule recurrent holidays
+ * @package achievo
+ * @subpackage scheduler
  *
- * $Id: class.scheduler_holidays.inc,v 1.6 2007/08/29 19:35:40 sandy Exp $
- * @author Sandy Pleyte <sandy@achievo.org>
- * @version $Revision: 1.6 $
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
  *
+ * @version $Revision: 5513 $
+ * $Id: class.scheduler_holidays.inc 5513 2009-03-21 12:04:34Z sandy $
  */
 
 useattrib("atkboolattribute");
@@ -22,6 +26,13 @@ include moduleDir("scheduler")."utils/class.calculateHoliday.inc";
 include moduleDir("scheduler")."utils/class.xmlfunctions.inc";
 atkimport("modules.utils.dateutil");
 
+/**
+ * This class makes it possible to schedule holidays.
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage scheduler
+ * @since 1.3.0
+ */
 class scheduler_holidays extends atkNode
 {
   var $m_country_filter = "";
@@ -45,13 +56,13 @@ class scheduler_holidays extends atkNode
     $this->add(new atkAttribute("name",AF_OBLIGATORY|AF_SEARCHABLE));
     $this->add(new atkListAttribute("type",array("weekend"),array("weekend"),AF_SEARCHABLE));
     $this->add(new atkListAttribute("day",array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31),
-                                          array(),AF_HIDE_LIST|AF_NO_TRANSLATION));
+		                                      array(),AF_HIDE_LIST|AF_NO_TRANSLATION));
     $this->add(new atkListAttribute("month",$month_options,$month_values,AF_HIDE_LIST));
     $this->add(new atkListAttribute("special",array("easter"),array("easter"),AF_HIDE_LIST));
     $this->add(new atkNumberAttribute("day_offset",AF_HIDE_LIST,3,0));
     $this->add(new atkNumberAttribute("length",AF_HIDE_LIST,2,0));
     $this->add(new atkListAttribute("weekday",array("monday","tuesday","wednesday","thursday","friday","saturday","sunday"),
-                                              array("0","1","2","3","4","5","6"),AF_HIDE_LIST));
+		                                          array(0,1,2,3,4,5,6),AF_HIDE_LIST));
     $this->add(new atkListAttribute("moveto",array("ifsatorsunthen","ifsunthen","ifsatorsunthen2"),array("1","2","3"),AF_HIDE_LIST));
     $this->add(new atkManyToOneRelation("schedulecategory", "scheduler.scheduler_category",AF_OBLIGATORY|AF_RELATION_AUTOLINK));
     $this->add(new atkCountryAttribute("country","world",array(),array(),AF_OBLIGATORY|AF_SEARCHABLE));
@@ -137,14 +148,7 @@ class scheduler_holidays extends atkNode
     $date = str_replace("-","",$date);
     $year = substr($date, 0,4);
     $holidays = $this->_getHolidays($year);
-    //foreach ($holidays as $key=>$val) {atkDebug("$key: $val");}
-    if (array_key_exists($date,$holidays) && is_array($holidays[$date]) && count($holidays[$date])>0) {
-        //atkDebug("isHoliday($date)");
-        return true;
-    } else {
-        //atkDebug("not isHoliday($date)");
-        return false;
-    }
+    return (array_key_exists($date,$holidays) && is_array($holidays[$date]) && count($holidays[$date])>0?true:false);
   }
 
  /**

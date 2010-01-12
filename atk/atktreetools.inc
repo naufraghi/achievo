@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.5 $
-   * $Id: atktreetools.inc,v 5.5 2006/03/14 14:27:37 boy Exp $
+   * @version $Revision: 3451 $
+   * $Id: atktreetools.inc 3451 2006-03-14 14:27:37Z boy $
    */
    
   /**

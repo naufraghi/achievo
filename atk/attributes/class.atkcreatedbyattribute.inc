@@ -12,8 +12,8 @@
    * @copyright (c)2006 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.1 $
-   * $Id: class.atkcreatedbyattribute.inc,v 1.1 2007/02/14 07:49:31 sandy Exp $
+   * @version $Revision: 4640 $
+   * $Id: class.atkcreatedbyattribute.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

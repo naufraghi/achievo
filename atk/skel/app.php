@@ -18,8 +18,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.8 $
-   * $Id: app.php,v 5.8 2007/04/10 20:06:16 sandy Exp $
+   * @version $Revision: 6301 $
+   * $Id: app.php 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -32,7 +32,7 @@
   atksecure();
   $output='<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">';
   $output.="\n<html>\n <head>\n";
-  $output.='  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset='.atktext("charset","","atk").'">';
+  $output.='  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset='.atkGetCharset().'">';
   $output.="\n  <title>".atktext('app_title')."</title>\n </head>\n";
 
   atkimport("atk.menu.atkmenu");
