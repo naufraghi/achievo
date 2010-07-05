@@ -131,9 +131,9 @@ class timebalance extends atkNode
         else
             $single_user = "";
 
-        /* Aggiunto controllo contratti, altrimenti le ore vengono aggiunte per
-        ogni contratto (esempio: una persona con 2 contratti, di cui uno
-        correttamente terminato, si ritrova 2 volte le ore segnate */
+        /* Rimossa la join con usercontract dato che era la causa del problema
+        e i dati presenti nella tabella non erano utilizzati da nessuna parte
+        nella query. */
         $ore_registrate = "
                 SELECT person.id, person.userid, person.firstname, person.lastname,
                     hours.activitydate, sum(hours.time)/60 AS time_spent,
@@ -146,11 +146,8 @@ class timebalance extends atkNode
                     JOIN phase ON hours.phaseid = phase.id
                     JOIN activity ON hours.activityid = activity.id
                     JOIN project ON phase.projectid = project.id
-                    JOIN usercontract ON usercontract.userid = person.id
                 WHERE activitydate >= '$date_start'
                     AND activitydate < '$date_end'
-                    AND usercontract.startdate >= '$date_start'
-                    AND usercontract.enddate < '$date_end'
                     $single_user
                 GROUP BY person.id, person.userid, person.firstname, person.lastname,
                     hours.activitydate, malattia, ferie, d20
