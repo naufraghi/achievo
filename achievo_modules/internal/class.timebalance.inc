@@ -150,7 +150,7 @@ class timebalance extends atkNode
                 WHERE activitydate >= '$date_start'
                     AND activitydate < '$date_end'
                     AND usercontract.startdate >= '$date_start'
-                    AND usercontract.enddate >= '$date_end'
+                    AND usercontract.enddate < '$date_end'
                     $single_user
                 GROUP BY person.id, person.userid, person.firstname, person.lastname,
                     hours.activitydate, malattia, ferie, d20
