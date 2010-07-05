@@ -22,9 +22,9 @@
   // the database to use and the user/password.
   //
   $config_db["default"]["host"] = "localhost";
-  $config_db["default"]["db"]   = "achievo_develer";
+  $config_db["default"]["db"]   = "achievo";
   $config_db["default"]["user"] = "achievo";
-  $config_db["default"]["password"] = "achievo";
+  $config_db["default"]["password"] = "XXX";
   $config_db["default"]["charset"] = "utf8";
   $config_db["default"]["collate"] = "utf8_general_ci";
 
@@ -46,7 +46,7 @@
   // The language of the application. You can use any language for which
   // a language file is present in the languages directory.
   //
-  $config_language="it";
+  $config_language="en";
 
   // The menu to use (For older themes this is 'achievo', for newer this
   //  is 'achievo_modern'
@@ -71,7 +71,7 @@
   // useraccounts in Achievo. If you don't, users can login, but won't
   // have permission to do anything.
   //
-  $config_authentication = "db";
+  $config_authentication = "server";
 
   // If you set $config_authentication to "pop3", you must configure
   // which server to use:
@@ -91,7 +91,6 @@
   // (disable it by putting // in front of it)
   //
   //$config_administratorpassword = "superupgrade";
-  $config_administratorpassword = "demo";
 
   // If you set $config_auth_dropdown to true, the login screen will contain
   // a list of available usernames. If you set it to false, there will be
