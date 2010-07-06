@@ -268,15 +268,33 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $content .= "<table border='1'>\n";
             $content .= $banca_head;
 
-            /* Sembrerebbe che per funzionare come ci si aspetta debbano essere
-            passati la data precedente a date_start e la data precedente a
-            date_end. Altrimenti inserisce nella banca ore le ore del primo
-            giorno del mese e le ore del primo del successivo.
+            /*
+            Affinche' il conteggio degli straordinari funzioni correttamente
+            e' necessario che:
+             * il giorno in cui si calcola il credito/debito di ore all'inizio
+             del range selezionato sia l'ultimo del mese precedente.
+             * il giorno in cui si calcola il credito/debito di ore alla fine
+             del bilancio sia l'ultimo del mese in corso.
 
-            TODO: sistemare questo problema.
+            Pertanto i valori di date_start e date_end sono modificati per
+            rispecchiare queste specifiche.
+
+            NOTE: queste modifica ha come requisito l'eliminazione dei check
+            inseriti da lmancini nella revisione r28891. Questo potrebbe
+            portare a malfunzionamenti. Ergo, prima di inserire le modifiche
+            sull'achievo in produzione sarebbe raccomandabile il testarlo. A
+            fondo.
             */
-            $userdata['date_start']['balance'] = $this->overtime_node->getBalance($results["date_start"], $userdata['id']);
-            $userdata['date_end']['balance'] = $this->overtime_node->getBalance($results["date_end"], $userdata['id']);
+            $tmp_d = date_create($results["date_start"]);
+            $tmp_d->modify("-1 day");
+            $tmp_d = format_date($tmp_d);
+            $userdata['date_start']['balance'] = $this->overtime_node->getBalance($tmp_d, $userdata['id']);
+
+            $tmp_d = date_create($results["date_end"]);
+            $tmp_d->modify("-1 day");
+            $tmp_d = format_date($tmp_d);
+            $userdata['date_end']['balance'] = $this->overtime_node->getBalance($tmp_d, $userdata['id']);
+
             $banca_ore = $userdata['date_start']['balance']['balance'] + $userdata['tot_worked'];
 
             foreach ($userdata['activity'] as $date => $activity)
@@ -346,7 +364,13 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $content .= "<tr><td colspan='11'>$title<dl>\n";
             $content .= "<b>$userid:</b> ".$userdata['fullname']."<br>";
             $content .= "<b>Banca ore al ".$results["date_start"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_start'])."<br>";
-            $content .= "<b>Banca ore al ".$results["date_end"].":</b> ".float2str($userdata['date_end']['balance']['balance'])."<br>";
+            /*
+            Aggiunto link per permettere di modificare il quantitativo di ore
+            presenti in banca ore dopo aver stabilito con il dipendente quante
+            di queste devono essere pagate come straordinari e quante messe da
+            parte.
+            */
+            $content .= "<b>Banca ore al ".$results["date_end"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_end'])."<br>";
             $content .= "<b>Ore Previste:</b> ".float2str($userdata['tot_contract'])."<br>";
             $content .= "<b>Ore Registro:</b> ".float2str($userdata['tot_registro'])."<br>";
             $content .= "<b>Ore Lavorate:</b> <a title='".float2str($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
