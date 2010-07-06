@@ -268,6 +268,13 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $content .= "<table border='1'>\n";
             $content .= $banca_head;
 
+            /* Sembrerebbe che per funzionare come ci si aspetta debbano essere
+            passati la data precedente a date_start e la data precedente a
+            date_end. Altrimenti inserisce nella banca ore le ore del primo
+            giorno del mese e le ore del primo del successivo.
+
+            TODO: sistemare questo problema.
+            */
             $userdata['date_start']['balance'] = $this->overtime_node->getBalance($results["date_start"], $userdata['id']);
             $userdata['date_end']['balance'] = $this->overtime_node->getBalance($results["date_end"], $userdata['id']);
             $banca_ore = $userdata['date_start']['balance']['balance'] + $userdata['tot_worked'];
