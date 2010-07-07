@@ -229,6 +229,11 @@
     function addOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"addOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
+      /*
+      Questa clausola e' stata rimossa perche' incompatibile con il nostro
+      modello di gestione degli straordinari.
+      */
+      // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
       $newid = $db->nextid("overtime_balance");
       $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
@@ -238,6 +243,11 @@ $this->debuglog(array("function"=>"addOvertimeBalance","userid"=>$userid, "day"=
     function saveOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
+      /*
+      Questa clausola e' stata rimossa perche' incompatibile con il nostro
+      modello di gestione degli straordinari.
+      */
+      // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
       $sql = "UPDATE overtime_balance SET balance = $balance WHERE userid = '$userid' AND day = '$day'";
       $db->query($sql);
@@ -251,6 +261,11 @@ $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"
     function updateOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
+      /*
+      Questa clausola e' stata rimossa perche' incompatibile con il nostro
+      modello di gestione degli straordinari.
+      */
+      // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
       $recs = $db->getrows("SELECT id FROM overtime_balance WHERE userid = '$userid' AND day = '$day'");
       if (!count($recs))
