@@ -307,7 +307,10 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
     function getUserHours($begin, $end, $userid)
     {
       $db = &atkGetDb();
-      $sql = "SELECT * FROM hours WHERE userid = '$userid' AND activitydate >= '$begin' AND activitydate <= '$end'";
+      // Modificata query per escludere dalla banca ore le ore di ferie.
+      //$sql = "SELECT * FROM hours WHERE userid = '$userid' AND activitydate >= '$begin' AND activitydate <= '$end'";
+      $sql = "select hours.* from hours join activity a on activityid = a.id join phase ph on phaseid = ph.id join project p on ph.projectid = p.id where not (p.name = '__dipendenti' and ph.name = 'ferie') and userid = '$userid' and activitydate >= '$begin' and activitydate <= '$end'";
+      
       return $db->getRows($sql);
     }
 

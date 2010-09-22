@@ -316,7 +316,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 if ( array_key_exists($date, $workdays) ) {
                     $content .= "<td align='right'>".float2str($activity['time_contract'])."</td>";
                     if ($banca_ore > 0) {
-                        $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'] - $activity['time_permessi'];
+                        $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_permessi'];
                         $ore_registro = min($ore_registro, $banca_ore);
                     } else {
                         $ore_registro = 0.0;
