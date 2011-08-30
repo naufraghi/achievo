@@ -17,6 +17,11 @@ function str_number_format($var, $digits)
         return $var;
 }
 
+function startswith($text, $prefix)
+{
+    return strpos($text, $prefix) === 0;
+}
+
 //Supporto per la colorazione alternata delle righe
 $_flipflop = true;
 function flipflop()
@@ -24,6 +29,16 @@ function flipflop()
     global $_flipflop;
     $_flipflop = !$_flipflop;
     return $_flipflop;
+}
+
+function project_group($project_name)
+{
+  $prefixes = array("prj_", "d20_", "ext_", "__");
+  foreach ($prefixes as $gkey)
+  {
+    if (startswith($project_name, $gkey)) return "PREFIX(".$gkey.")";
+  }
+  return "other";
 }
 
 class timesummary extends atkNode
@@ -130,72 +145,68 @@ class timesummary extends atkNode
         $content .= "<h2>$title</h2>\n";
         $content .= "<p>Le ore segnate come malattia/ferie non vengono conteggiate.</p>\n";
 
-        // Tabella ore lavorate per progetto
-        $content .= "<table border='1'>\n";
-        $content .= "<tr><th>User Id</th><th>Progetto</th><th>Ore</th><th>Euro</th></tr>\n";
-        $progetti = array();
-        $persone = array();
-        foreach ($results['rows'] as $key => $r)
-        {
-            if (!array_key_exists($r['prj'], $progetti)) {
-                $progetti[$r['prj']] = array("ore" => 0.0, "euro" => 0.0);
-            }
-            if (!array_key_exists($r['userid'], $persone)) {
-                $persone[$r['userid']] = array("ore" => 0.0, "euro" => 0.0, "euro_ora" => 0.0, "lastmod" => "0000-00-00");
-            }
-            $progetti[$r['prj']]['ore'] += $r['ore'];
-            $progetti[$r['prj']]['lastmod'] = max($progetti[$r['prj']]['lastmod'], $r['lastmod']);
-            $persone[$r['userid']]['ore'] += $r['ore'];
-            $persone[$r['userid']]['lastmod'] = max($persone[$r['userid']]['lastmod'], $r['lastmod']);
-
-            atkdebug("Euro ora loop: ".var_export($r, 1)." incr ore prj:".var_export($progetti[$r['prj']], 1).", user:".var_export($persone[$r['userid']], 1));
-
-            if (array_key_exists($r['userid'], $results['euro_ora_array'])) {
-                $r['euro'] = $r['ore'] * $results['euro_ora_array'][$r['userid']];
-                $persone[$r['userid']]['euro_ora'] = $results['euro_ora_array'][$r['userid']];
-            } else {
-                $r['euro'] = "Manca euro/h";
-                $persone[$r['userid']]['euro_ora'] = "Manca euro/h";
-            }
-
-            if (is_numeric($progetti[$r['prj']]['euro']) and is_numeric($r['euro'])) {
-                $progetti[$r['prj']]['euro'] += $r['euro'];
-            } else {
-                $progetti[$r['prj']]['euro'] = "Manca euro/h";
-            }
-            if (is_numeric($persone[$r['userid']]['euro']) and is_numeric($r['euro'])) {
-                $persone[$r['userid']]['euro'] += $r['euro'];
-            } else {
-                $persone[$r['userid']]['euro'] = "Manca euro/h";
-            }
-
-            if (flipflop()) {
-                $content .= "<tr>";
-            } else {
-                $content .= "<tr style='background: #DDDDC0'>";
-            }
-            $content .= "<td>".$r['userid']."</td>";
-            $content .= "<td>".$r['prj']."</td>";
-            $content .= "<td align='right'>".str_number_format($r['ore'], 2)."</td>";
-            $content .= "<td align='right'>".str_number_format($r['euro'], 2)."</td>";
-            $content .= "</tr>\n";
-        }
-        $content .= "</table>";
-
-        // Tabella ore per progetto / ore per persona
+        // Tabelle persone
         $content .= "<table><tr><td>";
-            // Tabella ore per progetto
-            $content .= "<table border='1'><tr><th>Totale progetto</th><th>Ore</th><th>Euro</th><th>Modificato</th></tr>";
-            uksort($progetti, "strcasecmp"); //Ordina per chiave, le persone sono già ordinate
-            foreach ($progetti as $key => $prj)
+            // Tabella ore lavorate per progetto
+            $content .= "<table border='1'>\n";
+            $content .= "<tr><th>User Id</th><th>Progetto</th><th>Ore</th><th>Euro</th></tr>\n";
+            $progetti = array();
+            $gprogetti = array();
+            $persone = array();
+            foreach ($results['rows'] as $key => $r)
             {
-                if (flipflop())
+                if (!array_key_exists($r['prj'], $progetti)) {
+                    $progetti[$r['prj']] = array("ore" => 0.0, "euro" => 0.0);
+                }
+                $r['gprj'] = project_group($r['prj']);
+                if (!array_key_exists($r['gprj'], $gprogetti)) {
+                    $gprogetti[$r['gprj']] = array("ore" => 0.0, "euro" => 0.0);
+                }
+                if (!array_key_exists($r['userid'], $persone)) {
+                    $persone[$r['userid']] = array("ore" => 0.0, "euro" => 0.0, "euro_ora" => 0.0, "lastmod" => "0000-00-00");
+                }
+                $progetti[$r['prj']]['ore'] += $r['ore'];
+                $progetti[$r['prj']]['lastmod'] = max($progetti[$r['prj']]['lastmod'], $r['lastmod']);
+                $gprogetti[$r['gprj']]['ore'] += $r['ore'];
+                $gprogetti[$r['gprj']]['lastmod'] = max($gprogetti[$r['gprj']]['lastmod'], $r['lastmod']);
+                $persone[$r['userid']]['ore'] += $r['ore'];
+                $persone[$r['userid']]['lastmod'] = max($persone[$r['userid']]['lastmod'], $r['lastmod']);
+
+                atkdebug("Euro ora loop: ".var_export($r, 1)." incr ore prj:".var_export($progetti[$r['prj']], 1).", user:".var_export($persone[$r['userid']], 1));
+
+                if (array_key_exists($r['userid'], $results['euro_ora_array'])) {
+                    $r['euro'] = $r['ore'] * $results['euro_ora_array'][$r['userid']];
+                    $persone[$r['userid']]['euro_ora'] = $results['euro_ora_array'][$r['userid']];
+                } else {
+                    $r['euro'] = "Manca euro/h";
+                    $persone[$r['userid']]['euro_ora'] = "Manca euro/h";
+                }
+
+                if (is_numeric($progetti[$r['prj']]['euro']) and is_numeric($r['euro'])) {
+                    $progetti[$r['prj']]['euro'] += $r['euro'];
+                } else {
+                    $progetti[$r['prj']]['euro'] = "Manca euro/h";
+                }
+                if (is_numeric($gprogetti[$r['gprj']]['euro']) and is_numeric($r['euro'])) {
+                    $gprogetti[$r['gprj']]['euro'] += $r['euro'];
+                } else {
+                    $gprogetti[$r['gprj']]['euro'] = "Manca euro/h";
+                }
+                if (is_numeric($persone[$r['userid']]['euro']) and is_numeric($r['euro'])) {
+                    $persone[$r['userid']]['euro'] += $r['euro'];
+                } else {
+                    $persone[$r['userid']]['euro'] = "Manca euro/h";
+                }
+
+                if (flipflop()) {
                     $content .= "<tr>";
-                else
+                } else {
                     $content .= "<tr style='background: #DDDDC0'>";
-                $content .= "<th>$key</th><td align='right'>".str_number_format($prj['ore'], 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($prj['euro'], 2)."</td>";
-                $content .= "<td>".$prj['lastmod']."</td>";
+                }
+                $content .= "<td>".$r['userid']."</td>";
+                $content .= "<td>".$r['prj']."</td>";
+                $content .= "<td align='right'>".str_number_format($r['ore'], 2)."</td>";
+                $content .= "<td align='right'>".str_number_format($r['euro'], 2)."</td>";
                 $content .= "</tr>\n";
             }
             $content .= "</table>";
@@ -222,6 +233,41 @@ class timesummary extends atkNode
             }
             $content .= "<th>Totale</th><td align='right'>".str_number_format($totale_ore_develer, 2)."</td>";
             $content .= "<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>\n";
+            $content .= "</table>";
+        $content .= "</td></tr></table>";
+
+        // Tabelle progetti
+        $content .= "<table><tr><td>";
+            // Tabella ore per progetto
+            $content .= "<table border='1'><tr><th>Totale progetto</th><th>Ore</th><th>Euro</th><th>Modificato</th></tr>";
+            uksort($progetti, "strcasecmp"); //Ordina per chiave, le persone sono già ordinate
+            foreach ($progetti as $key => $prj)
+            {
+                if (flipflop())
+                    $content .= "<tr>";
+                else
+                    $content .= "<tr style='background: #DDDDC0'>";
+                $content .= "<th>$key</th><td align='right'>".str_number_format($prj['ore'], 2)."</td>";
+                $content .= "<td align='right'>".str_number_format($prj['euro'], 2)."</td>";
+                $content .= "<td>".$prj['lastmod']."</td>";
+                $content .= "</tr>\n";
+            }
+            $content .= "</table>";
+        $content .= "</td><td>";
+            // Tabella ore per gruppo progetti
+            $content .= "<table border='1'><tr><th>Totale gruppo progetti</th><th>Ore</th><th>Euro</th><th>Modificato</th></tr>";
+            uksort($gprogetti, "strcmp");
+            foreach ($gprogetti as $key => $prj)
+            {
+                if (flipflop())
+                    $content .= "<tr>";
+                else
+                    $content .= "<tr style='background: #DDDDC0'>";
+                $content .= "<th>$key</th><td align='right'>".str_number_format($prj['ore'], 2)."</td>";
+                $content .= "<td align='right'>".str_number_format($prj['euro'], 2)."</td>";
+                $content .= "<td>".$prj['lastmod']."</td>";
+                $content .= "</tr>\n";
+            }
             $content .= "</table>";
         $content .= "</td></tr></table>";
 
