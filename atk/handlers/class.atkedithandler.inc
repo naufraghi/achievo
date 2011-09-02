@@ -14,7 +14,7 @@
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision: 6351 $
-   * $Id: class.atkedithandler.inc 6541 2009-10-28 09:58:14Z peter $
+   * $Id: class.atkedithandler.inc 7031 2010-09-26 20:17:11Z sandy $
    */
 
   atkimport("atk.handlers.atkvieweditbase");
@@ -279,6 +279,8 @@
       $formstart = '<form id="'.$formIdentifier.'" name="'.$formIdentifier.'" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
                                    ' method="post" onsubmit="return globalSubmit(this)">'.
                                    session_form($this->getUpdateSessionStatus());
+                                   
+      $formstart .= '<input type="hidden" name="'.$this->getNode()->getEditFieldPrefix().'atkcsrftoken" value="'.$this->getCSRFToken().'" />';
 
       $formstart .= $controller->getHiddenVarsString();
 

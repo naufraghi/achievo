@@ -14,7 +14,7 @@
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision: 6323 $
-   * $Id: class.atkaddhandler.inc 6513 2009-09-25 08:32:04Z peter $
+   * $Id: class.atkaddhandler.inc 7031 2010-09-26 20:17:11Z sandy $
    */
 
   /**
@@ -186,6 +186,7 @@
 
 
       $formstart .= session_form(SESSION_NESTED, $this->getReturnBehaviour(), $node->getEditFieldPrefix());
+      $formstart .= '<input type="hidden" name="'.$this->getNode()->getEditFieldPrefix().'atkcsrftoken" value="'.$this->getCSRFToken().'" />';
       $formstart .= $controller->getHiddenVarsString();
 
       if (isset($node->m_postvars['atkfilter']))

@@ -12,8 +12,8 @@
    * @copyright (c)2008 Ibuildings B.V.
    * @license http://www.achievo.org/licensing Achievo Open Source License
    *
-   * @version $Revision: 5733 $
-   * $Id: class.documentfileattribute.inc 5733 2009-12-03 20:00:26Z sandy $
+   * @version $Revision: 5730 $
+   * $Id: class.documentfileattribute.inc 5730 2009-12-03 19:53:35Z sandy $
    */
 
   useattrib("atkfileattribute");
@@ -69,7 +69,7 @@
       $this->m_originalurl = $this->m_url;
       $this->m_localpath = $localpath;
       $this->m_allowpathcustomization = $allowpathcustomization;
-      $this->setAllowedFileTypes(atkconfig::get('docmanager','docmanager_allowedfiletypes'),array());
+      $this->setAllowedFileTypes(atkconfig::get('docmanager','docmanager_allowedfiletypes'));
     }
 
     /**

@@ -13,13 +13,13 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 6577 $
-   * $Id: version.inc 6577 2009-11-23 08:24:16Z peter $
+   * @version $Revision: 7031 $
+   * $Id: version.inc 7031 2010-09-26 20:17:11Z sandy $
    */
 
   /**
    * The current atk version
    */
-  $atk_version = "6.4.3";
+  $atk_version = "6.4.4";
   $atk_state   = "stable";
 ?>

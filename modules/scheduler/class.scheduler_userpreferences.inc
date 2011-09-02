@@ -12,8 +12,8 @@
  * @copyright (c)2008 Ibuildings B.V.
  * @license http://www.achievo.org/licensing Achievo Open Source License
  *
- * @version $Revision: 5467 $
- * $Id: class.scheduler_userpreferences.inc 5467 2009-03-01 18:42:59Z sandy $
+ * @version $Revision: 5861 $
+ * $Id: class.scheduler_userpreferences.inc 5861 2010-05-19 06:10:49Z sandy $
  */
 
   useattrib("atklistattribute");
@@ -29,10 +29,10 @@
   userelation("atkmanytomanyrelation");
   userelation("atkmanyboolrelation");
   userelation("atkshuttlerelation");
-  
+
   /**
    * This class for managing the scheduler preferences of a user
-   * 
+   *
    * @author Sandy Pleyte <sandy@achievo.org>
    * @package achievo
    * @subpackage scheduler
@@ -151,22 +151,22 @@
     {
       $userid = atkArrayNvl(atkgetUser(), "id");
       return array("timeschedule"=>30,
-                   "showweeknumbers"=>false,
-                   "showtodo"=>false,
-                   "showemployeebirthdays"=>false,
-                   "showcustomerbirthdays"=>false,
-                   "autorefresh"=>false,
+                   "showweeknumbers"=>0,
+                   "showtodo"=>0,
+                   "showemployeebirthdays"=>0,
+                   "showcustomerbirthdays"=>0,
+                   "autorefresh"=>0,
                    "refresh_interval"=>0,
                    "default_view"=>"day",
                    "default_userview"=>$userid,
                    "default_eventtime"=>array('hours'=>'01','minutes'=>'00','seconds'=>'00'),
                    "scheduler_emptycolor"=>"#DDDDDD",
                    "scheduler_emptyworkhourscolor"=>"#FFFFFF",
-                   "email_reminders"=>false,
-                   "email_addedevents"=>false,
-                   "email_updatedevents"=>false,
-                   "email_removedevents"=>false,
-                   "email_rejectedevents"=>false);
+                   "email_reminders"=>0,
+                   "email_addedevents"=>0,
+                   "email_updatedevents"=>0,
+                   "email_removedevents"=>0,
+                   "email_rejectedevents"=>0);
     }
 
     function getDateStyles()
@@ -255,7 +255,7 @@
         return $userPreferences[$userid];
       }
     }
-    
+
     function createUserPreferences($userid)
     {
       $rec = $this->initial_values();
@@ -263,7 +263,7 @@
       $rec['userid']=$userid;
       $this->addDb($rec);
     }
-    
+
   }
 
 ?>

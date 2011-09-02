@@ -12,7 +12,7 @@
    * @copyright (c)2000-2008 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 6510 $
+   * @version $Revision: 7031 $
    */
 
   /**
@@ -2664,7 +2664,7 @@
      *                confirmation page, or the output of the custom
      *                override if $checkoverride was true.
      */
-    function confirmAction($atkselector, $action, $locked=false, $checkoverride=true, $mergeSelectors=true)
+    function confirmAction($atkselector, $action, $locked=false, $checkoverride=true, $mergeSelectors=true, $csrfToken=null)
     {
       $method = 'confirm'.$action;
       if ($checkoverride && method_exists($this, $method))
@@ -2682,6 +2682,11 @@
       $formstart.=session_form();
       $formstart.='<input type="hidden" name="atkaction" value="'.$action.'">';
       $formstart.='<input type="hidden" name="atknodetype" value="'.$this->atknodetype().'">';
+      if (isset($csrfToken))
+      {
+        $this->getHandler($action);
+        $formstart .= '<input type="hidden" name="atkcsrftoken" value="'.$csrfToken.'">';
+      }
 
       if ($mergeSelectors)
       {

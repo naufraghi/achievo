@@ -14,7 +14,7 @@
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision: 6310 $
-   * $Id: class.atksavehandler.inc 6513 2009-09-25 08:32:04Z peter $
+   * $Id: class.atksavehandler.inc 7031 2010-09-26 20:17:11Z sandy $
    */
 
   /**
@@ -64,6 +64,13 @@
 
       // allowed to save record?
       if (!$this->allowed($record))
+      {
+        $this->renderAccessDeniedPage();
+        return;
+      }
+      
+      // check for CSRF token
+      if (!$this->isValidCSRFToken($this->m_postvars['atkcsrftoken']))
       {
         $this->renderAccessDeniedPage();
         return;

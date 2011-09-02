@@ -13,7 +13,7 @@
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision: 6310 $
-   * $Id: class.atkupdatehandler.inc 6518 2009-10-02 14:46:59Z peter $
+   * $Id: class.atkupdatehandler.inc 7031 2010-09-26 20:17:11Z sandy $
    */
 
   /**
@@ -65,6 +65,14 @@
         $this->handleAccessDenied();
         return;
       }
+      
+      // check for CSRF token
+      if (!$this->isValidCSRFToken($this->m_postvars['atkcsrftoken']))
+      {
+        $this->renderAccessDeniedPage();
+        return;
+      }
+
 
       if (isset($this->m_postvars['atknoclose'])||
           isset($this->m_postvars['atksaveandclose']) ||

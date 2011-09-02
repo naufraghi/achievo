@@ -12,8 +12,8 @@
  * @copyright (c)2008 Ibuildings B.V.
  * @license http://www.achievo.org/licensing Achievo Open Source License
  *
- * @version $Revision: 5733 $
- * $Id: class.scheduler_model.inc 5733 2009-12-03 20:00:26Z sandy $
+ * @version $Revision: 5729 $
+ * $Id: class.scheduler_model.inc 5729 2009-12-03 19:40:20Z sandy $
  */
 
 atkimport("modules.scheduler.utils.schedulertools");

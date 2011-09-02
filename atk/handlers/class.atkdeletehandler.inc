@@ -13,7 +13,7 @@
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
    * @version $Revision: 6263 $
-   * $Id: class.atkdeletehandler.inc 6368 2009-04-23 14:55:48Z boy $
+   * $Id: class.atkdeletehandler.inc 7031 2010-09-26 20:17:11Z sandy $
    */
 
   /**
@@ -37,6 +37,14 @@
       if (!$this->_checkAllowed())
       {
         $this->renderAccessDeniedPage();
+        return;
+      }
+
+      if ((!empty($this->m_postvars['confirm']) || !empty($this->m_postvars['cancel'])) &&
+          !$this->isValidCSRFToken($this->m_postvars['atkcsrftoken']))
+      {
+        $this->renderAccessDeniedPage();
+        return;
       }
 
       if (!empty($this->m_postvars['confirm'])) $this->_doDelete();
@@ -54,7 +62,7 @@
         // If we got here, then the node is not locked and we haven't displayed the
         // confirmation page yet, so we display it
         $page = &$this->getPage();
-        $page->addContent($this->m_node->renderActionPage("delete", $this->m_node->confirmAction($this->m_postvars['atkselector'], "delete", false, TRUE)) );
+        $page->addContent($this->m_node->renderActionPage("delete", $this->m_node->confirmAction($this->m_postvars['atkselector'], "delete", false, TRUE, true, $this->getCSRFToken())) );
       }
       else
       {
