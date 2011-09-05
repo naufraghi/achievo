@@ -89,27 +89,36 @@ function format_date($date)
 
 class timebalance extends atkNode
 {
+    var $m_user = "";
+    
     function timebalance()
     {
         $this->atkNode("timebalance");
         $this->overtime_node = &atkGetNode("timereg.overtime_balance");
         $this->holidays_node = &atkGetNode("scheduler.scheduler_holidays");
+        $this->m_user = $this->processGlobalVar("userid");
+        atkdebug("DEBUG: m_user = ".$this->m_user);
+        if($this->m_user=="") $this->m_user = $this->getInitialUser();
     }
 
-    function get_userid() {
-        // Questo userid è in nome utente e non l'id numerico
-        if ( $this->allowed("any_user") && $this->m_postvars['userid'] ) {
-            return $this->m_postvars['userid'];
-        } else {
-            global $g_user;
-            return $g_user["id"];
-        }
+    function getInitialUser() {
+        global $g_user;
+        return $g_user["id"];
+    }
+
+    function processGlobalVar($name, $value="")
+    {
+      $sessionManager = &atkGetSessionManager();
+      $session = &$sessionManager->getSession();
+      $sessionvarid = "timebalance_$name";
+      if (empty($value) && isset($_REQUEST[$name])) $value = $_REQUEST[$name];
+      if ($value!=="") $session[$sessionvarid] = $value;
+      return $session[$sessionvarid];
     }
 
     function get_timesummary()
     {
-
-        $userid = $this->get_userid();
+        $userid = $this->m_user;
         $db = &atkGetDb();
 
         /* Accetta una data in ingresso oppure imposta l'intervallo all'ultimo mese appena concluso*/
@@ -178,7 +187,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
 
     function action_report()
     {
-        $userid = $this->get_userid();
+        $userid = $this->m_user;
         $ui = &$this->getUi();
         $page = &$this->getPage();
         $this->addStyle("style.css");
