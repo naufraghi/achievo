@@ -217,6 +217,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $alldays[$day] = array('time_contract' => $workdays[$day]);
         }
         $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate)."<br>\n";
+				$content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
+				$content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'-1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'-1\'})" value="Mese-" />';
         $weekreport = &atkGetNode("reports.weekreport");
         $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="userid").'</SELECT>';
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
