@@ -57,7 +57,7 @@ class timesummary extends atkNode
 
         /* Accetta una data in ingresso oppure imposta l'intervallo all'ultimo mese appena concluso*/
         $last_month_start  = mktime(0, 0, 0, date("m")-1, 1, date("Y"));
-        $last_month_end = mktime(0, 0, 0, date("m"), 0, date("Y"));
+        $this_month_start = mktime(0, 0, 0, date("m"), 1, date("Y"));
         $date_start = $this->m_postvars['date_start'];
         $date_end = $this->m_postvars['date_end'];
         if ($date_start == "")
@@ -65,7 +65,7 @@ class timesummary extends atkNode
         else
             $date_start = sprintf("%04d",$date_start["year"])."-".sprintf("%02d",$date_start["month"])."-".sprintf("%02d",$date_start["day"]);
         if ($date_end == "")
-            $date_end = date("Y-m-d", $last_month_end);
+            $date_end = date("Y-m-d", $this_month_start);
         else
             $date_end = sprintf("%04d",$date_end["year"])."-".sprintf("%02d",$date_end["month"])."-".sprintf("%02d",$date_end["day"]);
 
@@ -95,7 +95,7 @@ class timesummary extends atkNode
         $filter = "
                 WHERE
                     activitydate >= '$date_start' AND
-                    activitydate <= '$date_end'";
+                    activitydate < '$date_end'";
         $filter_nopay = "
                 AND NOT (
                     project.name = '__dipendenti' AND
@@ -119,7 +119,7 @@ class timesummary extends atkNode
         atkdebug("timesummary Action search");
 
         $results = $this->get_timesummary();
-        echo make_xml("timesummary", "$date_start<=D<=$date_end", $results['rows'], $bodykey="remark");
+        echo make_xml("timesummary", "$date_start<=D<$date_end", $results['rows'], $bodykey="remark");
         exit;
     }
 
@@ -132,7 +132,7 @@ class timesummary extends atkNode
         $content .= session_form();
 
         $results = $this->get_timesummary();
-        $title = "TimeSummary: ".$results["date_start"]." - ".$results["date_end"];
+        $title = "TimeSummary: ".$results["date_start"]." - ".$results["date_end"]." (escluso)";
 
         $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
         $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
@@ -141,6 +141,8 @@ class timesummary extends atkNode
         $_enddate = array("date_end" => $enddateatt->dateArray($results["date_end"]));
 
         $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate);
+        $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
+        $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'-1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'-1\'})" value="Mese-" />';
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= "<h2>$title</h2>\n";
         $content .= "<p>Le ore segnate come malattia/ferie non vengono conteggiate.</p>\n";
