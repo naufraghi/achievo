@@ -24,10 +24,12 @@ function startswith($text, $prefix)
 
 //Supporto per la colorazione alternata delle righe
 $_flipflop = true;
-function flipflop()
+function flipflop($step=true)
 {
     global $_flipflop;
-    $_flipflop = !$_flipflop;
+    if ($step) {
+      $_flipflop = !$_flipflop;
+    }
     return $_flipflop;
 }
 
@@ -148,6 +150,7 @@ class timesummary extends atkNode
         $content .= "<p>Le ore segnate come malattia/ferie non vengono conteggiate.</p>\n";
 
         // Tabelle persone
+        $_last_user = "";
         $content .= "<table><tr><td>";
             // Tabella ore lavorate per progetto
             $content .= "<table border='1'>\n";
@@ -200,7 +203,11 @@ class timesummary extends atkNode
                     $persone[$r['userid']]['euro'] = "Manca euro/h";
                 }
 
-                if (flipflop()) {
+                if ($_last_user != $r['userid']) {
+                  $_last_user = $r['userid'];
+                  flipflop();
+                }
+                if (flipflop(false)) {
                     $content .= "<tr>";
                 } else {
                     $content .= "<tr style='background: #DDDDC0'>";
