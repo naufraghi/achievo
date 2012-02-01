@@ -145,7 +145,7 @@ class timebalance extends atkNode
         nella query. */
         $ore_registrate = "
                 SELECT person.id, person.userid, person.firstname, person.lastname,
-                    hours.activitydate, sum(hours.time)/60 AS time_spent,
+                    hours.activitydate, hours.time/60 AS time_spent,
                     (project.name = '__dipendenti' AND phase.name = 'malattia') AS malattia,
                     (project.name = '__dipendenti' AND phase.name = 'ferie') AS ferie,
                     (project.name = '__dipendenti' AND LOWER(phase.name) LIKE 'permessi%') AS permessi,
@@ -158,8 +158,6 @@ class timebalance extends atkNode
                 WHERE activitydate >= '$date_start'
                     AND activitydate < '$date_end'
                     $single_user
-                GROUP BY person.id, person.userid, person.firstname, person.lastname,
-                    hours.activitydate, malattia, ferie, d20
         ";
 
         $select = "
