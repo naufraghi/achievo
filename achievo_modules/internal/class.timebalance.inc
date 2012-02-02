@@ -163,15 +163,14 @@ class timebalance extends atkNode
         $select = "
 SELECT id, userid, firstname, lastname, activitydate, SUM(time_worked) as time_worked,
        SUM(time_malattia) as time_malattia, SUM(time_ferie) as time_ferie, SUM(time_permessi) as time_permessi,
-       SUM(time_d20) as time_d20, SUM(tickets) as tickets
+       SUM(time_d20) as time_d20, (SUM(time_worked) >= 5) as tickets
     FROM (
         SELECT id, userid, firstname, lastname, activitydate,
             (NOT (malattia OR ferie OR permessi OR d20)) * time_spent AS time_worked,
             malattia * time_spent AS time_malattia,
             ferie * time_spent AS time_ferie,
             permessi * time_spent AS time_permessi,
-            d20 * time_spent AS time_d20,
-            (NOT (malattia OR ferie OR permessi OR d20)) * (time_spent >= 5) AS tickets
+            d20 * time_spent AS time_d20
         FROM (
             $ore_registrate
         ) AS lavoro
