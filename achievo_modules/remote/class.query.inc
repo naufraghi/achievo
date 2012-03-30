@@ -124,22 +124,23 @@ class query extends atkNode
         foreach ($guesses as $k => $g)
         {
             $sql .= "
-                SELECT DISTINCT
+                SELECT
                     $k AS k,
-                    project.name as prj,
-                    phase.name as pha,
-                    activity.name as act,
-                    phase.projectid,
-                    phaseid,
-                    activityid
-                FROM hours, activity, phase, project
+                    project.name AS prj,
+                    phase.name AS pha,
+                    activity.name AS act,
+                    project.id AS projectid,
+                    phase.id AS phaseid,
+                    activity.id AS activityid
+                FROM
+                    project
+                    JOIN phase ON project.id = phase.projectid
+                    JOIN phase_activity ON phase.id = phase_activity.phaseid
+                    JOIN activity ON phase_activity.activityid = activity.id
+                    JOIN project_person ON project.id = project_person.projectid
                 WHERE
-                    userid=" . $g_user["id"] . " AND
-                    activityid=activity.id AND
-                    phaseid=phase.id AND
-                    phase.projectid=project.id AND
-                    phase.status='active' AND
-                    project.status='active' AND
+                    project.status = 'active' AND
+                    project_person.personid = " . $g_user["id"] . " AND
                     (
                     (" . smartLike("project.name", $guesses[$k]["in_prj"]) . ") AND
                     (" . smartLike("phase.name", $guesses[$k]["in_pha"]) . ") AND
