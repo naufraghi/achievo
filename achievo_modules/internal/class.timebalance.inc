@@ -201,22 +201,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $_enddate = array("date_end" => $enddateatt->dateArray($results["date_end"]));
 
         $daykeys = array_map("format_date", get_days_array($results["date_start"], $results["date_end"]));
-        /* Questo orribile hack ha lo scopo di escludere le ore del primo del
-        mese dal totale delle ore richieste dal contratto.
-
-        In pratica a partire dalla data sotto forma di stringa creo un oggetto
-        data. Poi decremento di 1 giorno la data e infine lo ritrasformo in
-        stringa. Tutto questo senza modificare i valori con cui il modulo ha
-        lavorato fino ad adesso. Questo dovrebbe garantire il corretto
-        funzionamento di tutte le altre parti di codice precedentemente
-        scritte.
-
-        QUESTO E' SOLAMENTE UN HACK. Probabilmente esiste un modo migliore di
-        fare tutto questo. */
-        $date_end = date_create($results["date_end"]);
-        $date_end->modify("-1 day");
-        $date_end = format_date($date_end);
-        $workdays = $this->overtime_node->enumWorkingDays($results["date_start"], $date_end, $userid, 'Y-m-d');
+        $workdays = $this->overtime_node->enumWorkingDays($results["date_start"], $results["date_end"], $userid, 'Y-m-d');
         atkdebug("workdays: ".var_export($workdays, 1));
         $alldays = array();
         foreach ($daykeys as $day) {
@@ -240,7 +225,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $time_balance[$r['userid']] = array('id' => $r['id'],
                                                     'fullname' => $r['firstname']." ".$r['lastname'],
                                                     'activity' => $alldays,
-                                                    'tot_contract' => array_sum($workdays),
+                                                    'tot_contract' => 0.0,
                                                     'tot_registro' => 0.0,
                                                     'tot_worked' => 0.0,
                                                     'tot_malattia' => 0.0,
@@ -257,6 +242,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                                                                                 'time_permessi' => floatval($r['time_permessi']),
                                                                                 'time_d20' => floatval($r['time_d20']),
                                                                                 'tickets' => intval($r['tickets']));
+            $time_balance[$r['userid']]['tot_contract'] += floatval($workdays[$r['activitydate']]);
             $time_balance[$r['userid']]['tot_worked'] += floatval($r['time_worked']);
             $time_balance[$r['userid']]['tot_malattia'] += floatval($r['time_malattia']);
             $time_balance[$r['userid']]['tot_ferie'] += floatval($r['time_ferie']);
