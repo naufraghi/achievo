@@ -250,6 +250,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $time_balance[$r['userid']]['tot_permessi'] += $activitydate['time_permessi'];
             $time_balance[$r['userid']]['tot_d20'] += $activitydate['time_d20'];
             $time_balance[$r['userid']]['tot_tickets'] += $activitydate['tickets'];
+
+            $time_balance[$r['userid']]['activity'][$r['activitydate']]['totale_parziale_contract'] = $time_balance[$r['userid']]['tot_contract'];
+            $time_balance[$r['userid']]['activity'][$r['activitydate']]['totale_parziale_worked'] = $time_balance[$r['userid']]['tot_worked'];
             atkdebug("TimeBalance loop: ".var_export($r, 1));
         }
         atkdebug("TimeBalance: ".var_export($time_balance, 1));
@@ -309,7 +312,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
                 }
                 if ( array_key_exists($date, $workdays) ) {
-                    $content .= "<td align='right'>".float2str($activity['time_contract'])."</td>";
+                    $content .= "<td align='right' title='".float2str($activity['totale_parziale_contract'])."'>".float2str($activity['time_contract'])."</td>";
                     if ($banca_ore > 0) {
                         $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_permessi'];
                         $ore_registro = min($ore_registro, $banca_ore);
@@ -325,7 +328,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 }
                 if ($activity)
                 {
-                    $content .= "<td align='right'>".float2str($activity['time_worked'])."</td>";
+                    $content .= "<td align='right' title='".float2str($activity['totale_parziale_worked'])."'>".float2str($activity['time_worked'])."</td>";
                     $content .= "<td align='right'>".float2str($activity['time_malattia'])."</td>";
                     $content .= "<td align='right'>".float2str($activity['time_ferie'])."</td>";
                     $content .= "<td align='right'>".float2str($activity['time_permessi'])."</td>";
