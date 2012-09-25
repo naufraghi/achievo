@@ -208,8 +208,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $alldays[$day] = array('time_contract' => $workdays[$day]);
         }
         $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate)."<br>\n";
-				$content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
-				$content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'-1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'-1\'})" value="Mese-" />';
+        $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
+        $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'-1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'-1\'})" value="Mese-" />';
         $weekreport = &atkGetNode("reports.weekreport");
         $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="userid").'</SELECT>';
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
@@ -217,7 +217,6 @@ GROUP BY id, userid, firstname, lastname, activitydate;
 
         // Prepara dati in struttura 3d
         $time_balance = array();
-        //$tot_contract = $this->overtime_node->getContractHours($results["date_start"], $results["date_end"], $userid);
         foreach ($results['rows'] as $key => $r)
         {
             if (!array_key_exists($r['userid'], $time_balance))
@@ -235,20 +234,22 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                                                     'tot_tickets' => 0,
                                                    );
             }
-            $time_balance[$r['userid']]['activity'][$r['activitydate']] = array('time_contract' => floatval($workdays[$r['activitydate']]),
-                                                                                'time_worked' => floatval($r['time_worked']),
-                                                                                'time_malattia' => floatval($r['time_malattia']),
-                                                                                'time_ferie' => floatval($r['time_ferie']),
-                                                                                'time_permessi' => floatval($r['time_permessi']),
-                                                                                'time_d20' => floatval($r['time_d20']),
-                                                                                'tickets' => intval($r['tickets']));
-            $time_balance[$r['userid']]['tot_contract'] += floatval($workdays[$r['activitydate']]);
-            $time_balance[$r['userid']]['tot_worked'] += floatval($r['time_worked']);
-            $time_balance[$r['userid']]['tot_malattia'] += floatval($r['time_malattia']);
-            $time_balance[$r['userid']]['tot_ferie'] += floatval($r['time_ferie']);
-            $time_balance[$r['userid']]['tot_permessi'] += floatval($r['time_permessi']);
-            $time_balance[$r['userid']]['tot_d20'] += floatval($r['time_d20']);
-            $time_balance[$r['userid']]['tot_tickets'] += intval($r['tickets']);
+            $activitydate = array('time_contract' => floatval($workdays[$r['activitydate']]),
+                                  'time_worked' => floatval($r['time_worked']),
+                                  'time_malattia' => floatval($r['time_malattia']),
+                                  'time_ferie' => floatval($r['time_ferie']),
+                                  'time_permessi' => floatval($r['time_permessi']),
+                                  'time_d20' => floatval($r['time_d20']),
+                                  'tickets' => intval($r['tickets']));
+
+            $time_balance[$r['userid']]['activity'][$r['activitydate']] = $activitydate;
+            $time_balance[$r['userid']]['tot_contract'] += $activitydate['time_contract'];
+            $time_balance[$r['userid']]['tot_worked'] += $activitydate['time_worked'];
+            $time_balance[$r['userid']]['tot_malattia'] += $activitydate['time_malattia'];
+            $time_balance[$r['userid']]['tot_ferie'] += $activitydate['time_ferie'];
+            $time_balance[$r['userid']]['tot_permessi'] += $activitydate['time_permessi'];
+            $time_balance[$r['userid']]['tot_d20'] += $activitydate['time_d20'];
+            $time_balance[$r['userid']]['tot_tickets'] += $activitydate['tickets'];
             atkdebug("TimeBalance loop: ".var_export($r, 1));
         }
         atkdebug("TimeBalance: ".var_export($time_balance, 1));
