@@ -9,6 +9,15 @@
 
 useattrib("atkdateattribute");
 
+
+function get_IVA($date)
+{
+  if ($date >= "2011-09-17")
+    return 0.21;
+  else
+    return 0.2;
+}
+
 function str_number_format($var, $digits)
 {
     if (is_numeric($var))
@@ -135,6 +144,7 @@ class timesummary extends atkNode
 
         $results = $this->get_timesummary();
         $title = "TimeSummary: ".$results["date_start"]." - ".$results["date_end"]." (escluso)";
+        $IVA = get_IVA($results["date_end"]);
 
         $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
         $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
@@ -222,7 +232,7 @@ class timesummary extends atkNode
         $content .= "</td><td>";
             // Tabella ore per persona
             $content .= "<table border='1'><tr><th>Totale persona</th><th>ore</th><th>euro/ora</th>";
-            $content .= "<th>euro</th><th>IVA</th><th>Ivato</th><th>Modificato</th></tr>";
+            $content .= "<th>euro</th><th>IVA (".str_number_format(100*$IVA, 0)."%)</th><th>Ivato</th><th>Modificato</th></tr>";
             $totale_ore_develer = 0;
             foreach ($persone as $key => $pers)
             {
@@ -231,11 +241,11 @@ class timesummary extends atkNode
                 else
                     $content .= "<tr style='background: #DDDDC0'>";
                 $content .= "<th>$key</th>";
-                $content .= "<td align='right'>".str_number_format($pers['ore'], 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro_ora'], 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro'], 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro']*0.2, 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro']*1.2, 2)."</td>";
+                $content .= "<td align='right'>".str_number_format($pers['ore'], 2)."</td>";           // ore
+                $content .= "<td align='right'>".str_number_format($pers['euro_ora'], 2)."</td>";      // euro/ora
+                $content .= "<td align='right'>".str_number_format($pers['euro'], 2)."</td>";          // euro
+                $content .= "<td align='right'>".str_number_format($pers['euro']*$IVA, 2)."</td>";     // IVA
+                $content .= "<td align='right'>".str_number_format($pers['euro']*(1+$IVA), 2)."</td>"; // ivato
                 $content .= "<td>".$pers['lastmod']."</td>";
                 $content .= "</tr>\n";
                 $totale_ore_develer += $pers['ore'];
