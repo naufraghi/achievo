@@ -42,6 +42,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract
 
 useattrib("atkdateattribute");
 atkImport("modules.scheduler.scheduler_holidays");
+atkImport("modules.reports.weekreport");
 
 function str_number_format($var, $digits)
 {
@@ -96,6 +97,7 @@ class timebalance extends atkNode
         $this->atkNode("timebalance");
         $this->overtime_node = &atkGetNode("timereg.overtime_balance");
         $this->holidays_node = &atkGetNode("scheduler.scheduler_holidays");
+        $this->weekreport_node = &atkGetNode("reports.weekreport");
         $this->m_user = $this->processGlobalVar("userid");
         atkdebug("DEBUG: m_user = ".$this->m_user);
         if($this->m_user=="") $this->m_user = $this->getInitialUser();
@@ -258,6 +260,23 @@ GROUP BY id, userid, firstname, lastname, activitydate;
 
             $time_balance[$r['userid']]['activity'][$r['activitydate']]['totale_parziale_worked'] = $time_balance[$r['userid']]['tot_worked'];
             atkdebug("TimeBalance loop: ".var_export($r, 1));
+        }
+        if ( (count($timebalance) < 1) and ($userid != 'all'))
+        {
+            $userinfo = $this->weekreport_node->get_employee($userid);
+            $time_balance[$userinfo['userid']] = array('id' => $userinfo['id'],
+                                                       'fullname' => $userinfo['firstname']." ".$userinfo['lastname'],
+                                                       'activity' => $alldays,
+                                                       'tot_contract' => 0.0,
+                                                       'tot_registro' => 0.0,
+                                                       'tot_worked' => 0.0,
+                                                       'tot_malattia' => 0.0,
+                                                       'tot_ferie' => 0.0,
+                                                       'tot_permessi' => 0.0,
+                                                       'tot_d20' => 0.0,
+                                                       'tot_tickets' => 0,
+                                                      );
+
         }
         atkdebug("TimeBalance: ".var_export($time_balance, 1));
         // Tabelle banca ore
