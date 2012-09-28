@@ -228,7 +228,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                                    'time_ferie' => 0.0,
                                    'time_permessi' => 0.0,
                                    'time_d20' => 0.0,
-                                   'tickets' => 0);
+                                   'tickets' => 0,
+                                   'lavoro' => false);
         }
         $time_balance = array();
         $userinfo = $this->weekreport_node->get_employee($userid);
@@ -251,7 +252,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                                   'time_ferie' => floatval($r['time_ferie']),
                                   'time_permessi' => floatval($r['time_permessi']),
                                   'time_d20' => floatval($r['time_d20']),
-                                  'tickets' => intval($r['tickets']));
+                                  'tickets' => intval($r['tickets']),
+                                  'lavoro' => true);
             $activitydate = array_merge($time_balance[$r['userid']]['activity'][$r['activitydate']], $activitydate);
 
             $time_balance[$r['userid']]['activity'][$r['activitydate']] = $activitydate;
@@ -307,8 +309,11 @@ GROUP BY id, userid, firstname, lastname, activitydate;
 
             foreach ($userdata['activity'] as $date => $activity)
             {
-                $bgcolor = flipflop("#9999FF", "#BBBBFF");
-
+                if ( $this->holidays_node->isHoliday($date) ) {
+                    $bgcolor = "#CCBBFF";
+                } else {
+                    $bgcolor = flipflop("#9999FF", "#BBBBFF");
+                }
                 $abstime = strtotime($date);
 
                 $content .= "<tr style='background: $bgcolor'>";
@@ -321,7 +326,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 } else {
                     $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
                 }
-                if ( $activity['time_contract'] > 0 ) {
+                if ( $activity['lavoro'] or ($activity['time_contract'] > 0) ) {
                     $userdata['tot_contract'] += $activity['time_contract'];
                     $content .= "<td align='right' title='".float2str($userdata['tot_contract'])."'>".float2str($activity['time_contract'])."</td>";
                     if ($banca_ore > 0) {
@@ -337,7 +342,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $content .= "<td align='right'>&nbsp</td>"; // time_contract
                     $content .= "<td align='right'>&nbsp</td>"; // ore_registro
                 }
-                if ( $activity['time_contract'] > 0 )
+                if ( $activity['lavoro'] or ($activity['time_contract'] > 0) )
                 {
                     $content .= "<td align='right' title='".float2str($activity['totale_parziale_worked'])."'>".float2str($activity['time_worked'])."</td>";
                     $content .= "<td align='right'>".float2str($activity['time_malattia'])."</td>";
