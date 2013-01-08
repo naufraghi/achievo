@@ -91,7 +91,7 @@ function format_date($date)
 class timebalance extends atkNode
 {
     var $m_user = "";
-    
+
     function timebalance()
     {
         $this->atkNode("timebalance");
@@ -395,7 +395,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $content .= "<b>Develer20:</b> <a title='".float2str($userdata['tot_d20'])."'>";
                 $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a><br>";
             $content .= "<b>Tickets:</b> ".$userdata['tot_tickets']."<br>";
-            
+
             $content .= "</dl></td></tr>\n";
             $content .= "</table>\n";
         }
