@@ -313,6 +313,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
                                         JOIN phase ph ON phaseid = ph.id
                                         JOIN project p on ph.projectid = p.id
             WHERE NOT (p.name = '__dipendenti' AND ph.name = 'ferie')
+                  AND NOT (p.name LIKE 'd20_%')
                   AND userid = '$userid'
                   AND activitydate >= '$begin' AND activitydate <= '$end'";
 
