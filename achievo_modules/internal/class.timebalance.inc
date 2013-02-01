@@ -159,7 +159,6 @@ class timebalance extends atkNode
                     JOIN project ON phase.projectid = project.id
                 WHERE activitydate >= '$date_start'
                     AND activitydate < '$date_end'
-                    AND phase.name != 'non billable'
                     $single_user
         ";
 
