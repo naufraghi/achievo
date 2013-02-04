@@ -97,7 +97,8 @@ class timesummary extends atkNode
                     person.userid,
                     project.name AS prj,
                     sum(hours.time)/60.0 as ore,
-                    max(entrydate) as lastmod
+                    max(entrydate) as lastmod,
+                    (phase.name != 'non billable') as billable
                 FROM hours
                     JOIN person ON hours.userid = person.id
                     JOIN phase ON hours.phaseid = phase.id
@@ -114,8 +115,8 @@ class timesummary extends atkNode
                 )";
         if (!$this->allowed("any_user")) $filter.= " AND hours.userid ='$userid' ";
         $groupby = "
-                GROUP BY lower(person.userid), lower(prj)
-                ORDER BY lower(person.userid), lower(prj)";
+                GROUP BY lower(person.userid), lower(prj), billable
+                ORDER BY lower(person.userid), lower(prj), billable";
 
         $sql = $select . $filter . $filter_nopay . $groupby;
 
@@ -171,7 +172,7 @@ class timesummary extends atkNode
             foreach ($results['rows'] as $key => $r)
             {
                 if (!array_key_exists($r['prj'], $progetti)) {
-                    $progetti[$r['prj']] = array("ore" => 0.0, "euro" => 0.0);
+                    $progetti[$r['prj']] = array("ore" => 0.0, "euro" => 0.0, "non-billable" => 0.0);
                 }
                 $r['gprj'] = project_group($r['prj']);
                 if (!array_key_exists($r['gprj'], $gprogetti)) {
@@ -180,7 +181,11 @@ class timesummary extends atkNode
                 if (!array_key_exists($r['userid'], $persone)) {
                     $persone[$r['userid']] = array("ore" => 0.0, "euro" => 0.0, "euro_ora" => 0.0, "lastmod" => "0000-00-00");
                 }
-                $progetti[$r['prj']]['ore'] += $r['ore'];
+                if ($r['billable']) {
+                    $progetti[$r['prj']]['ore'] += $r['ore'];
+                } else {
+                    $progetti[$r['prj']]['non-billable'] += $r['ore'];
+                }
                 $progetti[$r['prj']]['lastmod'] = max($progetti[$r['prj']]['lastmod'], $r['lastmod']);
                 $gprogetti[$r['gprj']]['ore'] += $r['ore'];
                 $gprogetti[$r['gprj']]['lastmod'] = max($gprogetti[$r['gprj']]['lastmod'], $r['lastmod']);
@@ -198,7 +203,9 @@ class timesummary extends atkNode
                 }
 
                 if (is_numeric($progetti[$r['prj']]['euro']) and is_numeric($r['euro'])) {
-                    $progetti[$r['prj']]['euro'] += $r['euro'];
+                    if ($r['billable']) {
+                        $progetti[$r['prj']]['euro'] += $r['euro'];
+                    }
                 } else {
                     $progetti[$r['prj']]['euro'] = "Manca euro/h";
                 }
@@ -266,7 +273,9 @@ class timesummary extends atkNode
                     $content .= "<tr>";
                 else
                     $content .= "<tr style='background: #DDDDC0'>";
-                $content .= "<th>$key</th><td align='right'>".str_number_format($prj['ore'], 2)."</td>";
+                $content .= "<th>$key</th><td align='right'>bill: ".str_number_format($prj['ore'], 2);
+                  $content .= "<br />nb: ".str_number_format($prj['non-billable'], 2);
+                  $content .= "<br />tot: ".str_number_format($prj['ore'] + $prj['non-billable'], 2)."</td>";
                 $content .= "<td align='right'>".str_number_format($prj['euro'], 2)."</td>";
                 $content .= "<td>".$prj['lastmod']."</td>";
                 $content .= "</tr>\n";
