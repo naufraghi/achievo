@@ -422,7 +422,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
 
         // Convert the contract start and enddate to "yyyymmdd" format so we can use it in calculations
         $contractstartdate = dateutil::str2str($contract["startdate"]);
-        if ( is_null($contracts[$i]["enddate"]) ) {
+        if ( is_null($contract["enddate"]) ) {
           $contractenddate = $enddate;
         } else {
           $contractenddate = dateutil::str2str($contract["enddate"]);
