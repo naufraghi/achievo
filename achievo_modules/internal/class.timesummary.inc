@@ -181,9 +181,8 @@ class timesummary extends atkNode
                 if (!array_key_exists($r['userid'], $persone)) {
                     $persone[$r['userid']] = array("ore" => 0.0, "euro" => 0.0, "euro_ora" => 0.0, "lastmod" => "0000-00-00");
                 }
-                if ($r['billable']) {
-                    $progetti[$r['prj']]['ore'] += $r['ore'];
-                } else {
+                $progetti[$r['prj']]['ore'] += $r['ore'];
+                if (!$r['billable']) {
                     $progetti[$r['prj']]['non-billable'] += $r['ore'];
                 }
                 $progetti[$r['prj']]['lastmod'] = max($progetti[$r['prj']]['lastmod'], $r['lastmod']);
@@ -203,9 +202,7 @@ class timesummary extends atkNode
                 }
 
                 if (is_numeric($progetti[$r['prj']]['euro']) and is_numeric($r['euro'])) {
-                    if ($r['billable']) {
-                        $progetti[$r['prj']]['euro'] += $r['euro'];
-                    }
+                    $progetti[$r['prj']]['euro'] += $r['euro'];
                 } else {
                     $progetti[$r['prj']]['euro'] = "Manca euro/h";
                 }
@@ -265,7 +262,7 @@ class timesummary extends atkNode
         // Tabelle progetti
         $content .= "<table><tr><td>";
             // Tabella ore per progetto
-            $content .= "<table border='1'><tr><th>Totale progetto</th><th>Ore</th><th>Euro</th><th>Modificato</th></tr>";
+            $content .= "<table border='1'><tr><th>Totale progetto</th><th>Ore (b)</th><th>Ore (nb)</th><th>Ore (tot)</th><th>Euro</th><th>Modificato</th></tr>";
             uksort($progetti, "strcasecmp"); //Ordina per chiave, le persone sono già ordinate
             foreach ($progetti as $key => $prj)
             {
@@ -273,9 +270,10 @@ class timesummary extends atkNode
                     $content .= "<tr>";
                 else
                     $content .= "<tr style='background: #DDDDC0'>";
-                $content .= "<th>$key</th><td align='right'>bill: ".str_number_format($prj['ore'], 2);
-                  $content .= "<br />nb: ".str_number_format($prj['non-billable'], 2);
-                  $content .= "<br />tot: ".str_number_format($prj['ore'] + $prj['non-billable'], 2)."</td>";
+                $content .= "<th>$key</th>"; // Nome progetto
+                $content .= "<td align='right'>".str_number_format($prj['ore'] - $prj['non-billable'], 2)."</td>";
+                $content .= "<td align='right'>".str_number_format($prj['non-billable'], 2)."</td>";
+                $content .= "<td align='right'>".str_number_format($prj['ore'], 2)."</td>";
                 $content .= "<td align='right'>".str_number_format($prj['euro'], 2)."</td>";
                 $content .= "<td>".$prj['lastmod']."</td>";
                 $content .= "</tr>\n";
