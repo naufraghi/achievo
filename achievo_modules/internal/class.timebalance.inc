@@ -189,23 +189,20 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                      "rows" => $rows);
     }
 
-    function action_report()
+    function get_hours_table($timesummary)
     {
         $userid = $this->m_user;
-        $ui = &$this->getUi();
-        $page = &$this->getPage();
         $this->addStyle("style.css");
         $content = '<form action="dispatch.php" method="get" name="entryform">';
         $content .= session_form();
 
-        $results = $this->get_timesummary();
-        $title = "TimeBalance: ".$results["date_start"]." - ".$results["date_end"]." (escluso)";
+        $title = "TimeBalance: ".$timesummary["date_start"]." - ".$timesummary["date_end"]." (escluso)";
 
         $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
         $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
 
-        $_startdate = array("date_start" => $startdateatt->dateArray($results["date_start"]));
-        $_enddate = array("date_end" => $enddateatt->dateArray($results["date_end"]));
+        $_startdate = array("date_start" => $startdateatt->dateArray($timesummary["date_start"]));
+        $_enddate = array("date_end" => $enddateatt->dateArray($timesummary["date_end"]));
 
         $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate)."<br>\n";
         $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
@@ -216,9 +213,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $content .= "<h2>$title</h2>\n";
 
         // Prepara dati in struttura 3d
-        $daykeys = array_map("format_date", get_days_array($results["date_start"], $results["date_end"]));
+        $daykeys = array_map("format_date", get_days_array($timesummary["date_start"], $timesummary["date_end"]));
         // FIXME: rotto se userid == all
-        $workdays = $this->overtime_node->enumWorkingDays($results["date_start"], $results["date_end"], $userid, 'Y-m-d');
+        $workdays = $this->overtime_node->enumWorkingDays($timesummary["date_start"], $timesummary["date_end"], $userid, 'Y-m-d');
         atkdebug("workdays: ".var_export($workdays, 1));
         $alldays = array();
         foreach ($daykeys as $day) {
@@ -245,7 +242,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                                                    'tot_d20' => 0.0,
                                                    'tot_tickets' => 0,
                                                   );
-        foreach ($results['rows'] as $key => $r)
+        foreach ($timesummary['rows'] as $key => $r)
         {
             $activitydate = array('time_worked' => floatval($r['time_worked']),
                                   'time_malattia' => floatval($r['time_malattia']),
@@ -268,11 +265,19 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             atkdebug("TimeBalance loop: ".var_export($r, 1));
         }
         atkdebug("TimeBalance: ".var_export($time_balance, 1));
+        return array("content" => $content, "time_balance" => $time_balance, "title" => $title);
+    }
+
+    function action_report()
+    {
+        $timesummary = $this->get_timesummary();
+        $hours_table = $this->get_hours_table($timesummary);
+        $content = $hours_table['content'];
         // Tabelle banca ore
         $banca_head = "<tr><th>User</th><th>Nome</th><th>Giorno</th><th>Ore previste</th><th>Ore registro</th>
                            <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Permessi</th><th>Develer20</th><th>Tickets</th>
                            </tr>\n";
-        foreach ($time_balance as $userid => $userdata)
+        foreach ($hours_table['time_balance'] as $userid => $userdata)
         {
             $content .= "<h3>$userid - ".$userdata['fullname']."</h3>\n";
             $content .= "<table border='1'>\n";
@@ -295,12 +300,12 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             sull'achievo in produzione sarebbe raccomandabile il testarlo. A
             fondo.
             */
-            $tmp_d = date_create($results["date_start"]);
+            $tmp_d = date_create($timesummary["date_start"]);
             $tmp_d->modify("-1 day");
             $tmp_d = format_date($tmp_d);
             $userdata['date_start']['balance'] = $this->overtime_node->getBalance($tmp_d, $userdata['id']);
 
-            $tmp_d = date_create($results["date_end"]);
+            $tmp_d = date_create($timesummary["date_end"]);
             $tmp_d->modify("-1 day");
             $tmp_d = format_date($tmp_d);
             $userdata['date_end']['balance'] = $this->overtime_node->getBalance($tmp_d, $userdata['id']);
@@ -377,14 +382,14 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $content .= "</tr>\n";
             $content .= "<tr><td colspan='11'>$title<dl>\n";
             $content .= "<b>$userid:</b> ".$userdata['fullname']."<br>";
-            $content .= "<b>Banca ore al ".$results["date_start"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_start'])."<br>";
+            $content .= "<b>Banca ore al ".$timesummary["date_start"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_start'])."<br>";
             /*
             Aggiunto link per permettere di modificare il quantitativo di ore
             presenti in banca ore dopo aver stabilito con il dipendente quante
             di queste devono essere pagate come straordinari e quante messe da
             parte.
             */
-            $content .= "<b>Banca ore al ".$results["date_end"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_end'])."<br>";
+            $content .= "<b>Banca ore al ".$timesummary["date_end"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_end'])."<br>";
             $content .= "<b>Ore Previste:</b> ".float2str($userdata['tot_contract'])."<br>";
             $content .= "<b>Ore Registro:</b> ".float2str($userdata['tot_registro'])."<br>";
             $content .= "<b>Ore Lavorate:</b> <a title='".float2str($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
@@ -406,7 +411,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $content .= '<input type="hidden" name="atkaction" value="report">';
 
         $content .= '</form>';
-        $page->addContent($ui->renderBox(array("title"=>$title,"content"=>$content)));
+        $page = &$this->getPage();
+        $ui = &$this->getUi();
+        $page->addContent($ui->renderBox(array("title"=>$hours_table['title'],"content"=>$content)));
     }
 }
 ?>
