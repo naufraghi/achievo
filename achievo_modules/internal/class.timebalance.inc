@@ -423,8 +423,24 @@ GROUP BY id, userid, firstname, lastname, activitydate;
     }
     function action_export()
     {
+        setlocale(LC_ALL, 'it_IT');
         $exporter = &atknew("atk.utils.atkfileexport");
-        $exporter->export("Nome, Cognome\nMatteo, Bertini\nLorenzo, Mancini", "prova", "csv");
+        $timesummary = $this->get_timesummary();
+        $hours_table = $this->get_hours_table($timesummary);
+        $report_time = strtotime($timesummary["date_start"]);
+        $table = "DEVELER SRL Registro presenze Anno ".strftime("%Y", $report_time)." mese di ".strftime("%B", $report_time)."\n";
+        foreach ($hours_table['time_balance'] as $userid => $userdata)
+        {
+            $table .= ";Totali";
+            foreach ($userdata['activity'] as $date => $activity)
+            {
+                $abstime = strtotime($date);
+                $table .= strftime(";%a %d", $abstime);
+            }
+            $table .= "\n";
+            $table .= $userdata['fullname'].";\n";
+        }
+        $exporter->export($table, "prova", "csv");
     }
 }
 ?>
