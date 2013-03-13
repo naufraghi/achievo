@@ -183,15 +183,20 @@ class excel_xml {
             $style  = ' ss:StyleID="bold"';
             $str    = $out[1];
         }
+        // Add formula
+        if (preg_match('/\=(.+)$/', $str, $out)) {
+            $formula = ' ss:Formula="='.$out[1].'"';
+            $str    = str_replace($out[0], '', $str);
+        }
 
         if (preg_match('/\|([\d]+)$/', $str, $out)) {
             $merge  = ' ss:MergeAcross="'.$out[1].'"';
             $str    = str_replace($out[0], '', $str);
         }
         // Get type
-        $type = preg_match('/^([\d]+)$/', $str) ? 'Number' : 'String';
+        $type = preg_match('/^([\d]+\.?[\d]*)$/', $str) ? 'Number' : 'String';
 
-        return '<Cell'.$style.$merge.'><Data ss:Type="'.$type.'">'.$str.'</Data></Cell>';
+        return '<Cell'.$style.$formula.$merge.'><Data ss:Type="'.$type.'">'.$str.'</Data></Cell>';
     }
 
     /**
