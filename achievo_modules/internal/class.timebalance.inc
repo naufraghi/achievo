@@ -264,10 +264,13 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             atkdebug("TimeBalance loop: ".var_export($r, 1));
         }
         atkdebug("TimeBalance: ".var_export($time_balance, 1));
-        return array("content" => $content, "time_balance" => $time_balance, "title" => $title, "timesummary" => $timesummary);
+        return array("content" => $content,
+                     "time_balance" => $time_balance,
+                     "title" => $title,
+                     "timesummary" => $timesummary);
     }
 
-    function action_report(&$handler, $userid=false, $export=false)
+    function action_report(&$handler, $userid=null, $export=false)
     {
         setlocale(LC_ALL, 'it_IT');
         if (!$userid) {
