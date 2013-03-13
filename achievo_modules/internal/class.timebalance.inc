@@ -476,22 +476,26 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         }
 
         $excel = new excel_xml();
-        $header_style = array(
+        $title_style = array(
             'bold'       => 1,
             'size'       => '14'
         );
+        $header_style = array(
+            'bold'       => 1,
+        );
+        $excel->add_style('title', $title_style);
         $excel->add_style('header', $header_style);
-        $excel->add_row(explode(";", ";DEVELER SRL Registro presenze Anno ".strftime("%Y", $report_time)." mese di ".strftime("%B", $report_time)."|10"), 'header');
+        $excel->add_row(explode(";", ";DEVELER SRL Registro presenze Anno ".strftime("%Y", $report_time)." mese di ".strftime("%B", $report_time)."|10"), 'title');
         $header = true;
         foreach ($users as $iuserid) {
             $hours_table = $this->action_report(&$handler, $iuserid, &$timesummary, true);
-            foreach ($hours_table['time_balance'] as $userdata)
+            foreach ($hours_table['time_balance'] as $username => $userdata)
             {
                 if ($userdata['id'] != $iuserid)
                     continue;
 
                 if ($header) {
-                    $totali = ";*Totali*;";
+                    $totali = ";Totali;";
                 }
                 $ore_ordinarie = "*".$userdata['fullname']."*;".float2str($userdata['tot_registro']).";Ore ordinarie";
                 $straordinarie = ";;Straordinarie";
@@ -509,7 +513,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $malattia .= ";".float2str($activity['time_malattia'], false);
                 }
                 if ($header) {
-                    $excel->add_row(explode(";", $totali));
+                    $excel->add_row(explode(";", $totali), 'header');
                     $header = false;
                 } else {
                     $excel->add_row("");
@@ -522,7 +526,10 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         }
         $excel->create_worksheet('Develer srl');
         $xml = $excel->generate();
-        $exporter->export($xml, "prova", "xls");
+        if ($userid == "all")
+            $exporter->export($xml, strftime("Develer-%Y-%B", $report_time), "xls");
+        else
+            $exporter->export($xml, strftime("Develer-%Y-%B-$username", $report_time), "xls");
     }
 }
 ?>
