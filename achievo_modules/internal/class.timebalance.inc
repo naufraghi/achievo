@@ -186,35 +186,36 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                      "rows" => $rows);
     }
 
-    function get_hours_table($userid, $timesummary=null)
+    function get_hours_table($userid, &$timesummary=null, $export=false)
     {
         if (!$timesummary) {
             $timesummary = $this->get_timesummary($userid);
         }
-        $this->addStyle("style.css");
         $content = '<form action="dispatch.php" method="get" name="entryform">';
-        $content .= session_form();
-
         $title = "TimeBalance: ".$timesummary["date_start"]." - ".$timesummary["date_end"]." (escluso)";
 
-        $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
-        $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
+        if (!$export) {
+            $this->addStyle("style.css");
+            $content .= session_form();
 
-        $_startdate = array("date_start" => $startdateatt->dateArray($timesummary["date_start"]));
-        $_enddate = array("date_end" => $enddateatt->dateArray($timesummary["date_end"]));
+            $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
+            $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
 
-        $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate)."<br>\n";
-        $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
-        $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'-1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'-1\'})" value="Mese-" />';
-        $weekreport = &atkGetNode("reports.weekreport");
-        $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="userid").'</SELECT>';
-        $content .= '<input type="submit" value="'.atktext("refresh").'">';
-        $content .= "<h2>$title</h2>\n";
+            $_startdate = array("date_start" => $startdateatt->dateArray($timesummary["date_start"]));
+            $_enddate = array("date_end" => $enddateatt->dateArray($timesummary["date_end"]));
+
+            $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate)."<br>\n";
+            $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
+            $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'-1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'-1\'})" value="Mese-" />';
+            $weekreport = &atkGetNode("reports.weekreport");
+            $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="userid").'</SELECT>';
+            $content .= '<input type="submit" value="'.atktext("refresh").'">';
+            $content .= "<h2>$title</h2>\n";
+        }
 
         if ($userid!="all") {
             // Prepara dati in struttura 3d
             $daykeys = array_map("format_date", get_days_array($timesummary["date_start"], $timesummary["date_end"]));
-            // FIXME: rotto se userid == all
             $workdays = $this->overtime_node->enumWorkingDays($timesummary["date_start"], $timesummary["date_end"], $userid, 'Y-m-d');
             atkdebug("workdays: ".var_export($workdays, 1));
             $alldays = array();
@@ -268,15 +269,15 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             return array("content" => $content,
                          "time_balance" => $time_balance,
                          "title" => $title,
-                         "timesummary" => $timesummary);
+                         "timesummary" => &$timesummary);
         } else {
             return array("content" => $content,
                          "title" => $title,
-                         "timesummary" => $timesummary);
+                         "timesummary" => &$timesummary);
         }
     }
 
-    function action_report(&$handler, $userid=null, $timesummary=null, $export=false)
+    function action_report(&$handler, $userid=null, &$timesummary=null, $export=false)
     {
         if (!$userid) {
             $userid = $this->m_user;
@@ -284,7 +285,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         if (!$timesummary) {
             $timesummary = $this->get_timesummary($userid);
         }
-        $hours_table = $this->get_hours_table($userid, $timesummary);
+        $hours_table = $this->get_hours_table($userid, &$timesummary, $export);
         $content = $hours_table['content'];
         $timesummary = $hours_table['timesummary'];
 
@@ -442,6 +443,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $ui = &$this->getUi();
             $page->addContent($ui->renderBox(array("title"=>$hours_table['title'], "content"=>$content)));
         } else {
+            $content = null;
             return $hours_table;
         }
 
@@ -449,11 +451,29 @@ GROUP BY id, userid, firstname, lastname, activitydate;
     function action_export(&$handler)
     {
         include "excel_xml.php";
+        $userid = $this->m_user;
 
         $exporter = &atknew("atk.utils.atkfileexport");
-        $hours_table = $this->action_report(&$handler, $this->m_user, true);
-        $timesummary = $hours_table['timesummary'];
+        $timesummary = $this->get_timesummary($userid);
         $report_time = strtotime($timesummary["date_start"]);
+
+        $date_start = $timesummary["date_start"];
+
+        if ($userid=="all") {
+            $db = &atkGetDb();
+            $select = "
+                SELECT DISTINCT userid FROM `usercontract`
+                WHERE startdate <= '$date_start'
+                    AND '$date_start' < enddate
+                    AND description NOT LIKE '%NO PRESENZE%'
+            ";
+            $users = array();
+            foreach($db->getRows($select) as $r) {
+                $users[] = $r['userid'];
+            }
+        } else {
+            $users = array($userid);
+        }
 
         $excel = new excel_xml();
         $header_style = array(
@@ -462,27 +482,43 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         );
         $excel->add_style('header', $header_style);
         $excel->add_row(explode(";", ";DEVELER SRL Registro presenze Anno ".strftime("%Y", $report_time)." mese di ".strftime("%B", $report_time)."|10"), 'header');
-        foreach ($hours_table['time_balance'] as $userid => $userdata)
-        {
-            $totali = ";*Totali*;";
-            $ore_ordinarie = "*".$userdata['fullname']."*;".float2str($userdata['tot_registro']).";Ore ordinarie";
-            $straordinarie = ";;Straordinarie";
-            $feriepermessi = ";".float2str($userdata['tot_ferie'] + $userdata['tot_permessi']).";Ferie/Permessi";
-            $malattia = ";".float2str($userdata['tot_malattia']).";Malattia";
-            foreach ($userdata['activity'] as $date => $activity)
+        $header = true;
+        foreach ($users as $iuserid) {
+            $hours_table = $this->action_report(&$handler, $iuserid, &$timesummary, true);
+            foreach ($hours_table['time_balance'] as $userdata)
             {
-                $abstime = strtotime($date);
-                $totali .= strftime(";%d %a", $abstime);
-                $ore_ordinarie .= ";".float2str($activity['time_registro'], false);
-                $straordinarie .= ";";
-                $feriepermessi .= ";".float2str($activity['time_ferie'] + $activity['time_permessi'], false);
-                $malattia .= ";".float2str($activity['time_malattia'], false);
+                if ($userdata['id'] != $iuserid)
+                    continue;
+
+                if ($header) {
+                    $totali = ";*Totali*;";
+                }
+                $ore_ordinarie = "*".$userdata['fullname']."*;".float2str($userdata['tot_registro']).";Ore ordinarie";
+                $straordinarie = ";;Straordinarie";
+                $feriepermessi = ";".float2str($userdata['tot_ferie'] + $userdata['tot_permessi']).";Ferie/Permessi";
+                $malattia = ";".float2str($userdata['tot_malattia']).";Malattia";
+                foreach ($userdata['activity'] as $date => $activity)
+                {
+                    if ($header) {
+                        $abstime = strtotime($date);
+                        $totali .= strftime(";%d %a", $abstime);
+                    }
+                    $ore_ordinarie .= ";".float2str($activity['time_registro'], false);
+                    $straordinarie .= ";";
+                    $feriepermessi .= ";".float2str($activity['time_ferie'] + $activity['time_permessi'], false);
+                    $malattia .= ";".float2str($activity['time_malattia'], false);
+                }
+                if ($header) {
+                    $excel->add_row(explode(";", $totali));
+                    $header = false;
+                } else {
+                    $excel->add_row("");
+                }
+                $excel->add_row(explode(";", $ore_ordinarie));
+                $excel->add_row(explode(";", $straordinarie));
+                $excel->add_row(explode(";", $feriepermessi));
+                $excel->add_row(explode(";", $malattia));
             }
-            $excel->add_row(explode(";", $totali));
-            $excel->add_row(explode(";", $ore_ordinarie));
-            $excel->add_row(explode(";", $straordinarie));
-            $excel->add_row(explode(";", $feriepermessi));
-            $excel->add_row(explode(";", $malattia));
         }
         $excel->create_worksheet('Develer srl');
         $xml = $excel->generate();
