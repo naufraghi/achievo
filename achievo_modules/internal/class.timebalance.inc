@@ -44,6 +44,8 @@ useattrib("atkdateattribute");
 atkImport("modules.scheduler.scheduler_holidays");
 atkImport("modules.reports.weekreport");
 
+setlocale(LC_ALL, 'it_IT');
+
 function str_number_format($var, $digits)
 {
     if (is_numeric($var))
@@ -272,7 +274,6 @@ GROUP BY id, userid, firstname, lastname, activitydate;
 
     function action_report(&$handler, $userid=null, $export=false)
     {
-        setlocale(LC_ALL, 'it_IT');
         if (!$userid) {
             $userid = $this->m_user;
         }
@@ -435,7 +436,6 @@ GROUP BY id, userid, firstname, lastname, activitydate;
     }
     function action_export()
     {
-        setlocale(LC_ALL, 'it_IT');
         $exporter = &atknew("atk.utils.atkfileexport");
         $timesummary = $this->get_timesummary();
         $hours_table = $this->get_hours_table($timesummary);
