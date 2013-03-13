@@ -420,7 +420,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $content .= '</form>';
 
         $content .= '<form action="dispatch.php" method="get" name="entryform">';
-        $content .= '<input type="submit" value="'.atktext("Esport CSV").'">';
+        $content .= '<input type="submit" value="'.atktext("Esporta").'">';
         $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
         $content .= '<input type="hidden" name="atkaction" value="export">';
         $content .= '</form>';
