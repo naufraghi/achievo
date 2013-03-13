@@ -409,11 +409,22 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
         $content .= '<input type="hidden" name="atkaction" value="report">';
-
         $content .= '</form>';
+
+        $content .= '<form action="dispatch.php" method="get" name="entryform">';
+        $content .= '<input type="submit" value="'.atktext("Esport CSV").'">';
+        $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
+        $content .= '<input type="hidden" name="atkaction" value="export">';
+        $content .= '</form>';
+
         $page = &$this->getPage();
         $ui = &$this->getUi();
         $page->addContent($ui->renderBox(array("title"=>$hours_table['title'],"content"=>$content)));
+    }
+    function action_export()
+    {
+        $exporter = &atknew("atk.utils.atkfileexport");
+        $exporter->export("Nome, Cognome\nMatteo, Bertini\nLorenzo, Mancini", "prova", "csv");
     }
 }
 ?>

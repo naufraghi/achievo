@@ -11,11 +11,12 @@
     class mod_internal extends atkModule
     {
         function getNodes()
+        // Ricordarsi sempre di attivare il permesso nei security profiles dal web
         {
-            registerNode("internal.timesummary", 
-                         array("report", "any_user", "view_all", "any_project"));
-            registerNode("internal.timebalance", 
-                         array("report", "any_user", "view_all", "any_project"));
+            registerNode("internal.timesummary",
+                         array("report"));
+            registerNode("internal.timebalance",
+                         array("report", "export"));
         }
         function getDependencies($mode)
         {
