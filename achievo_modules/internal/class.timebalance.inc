@@ -434,25 +434,47 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         }
 
     }
-    function action_export()
+    function action_export(&$handler)
     {
+        include "excel_xml.php";
+
         $exporter = &atknew("atk.utils.atkfileexport");
-        $timesummary = $this->get_timesummary();
-        $hours_table = $this->get_hours_table($timesummary);
+        $hours_table = $this->action_report(&$handler, $this->m_user, true);
+        $timesummary = $hours_table['timesummary'];
         $report_time = strtotime($timesummary["date_start"]);
-        $table = "DEVELER SRL Registro presenze Anno ".strftime("%Y", $report_time)." mese di ".strftime("%B", $report_time)."\n";
+
+        $excel = new excel_xml();
+        $header_style = array(
+            'bold'       => 1,
+            'size'       => '14'
+        );
+        $excel->add_style('header', $header_style);
+        $excel->add_row(explode(";", ";DEVELER SRL Registro presenze Anno ".strftime("%Y", $report_time)." mese di ".strftime("%B", $report_time)."|10"), 'header');
         foreach ($hours_table['time_balance'] as $userid => $userdata)
         {
-            $table .= ";Totali";
+            $totali = ";*Totali*;";
+            $ore_ordinarie = "*".$userdata['fullname']."*;".float2str($userdata['tot_registro']).";Ore ordinarie";
+            $straordinarie = ";;Straordinarie";
+            $feriepermessi = ";".float2str($userdata['tot_ferie'] + $userdata['tot_permessi']).";Ferie/Permessi";
+            $malattia = ";".float2str($userdata['tot_malattia']).";Malattia";
             foreach ($userdata['activity'] as $date => $activity)
             {
                 $abstime = strtotime($date);
-                $table .= strftime(";%a %d", $abstime);
+                $totali .= strftime(";%d %a", $abstime);
+                $ore_ordinarie .= ";".float2str($activity['time_registro'], false);
+                $straordinarie .= ";";
+                $feriepermessi .= ";".float2str($activity['time_ferie'] + $activity['time_permessi'], false);
+                $malattia .= ";".float2str($activity['time_malattia'], false);
             }
-            $table .= "\n";
-            $table .= $userdata['fullname'].";\n";
+            $excel->add_row(explode(";", $totali));
+            $excel->add_row(explode(";", $ore_ordinarie));
+            $excel->add_row(explode(";", $straordinarie));
+            $excel->add_row(explode(";", $feriepermessi));
+            $excel->add_row(explode(";", $malattia));
         }
-        $exporter->export($table, "prova", "csv");
+        $excel->create_worksheet('Develer srl');
+        $xml = $excel->generate();
+        $exporter->export($xml, "prova", "xls");
     }
 }
 ?>

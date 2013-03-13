@@ -63,6 +63,11 @@
       $mime_type='text/x-csv';
       $ext = "csv";
     }
+    elseif($type=="xls")
+    {
+      $mime_type='application/vnd.ms-excel';
+      $ext = "xls";
+    }
     elseif($type=="xml")
     {
       $mime_type='text/xml';
