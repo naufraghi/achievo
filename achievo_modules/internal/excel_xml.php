@@ -107,7 +107,7 @@ class excel_xml {
     */
     function add_row($array, $style = null) {
         if(!is_array($array)) {
-            // Asume the delimiter is , or ;
+            // Assume the delimiter is , or ;
             $array = str_replace(',', ';', $array);
             $array = explode(';', $array);
         }
