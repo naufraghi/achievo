@@ -462,10 +462,12 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         if ($userid=="all") {
             $db = &atkGetDb();
             $select = "
-                SELECT DISTINCT userid FROM `usercontract`
+                SELECT DISTINCT usercontract.userid FROM usercontract
+                    JOIN person ON usercontract.userid = person.id
                 WHERE startdate <= '$date_start'
                     AND '$date_start' < enddate
                     AND description NOT LIKE '%NO PRESENZE%'
+                ORDER BY person.firstname, person.lastname
             ";
             $users = array();
             foreach($db->getRows($select) as $r) {
