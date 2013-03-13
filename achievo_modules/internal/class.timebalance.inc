@@ -118,9 +118,8 @@ class timebalance extends atkNode
       return $session[$sessionvarid];
     }
 
-    function get_timesummary()
+    function get_timesummary($userid)
     {
-        $userid = $this->m_user;
         $db = &atkGetDb();
 
         /* Accetta una data in ingresso oppure imposta l'intervallo all'ultimo mese appena concluso*/
@@ -189,9 +188,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                      "rows" => $rows);
     }
 
-    function get_hours_table($timesummary)
+    function get_hours_table($userid)
     {
-        $userid = $this->m_user;
+        $timesummary = $this->get_timesummary($userid);
         $this->addStyle("style.css");
         $content = '<form action="dispatch.php" method="get" name="entryform">';
         $content .= session_form();
@@ -265,14 +264,18 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             atkdebug("TimeBalance loop: ".var_export($r, 1));
         }
         atkdebug("TimeBalance: ".var_export($time_balance, 1));
-        return array("content" => $content, "time_balance" => $time_balance, "title" => $title);
+        return array("content" => $content, "time_balance" => $time_balance, "title" => $title, "timesummary" => $timesummary);
     }
 
-    function action_report()
+    function action_report(&$handler, $userid=false, $export=false)
     {
-        $timesummary = $this->get_timesummary();
-        $hours_table = $this->get_hours_table($timesummary);
+        setlocale(LC_ALL, 'it_IT');
+        if (!$userid) {
+            $userid = $this->m_user;
+        }
+        $hours_table = $this->get_hours_table($userid);
         $content = $hours_table['content'];
+        $timesummary = $hours_table['timesummary'];
         // Tabelle banca ore
         $banca_head = "<tr><th>User</th><th>Nome</th><th>Giorno</th><th>Ore previste</th><th>Ore registro</th>
                            <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Permessi</th><th>Develer20</th><th>Tickets</th>
