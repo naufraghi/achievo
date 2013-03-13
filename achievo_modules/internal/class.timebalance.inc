@@ -489,6 +489,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $excel->add_style('header', $header_style);
         $excel->add_row(explode(";", ";DEVELER SRL Registro presenze Anno ".strftime("%Y", $report_time)." mese di ".strftime("%B", $report_time)."|10"), 'title');
         $header = true;
+        function fformat($number) {
+            return number_format($number, 2);
+        }
         foreach ($users as $iuserid) {
             $hours_table = $this->action_report(&$handler, $iuserid, &$timesummary, true);
             foreach ($hours_table['time_balance'] as $username => $userdata)
@@ -499,20 +502,30 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 if ($header) {
                     $totali = ";Totali;";
                 }
-                $ore_ordinarie = "*".$userdata['fullname']."*;".float2str($userdata['tot_registro']).";Ore ordinarie";
-                $straordinarie = ";;Straordinarie";
-                $feriepermessi = ";".float2str($userdata['tot_ferie'] + $userdata['tot_permessi']).";Ferie/Permessi";
-                $malattia = ";".float2str($userdata['tot_malattia']).";Malattia";
+
+                $ore_ordinarie = "";
+                $straordinarie = "";
+                $feriepermessi = "";
+                $malattia = "";
+                $userdata['tot_missing'] = 0.0;
+
                 foreach ($userdata['activity'] as $date => $activity)
                 {
                     if ($header) {
                         $abstime = strtotime($date);
                         $totali .= strftime(";%d %a", $abstime);
                     }
-                    $ore_ordinarie .= ";".float2str($activity['time_registro'], false);
-                    $straordinarie .= ";";
-                    $feriepermessi .= ";".float2str($activity['time_ferie'] + $activity['time_permessi'], false);
-                    $malattia .= ";".float2str($activity['time_malattia'], false);
+                    $ore_ordinarie .= ";".fformat($activity['time_registro']);
+                    $ore_mancanti = $activity['time_contract'] - $activity['time_registro'] - $activity['time_malattia'] - $activity['time_ferie'] - $activity['time_permessi'];
+                    if ($ore_mancanti > 0) {
+                        $activity['time_missing'] = $ore_mancanti;
+                        $userdata['tot_missing'] += $ore_mancanti;
+                    } else {
+                        $activity['time_missing'] = 0.0;
+                    }
+                    $straordinarie .= ";0";
+                    $feriepermessi .= ";-1=".fformat($activity['time_ferie'])."+".fformat($activity['time_permessi'])."+".fformat($activity['time_missing']);
+                    $malattia .= ";".fformat($activity['time_malattia']);
                 }
                 if ($header) {
                     $excel->add_row(explode(";", $totali), 'header');
@@ -520,10 +533,16 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 } else {
                     $excel->add_row("");
                 }
-                $excel->add_row(explode(";", $ore_ordinarie));
-                $excel->add_row(explode(";", $straordinarie));
-                $excel->add_row(explode(";", $feriepermessi));
-                $excel->add_row(explode(";", $malattia));
+
+                $head_ore_ordinarie = "*".$userdata['fullname']."*;-1=SUM(RC[2]:RC[33]);Ore ordinarie";
+                $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[2]C[1]);-1=SUM(RC[2]:RC[33]);Straordinarie";
+                $head_feriepermessi = "Ore previste: ".fformat($userdata['tot_contract']).";-1=SUM(RC[2]:RC[33]);Ferie/Permessi";
+                $head_malattia = ";-1=SUM(RC[2]:RC[33]);Malattia";
+
+                $excel->add_row(explode(";", $head_ore_ordinarie.$ore_ordinarie));
+                $excel->add_row(explode(";", $head_straordinarie.$straordinarie));
+                $excel->add_row(explode(";", $head_feriepermessi.$feriepermessi));
+                $excel->add_row(explode(";", $head_malattia.$malattia));
             }
         }
         $excel->create_worksheet('Develer srl');
