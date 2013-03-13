@@ -277,7 +277,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $banca_head = "<tr><th>User</th><th>Nome</th><th>Giorno</th><th>Ore previste</th><th>Ore registro</th>
                            <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Permessi</th><th>Develer20</th><th>Tickets</th>
                            </tr>\n";
-        foreach ($hours_table['time_balance'] as $userid => $userdata)
+        foreach ($hours_table['time_balance'] as $userid => &$userdata)
         {
             $content .= "<h3>$userid - ".$userdata['fullname']."</h3>\n";
             $content .= "<table border='1'>\n";
@@ -312,7 +312,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
 
             $banca_ore = $userdata['date_start']['balance']['balance'] + $userdata['tot_worked'];
 
-            foreach ($userdata['activity'] as $date => $activity)
+            foreach ($userdata['activity'] as $date => &$activity)
             {
                 if ( $this->holidays_node->isHoliday($date) ) {
                     $bgcolor = "#CCBBFF";
@@ -342,6 +342,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     }
                     $banca_ore -= $ore_registro;
                     $content .= "<td align='right'>".float2str($ore_registro)."</td>";
+                    $activity['time_registro'] = $ore_registro;
                     $userdata['tot_registro'] += $ore_registro;
                 } else {
                     $content .= "<td align='right'>&nbsp</td>"; // time_contract
@@ -417,9 +418,14 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $content .= '<input type="hidden" name="atkaction" value="export">';
         $content .= '</form>';
 
-        $page = &$this->getPage();
-        $ui = &$this->getUi();
-        $page->addContent($ui->renderBox(array("title"=>$hours_table['title'],"content"=>$content)));
+        if (!$export) {
+            $page = &$this->getPage();
+            $ui = &$this->getUi();
+            $page->addContent($ui->renderBox(array("title"=>$hours_table['title'], "content"=>$content)));
+        } else {
+            return $hours_table;
+        }
+
     }
     function action_export()
     {
