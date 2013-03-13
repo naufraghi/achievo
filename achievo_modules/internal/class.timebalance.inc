@@ -78,9 +78,9 @@ function get_days_array($date_start, $date_end)
     return $days;
 }
 
-function float2str($float)
+function float2str($float, $show_zero=true)
 {
-    return str_number_format($float, 2);
+    return ($float or $show_zero) ? str_number_format($float, 2) : "";
 }
 
 function format_date($date)
