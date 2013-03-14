@@ -509,8 +509,10 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $malattia = "";
                 $userdata['tot_missing'] = 0.0;
 
+                $counter = -1;
                 foreach ($userdata['activity'] as $date => $activity)
                 {
+                    $counter++;
                     if ($header) {
                         $abstime = strtotime($date);
                         $totali .= strftime(";%d %a", $abstime);
@@ -523,7 +525,13 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     } else {
                         $activity['time_missing'] = 0.0;
                     }
-                    $straordinarie .= ";0";
+                    if ($counter == 0) {
+                        $straordinarie .= ";-1=IF(RC[-2]>=0.5, 0.5, 0)";
+                    } else {
+                        $col_tot = -2 - $counter;
+                        $col_first = -$counter;
+                        $straordinarie .= ";-1=IF(RC[$col_tot]-SUM(RC[$col_first]:RC[-1])>=0.5, 0.5, 0)";
+                    }
                     $feriepermessi .= ";-1=".fformat($activity['time_ferie'])."+".fformat($activity['time_permessi'])."+".fformat($activity['time_missing']);
                     $malattia .= ";".fformat($activity['time_malattia']);
                 }
@@ -535,9 +543,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 }
 
                 $head_ore_ordinarie = "*".$userdata['fullname']."*;-1=SUM(RC[2]:RC[33]);Ore ordinarie";
-                $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[2]C[1]);-1=SUM(RC[2]:RC[33]);Straordinarie";
-                $head_feriepermessi = "Ore previste: ".fformat($userdata['tot_contract']).";-1=SUM(RC[2]:RC[33]);Ferie/Permessi";
-                $head_malattia = ";-1=SUM(RC[2]:RC[33]);Malattia";
+                $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[2]C[1]);0;Straordinarie";
+                $head_feriepermessi = "Ore previste;-1=SUM(RC[2]:RC[33]);Ferie/Permessi";
+                $head_malattia = fformat($userdata['tot_contract']).";-1=SUM(RC[2]:RC[33]);Malattia";
 
                 $excel->add_row(explode(";", $head_ore_ordinarie.$ore_ordinarie));
                 $excel->add_row(explode(";", $head_straordinarie.$straordinarie));
