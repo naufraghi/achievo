@@ -389,8 +389,14 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $content .= "<tr><td>$iuserid</td><td>".$userdata['fullname']."</td><th>Totale</th>";
                 $content .= "<th align='right'>".float2str($userdata['tot_contract'])."</th>";
                 $content .= "<th align='right'>".float2str($userdata['tot_registro'])."</th>";
-                $content .= "<th align='right' title='".float2str($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
+                $overtime_balance = $userdata['tot_worked'] - $userdata['tot_registro'];
+                $content .= "<th align='right' title='".float2str($overtime_balance)."'>";
                     $content .= float2str($userdata['tot_worked'])."</th>";
+                if ($overtime_balance > 0) {
+                    $userdata['overtime_balance'] = $overtime_balance;
+                } else {
+                    $userdata['overtime_balance'] = 0.0;
+                }
                 $content .= "<th align='right'>".float2str($userdata['tot_malattia'])."</th>";
                 $content .= "<th align='right'>".float2str($userdata['tot_ferie'])."</th>";
                 $content .= "<th align='right'>".float2str($userdata['tot_permessi'])."</th>";
@@ -408,6 +414,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 parte.
                 */
                 $content .= "<b>Banca ore al ".$timesummary["date_end"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_end'])."<br>";
+                $userdata['straordinari'] = $userdata['overtime_balance'] - $userdata['date_end']['balance']['balance'];
+                $content .= "<b>Straordinari:</b> ".float2str($userdata['straordinari'])."<br>";
                 $content .= "<b>Ore Previste:</b> ".float2str($userdata['tot_contract'])."<br>";
                 $content .= "<b>Ore Registro:</b> ".float2str($userdata['tot_registro'])."<br>";
                 $content .= "<b>Ore Lavorate:</b> <a title='".float2str($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
@@ -543,7 +551,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 }
 
                 $head_ore_ordinarie = "*".$userdata['fullname']."*;-1=SUM(RC[2]:RC[33]);Ore ordinarie";
-                $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[2]C[1]);0;Straordinarie";
+                $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[2]C[1]);".fformat($userdata['straordinari']).";Straordinarie";
                 $head_feriepermessi = "Ore previste;-1=SUM(RC[2]:RC[33]);Ferie/Permessi";
                 $head_malattia = fformat($userdata['tot_contract']).";-1=SUM(RC[2]:RC[33]);Malattia";
 
