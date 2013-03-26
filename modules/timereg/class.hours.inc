@@ -1006,9 +1006,12 @@ class hours extends atkNode
   }
 
 
-  function action_lock(&$handler)
+  function action_lock(&$handler, $viewdate=null)
   {
-    $period = Locking::getPeriod($this->m_viewdate);
+    if ($viewdate == null) {
+      $viewdate = $this->m_viewdate;
+    }
+    $period = Locking::getPeriod($viewdate);
 
     if (atkconfig::get("timereg","lock_period_approval_required",false))
     {
@@ -1021,9 +1024,11 @@ class hours extends atkNode
   }
 
 
-  function action_unlock(&$handler)
+  function action_unlock(&$handler, $viewdate=null)
   {
-    $viewdate = $this->m_postvars["viewdate"];
+    if ($viewdate == null) {
+      $viewdate = $this->m_postvars["viewdate"];
+    }
     Locking::unlockPeriod(Locking::getPeriod($viewdate));
     $this->redirect();
   }
