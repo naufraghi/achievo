@@ -28,7 +28,7 @@
    * Decides if locking should be based on months or
    * weeks. Valid entries are 'week' and 'month'
   */
-  $config["lockmode"] = "week";
+  $config["lockmode"] = "month";
 
   /**
    * When this setting is set to 'true', each coordinator
