@@ -882,6 +882,16 @@ class hours extends atkNode
       {
         $tplvars['lockurl']=session_url(dispatch_url($this->atknodetype(),"lock",array("userid"=>$userid,"viewdate"=>$this->m_viewdate)), SESSION_NESTED);
       }
+    } else if ($this->m_lockmode == "month") {
+      atkdebug('Locking: '.$this->m_lock);
+      if ($this->m_lock=="individual" && $this->allowed("unlock"))
+      {
+        $tplvars['unlockurl']=session_url(dispatch_url($this->atknodetype(),"unlock",array("userid"=>$userid,"viewdate"=>$this->m_viewdate)),SESSION_NESTED);
+      }
+      else if ($this->m_lock=="" && $this->allowed("lock"))
+      {
+        $tplvars['lockurl']=session_url(dispatch_url($this->atknodetype(),"lock",array("userid"=>$userid,"viewdate"=>$this->m_viewdate)), SESSION_NESTED);
+      }
     }
 
     return $ui->render($ui->templatePath('hours_adminheader_weekview.tpl'),$tplvars);
