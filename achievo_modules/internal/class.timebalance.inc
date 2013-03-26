@@ -386,7 +386,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $content .= "</tr>\n";
                 } // fine loop su tutti i giorni selezionati
                 $content .= $banca_head;
-                $content .= "<tr><td>$userid</td><td>".$userdata['fullname']."</td><th>Totale</th>";
+                $content .= "<tr><td>$iuserid</td><td>".$userdata['fullname']."</td><th>Totale</th>";
                 $content .= "<th align='right'>".float2str($userdata['tot_contract'])."</th>";
                 $content .= "<th align='right'>".float2str($userdata['tot_registro'])."</th>";
                 $content .= "<th align='right' title='".float2str($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
@@ -399,7 +399,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
                 $content .= "</tr>\n";
                 $content .= "<tr><td colspan='11'>$title<dl>\n";
-                $content .= "<b>$userid:</b> ".$userdata['fullname']."<br>";
+                $content .= "<b>$iuserid:</b> ".$userdata['fullname']."<br>";
                 $content .= "<b>Banca ore al ".$timesummary["date_start"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_start'])."<br>";
                 /*
                 Aggiunto link per permettere di modificare il quantitativo di ore
