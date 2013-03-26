@@ -317,15 +317,15 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 sull'achievo in produzione sarebbe raccomandabile il testarlo. A
                 fondo.
                 */
-                $tmp_d = date_create($timesummary["date_start"]);
-                $tmp_d->modify("-1 day");
-                $tmp_d = format_date($tmp_d);
-                $userdata['date_start']['balance'] = $this->overtime_node->getBalance($tmp_d, $userdata['id']);
+                $date_start = date_create($timesummary["date_start"]);
+                $date_start->modify("-1 day");
+                $date_start = format_date($date_start);
+                $userdata['date_start']['balance'] = $this->overtime_node->getBalance($date_start, $userdata['id']);
 
-                $tmp_d = date_create($timesummary["date_end"]);
-                $tmp_d->modify("-1 day");
-                $tmp_d = format_date($tmp_d);
-                $userdata['date_end']['balance'] = $this->overtime_node->getBalance($tmp_d, $userdata['id']);
+                $date_end = date_create($timesummary["date_end"]);
+                $date_end->modify("-1 day");
+                $date_end = format_date($date_end);
+                $userdata['date_end']['balance'] = $this->overtime_node->getBalance($date_end, $userdata['id']);
 
                 $banca_ore = $userdata['date_start']['balance']['balance'] + $userdata['tot_worked'];
 
