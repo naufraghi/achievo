@@ -392,7 +392,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
     function enumWorkingDays($begin, $end, $userid, $format='Ymd')
     {
       static $user_contracts = array();
-      
+
       // Convert the given begindate and enddate to "yyyymmdd" format so we can run calculations on them
       // in order to determine if a given date is earlier than, equal to or later than another date
       $begindate = dateutil::str2str($begin);
@@ -409,7 +409,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       {
         $contracts = $user_contracts[$userid];
       }
-      
+
       $workday_array = array();
       foreach ($contracts as $contract)
       {
