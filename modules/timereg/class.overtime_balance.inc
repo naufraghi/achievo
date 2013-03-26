@@ -237,7 +237,7 @@ $this->debuglog(array("function"=>"addOvertimeBalance","userid"=>$userid, "day"=
       $db = &atkGetDb();
       $newid = $db->nextid("overtime_balance");
       $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
-                  VALUES ('$newid', '$userid', '$day', '$balance', 0)");
+                  VALUES ('$newid', '$userid', '$day', $balance, 0)");
     }
 
     function saveOvertimeBalance($userid, $day, $balance)
