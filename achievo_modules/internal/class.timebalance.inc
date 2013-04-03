@@ -414,7 +414,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 parte.
                 */
                 $content .= "<b>Banca ore al ".$timesummary["date_end"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_end'])."<br>";
-                $userdata['straordinari'] = $userdata['overtime_balance'] - $userdata['date_end']['balance']['balance'];
+                atkdebug("userdata['overtime_balance']=".$userdata['overtime_balance']);
+                atkdebug("userdata['date_end']['balance']['balance']=".$userdata['date_end']['balance']['balance']);
+                $userdata['straordinari'] = max($userdata['overtime_balance'] - max($userdata['date_end']['balance']['balance'], 0.0), 0.0);
                 $content .= "<b>Straordinari:</b> ".float2str($userdata['straordinari'])."<br>";
                 $content .= "<b>Ore Previste:</b> ".float2str($userdata['tot_contract'])."<br>";
                 $content .= "<b>Ore Registro:</b> ".float2str($userdata['tot_registro'])."<br>";
@@ -500,6 +502,12 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         function fformat($number) {
             return number_format($number, 2);
         }
+        function if_workday($abstime, $value) {
+            if (intval(strftime("%u", $abstime)) <= 5)
+                return $value;
+            else
+                return "";
+        }
         foreach ($users as $iuserid) {
             $hours_table = $this->action_report(&$handler, $iuserid, &$timesummary, true);
             foreach ($hours_table['time_balance'] as $username => $userdata)
@@ -534,11 +542,11 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                         $activity['time_missing'] = 0.0;
                     }
                     if ($counter == 0) {
-                        $straordinarie .= ";-1=IF(RC[-2]>=0.5, 0.5, 0)";
+                        $straordinarie .= ";".if_workday($abstime, "-1=IF(RC[-2]>=1, 1, (RC[-2]))");
                     } else {
                         $col_tot = -2 - $counter;
                         $col_first = -$counter;
-                        $straordinarie .= ";-1=IF(RC[$col_tot]-SUM(RC[$col_first]:RC[-1])>=0.5, 0.5, 0)";
+                        $straordinarie .= ";".if_workday($abstime, "-1=IF(RC[$col_tot]-SUM(RC[$col_first]:RC[-1])>=1, 1, (RC[$col_tot]-SUM(RC[$col_first]:RC[-1])))");
                     }
                     $feriepermessi .= ";-1=".fformat($activity['time_ferie'])."+".fformat($activity['time_permessi'])."+".fformat($activity['time_missing']);
                     $malattia .= ";".fformat($activity['time_malattia']);
