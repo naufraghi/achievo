@@ -389,8 +389,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $content .= "<tr><td>$iuserid</td><td>".$userdata['fullname']."</td><th>Totale</th>";
                 $content .= "<th align='right'>".float2str($userdata['tot_contract'])."</th>";
                 $content .= "<th align='right'>".float2str($userdata['tot_registro'])."</th>";
-                $overtime_balance = $userdata['tot_worked'] - $userdata['tot_registro'];
-                $content .= "<th align='right' title='".float2str($overtime_balance)."'>";
+                $overtime_balance = $userdata['date_start']['balance']['balance'] + $userdata['tot_worked'] - $userdata['tot_registro'];
+                $content .= "<th align='right' title='banca ore: ".float2str($overtime_balance)."'>";
                     $content .= float2str($userdata['tot_worked'])."</th>";
                 if ($overtime_balance > 0) {
                     $userdata['overtime_balance'] = $overtime_balance;
