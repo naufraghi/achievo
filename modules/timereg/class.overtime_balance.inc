@@ -236,8 +236,9 @@ $this->debuglog(array("function"=>"addOvertimeBalance","userid"=>$userid, "day"=
       // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
       $newid = $db->nextid("overtime_balance");
+      $balance = number_format($balance, 2);
       $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
-                  VALUES ('$newid', '$userid', '$day', $balance, 0)");
+                  VALUES ('$newid', '$userid', '$day', '$balance', 0)");
     }
 
     function saveOvertimeBalance($userid, $day, $balance)
@@ -271,8 +272,9 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       if (!count($recs))
       {
         $newid = $db->nextid("overtime_balance");
+        $balance = number_format($balance, 2);
         $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
-                  VALUES ('$newid', '$userid', '$day', $balance, 0)");
+                  VALUES ('$newid', '$userid', '$day', '$balance', 0)");
         return $newid;
       }
       else
