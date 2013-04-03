@@ -272,7 +272,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       {
         $newid = $db->nextid("overtime_balance");
         $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
-                  VALUES ('$newid', '$userid', '$day', '$balance', 0)");
+                  VALUES ('$newid', '$userid', '$day', $balance, 0)");
         return $newid;
       }
       else
