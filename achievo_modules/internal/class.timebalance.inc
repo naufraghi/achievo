@@ -502,6 +502,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         function fformat($number) {
             return number_format($number, 2);
         }
+        function coalesce($value) {
+            return "IF($value, ($value), \"\")";
+        }
         function if_workday($abstime, $value) {
             if (intval(strftime("%u", $abstime)) <= 5)
                 return $value;
@@ -533,7 +536,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                         $abstime = strtotime($date);
                         $totali .= strftime(";%d %a", $abstime);
                     }
-                    $ore_ordinarie .= ";".fformat($activity['time_registro']);
+                    $value = fformat($activity['time_registro']);
+                    $ore_ordinarie .= ";-1=".coalesce(fformat($activity['time_registro']));
                     $ore_mancanti = $activity['time_contract'] - $activity['time_registro'] - $activity['time_malattia'] - $activity['time_ferie'] - $activity['time_permessi'];
                     if ($ore_mancanti > 0) {
                         $activity['time_missing'] = $ore_mancanti;
@@ -542,14 +546,15 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                         $activity['time_missing'] = 0.0;
                     }
                     if ($counter == 0) {
-                        $straordinarie .= ";".if_workday($abstime, "-1=IF(RC[-2]>=1, 1, (RC[-2]))");
+                        $straordinarie .= ";".if_workday($abstime, "-1=IF(RC[-2]>=1, 1, IF(RC[-2], (RC[-2]), \"\"))");
                     } else {
                         $col_tot = -2 - $counter;
                         $col_first = -$counter;
-                        $straordinarie .= ";".if_workday($abstime, "-1=IF(RC[$col_tot]-SUM(RC[$col_first]:RC[-1])>=1, 1, (RC[$col_tot]-SUM(RC[$col_first]:RC[-1])))");
+                        $value = "RC[$col_tot]-SUM(RC[$col_first]:RC[-1])";
+                        $straordinarie .= ";".if_workday($abstime, "-1=IF($value>=1, 1, ".coalesce($value).")");
                     }
-                    $feriepermessi .= ";-1=".fformat($activity['time_ferie'])."+".fformat($activity['time_permessi'])."+".fformat($activity['time_missing']);
-                    $malattia .= ";".fformat($activity['time_malattia']);
+                    $feriepermessi .= ";-1=".coalesce(fformat($activity['time_ferie'])."+".fformat($activity['time_permessi'])."+".fformat($activity['time_missing']));
+                    $malattia .= ";-1=".coalesce(fformat($activity['time_malattia']));
                 }
                 if ($header) {
                     $excel->add_row(explode(";", $totali), 'header');

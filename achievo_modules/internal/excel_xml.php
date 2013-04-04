@@ -173,7 +173,7 @@ class excel_xml {
 
         $str = str_replace("\t", " ", $cell_data);          // replace tabs with spaces
         $str = str_replace("\r\n", "\n", $str);             // replace windows-like new-lines with unix-like
-        $str = str_replace('"',  '""', $str);               // escape quotes so we support multiline cells now
+        $str = str_replace('"',  '&quot;', $str);               // escape quotes so we support multiline cells now
         preg_match('#\"\"#', $str) ? $str = '"'.$str.'"' : $str; // If there are double doublequotes, encapsulate str in doublequotes
 
         // Formating: bold
