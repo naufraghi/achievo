@@ -161,7 +161,6 @@ class timesummary extends atkNode
         $content .= "<p>Le ore segnate come malattia/ferie non vengono conteggiate.</p>\n";
 
         // Tabelle persone
-        $_last_user = "";
         $content .= "<table><tr><td>";
             // Tabella ore lavorate per progetto
             $content .= "<table border='1'>\n";
@@ -169,8 +168,12 @@ class timesummary extends atkNode
             $progetti = array();
             $gprogetti = array();
             $persone = array();
+            $userid_progetti = array();
             foreach ($results['rows'] as $key => $r)
             {
+                if (!array_key_exists($r['userid'].$r['prj'], $userid_progetti)) {
+                    $userid_progetti[$r['userid'].$r['prj']] = array('userid' => $r['userid'], 'prj' => $r['prj'], 'ore' => 0.0, 'euro' => 0.0);
+                }
                 if (!array_key_exists($r['prj'], $progetti)) {
                     $progetti[$r['prj']] = array("ore" => 0.0, "euro" => 0.0, "non-billable" => 0.0);
                 }
@@ -186,6 +189,7 @@ class timesummary extends atkNode
                     $progetti[$r['prj']]['non-billable'] += $r['ore'];
                 }
                 $progetti[$r['prj']]['lastmod'] = max($progetti[$r['prj']]['lastmod'], $r['lastmod']);
+                $userid_progetti[$r['userid'].$r['prj']]['ore'] += $r['ore'];
                 $gprogetti[$r['gprj']]['ore'] += $r['ore'];
                 $gprogetti[$r['gprj']]['lastmod'] = max($gprogetti[$r['gprj']]['lastmod'], $r['lastmod']);
                 $persone[$r['userid']]['ore'] += $r['ore'];
@@ -201,6 +205,11 @@ class timesummary extends atkNode
                     $persone[$r['userid']]['euro_ora'] = "Manca euro/h";
                 }
 
+                if (is_numeric($userid_progetti[$r['userid'].$r['prj']]['euro']) and is_numeric($r['euro'])) {
+                    $userid_progetti[$r['userid'].$r['prj']]['euro'] += $r['euro'];
+                } else {
+                    $userid_progetti[$r['userid'].$r['prj']]['euro'] = "Manca euro/h";
+                }
                 if (is_numeric($progetti[$r['prj']]['euro']) and is_numeric($r['euro'])) {
                     $progetti[$r['prj']]['euro'] += $r['euro'];
                 } else {
@@ -216,7 +225,10 @@ class timesummary extends atkNode
                 } else {
                     $persone[$r['userid']]['euro'] = "Manca euro/h";
                 }
-
+            }
+            $_last_user = "";
+            foreach($userid_progetti as $key => $r)
+            {
                 if ($_last_user != $r['userid']) {
                   $_last_user = $r['userid'];
                   flipflop();
