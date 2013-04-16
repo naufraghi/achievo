@@ -285,7 +285,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         if (!$timesummary) {
             $timesummary = $this->get_timesummary($userid);
         }
-        $hours_table = $this->get_hours_table($userid, &$timesummary, $export);
+        $hours_table = $this->get_hours_table($userid, $timesummary, $export);
         $content = $hours_table['content'];
         $timesummary = $hours_table['timesummary'];
 
@@ -512,7 +512,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 return "";
         }
         foreach ($users as $iuserid) {
-            $hours_table = $this->action_report(&$handler, $iuserid, &$timesummary, true);
+            $hours_table = $this->action_report($handler, $iuserid, $timesummary, true);
             foreach ($hours_table['time_balance'] as $username => $userdata)
             {
                 if ($userdata['id'] != $iuserid)
