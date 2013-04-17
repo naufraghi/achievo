@@ -146,8 +146,11 @@
      * @param int $userid User id
      * @return int
      */
-    function getBalance($day, $userid)
+    function getBalance($day, $userid, $reset_cache=false)
     {
+      if ($reset_cache) {
+          $this->deleteBalance($userid, $day);
+      }
       $node = &atkGetNode("timereg.overtime_balance");
       $result = $node->selectDb("day <= '$day' AND userid.id = '$userid'", "day DESC", 1);
 

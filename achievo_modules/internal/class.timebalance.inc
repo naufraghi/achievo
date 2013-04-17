@@ -320,7 +320,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $date_start = date_create($timesummary["date_start"]);
                 $date_start->modify("-1 day");
                 $date_start = format_date($date_start);
-                $userdata['date_start']['balance'] = $this->overtime_node->getBalance($date_start, $userdata['id']);
+                $userdata['date_start']['balance'] = $this->overtime_node->getBalance($date_start, $userdata['id'], true);
 
                 $date_end = date_create($timesummary["date_end"]);
                 $date_end->modify("-1 day");
