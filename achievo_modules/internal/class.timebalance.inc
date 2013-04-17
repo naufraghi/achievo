@@ -208,7 +208,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
             $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'-1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'-1\'})" value="Mese-" />';
             $weekreport = &atkGetNode("reports.weekreport");
-            $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="userid").'</SELECT>';
+            $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="lastname").'</SELECT>';
             $content .= '<input type="submit" value="'.atktext("refresh").'">';
             $content .= "<h2>$title</h2>\n";
         }
