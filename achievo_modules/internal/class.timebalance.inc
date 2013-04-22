@@ -210,6 +210,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $weekreport = &atkGetNode("reports.weekreport");
             $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="lastname").'</SELECT>';
             $content .= '<input type="submit" value="'.atktext("refresh").'">';
+            $content .= '</form>';
             $content .= "<h2>$title</h2>\n";
         }
 
@@ -437,10 +438,6 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         }
 
         $content .= "<p>Pagina creata il ".date_create()->format("Y-m-d")."</p>\n";
-        $content .= '<input type="submit" value="'.atktext("refresh").'">';
-        $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
-        $content .= '<input type="hidden" name="atkaction" value="report">';
-        $content .= '</form>';
 
         $content .= '<form action="dispatch.php" method="get" name="entryform">';
         $content .= '<input type="submit" value="'.atktext("Esporta").'">';
