@@ -253,7 +253,8 @@ $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"
       */
       // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
-      $sql = "UPDATE overtime_balance SET balance = $balance WHERE userid = '$userid' AND day = '$day'";
+      $balance = number_format($balance, 2);
+      $sql = "UPDATE overtime_balance SET balance = '$balance' WHERE userid = '$userid' AND day = '$day'";
       $db->query($sql);
     }
 
