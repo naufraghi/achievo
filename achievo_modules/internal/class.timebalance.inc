@@ -43,6 +43,7 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract
 useattrib("atkdateattribute");
 atkImport("modules.scheduler.scheduler_holidays");
 atkImport("modules.reports.weekreport");
+atkimport("module.timereg.locking");
 
 setlocale(LC_ALL, 'it_IT');
 
@@ -430,6 +431,24 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a><br>";
                 $content .= "<b>Tickets:</b> ".$userdata['tot_tickets']."<br>";
 
+                if ($userdata['date_end']['balance']['balance'] > 0)
+                {
+                    $content .= '<form action="dispatch.php" method="get" name="entryform">';
+                    $content .= 'In banca ore ci sono '.$userdata['date_end']['balance']['balance'].' ore';
+                    $content .= '<button name="option" type="submit" value="store">'.atktext("Lascia tutto in banca ore").'</button>';
+                    $content .= '<button name="option" type="submit" value="empty">'.atktext("Riscatta tutte le ore").'</button>';
+                    $content .= '<input type="hidden" name="userid" value="'.$userdata['id'].'">';
+                    $content .= '<input type="hidden" name="balance_date" value="'.$date_end.'">';
+                    $content .= '<input type="hidden" name="balance" value="'.$userdata['date_end']['balance']['balance'].'">';
+                    $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
+                    $content .= '<input type="hidden" name="atkaction" value="bancaore">';
+                    $content .= '</form>';
+                } else if ($userdata['date_end']['balance']['balance'] < 0) {
+                    $content .= 'Banca ore in negativo, le ore mancanti verranno prese dai permessi';
+                } else {
+                    $content .= 'Banca ore in pari';
+                }
+
                 $content .= "</dl></td></tr>\n";
                 $content .= "</table>\n";
             }
@@ -577,6 +596,24 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $exporter->export($xml, strftime("Develer-%Y-%B", $report_time), "xls");
         else
             $exporter->export($xml, strftime("Develer-%Y-%B-$username", $report_time), "xls");
+    }
+    function action_bancaore(&$handler)
+    {
+        $userid = $this->m_postvars['userid'];
+        $option = $this->m_postvars['option'];
+        $balance_date = $this->m_postvars['balance_date'];
+        $lock_date = date_create($balance_date)->format("Ym");
+        if ($option == 'store')
+            $balance = $this->m_postvars['balance'];
+        else
+            $balance = min(0.0, $this->m_postvars['balance']);
+        atkdebug("action_bancaore: $userid $option ".var_export($balance_date, 1)." $balance");
+        if ($balance >= 0)
+        {
+            $this->overtime_node->updateOvertimeBalance($userid, $date_end, $balance);
+        }
+        Locking::lockPeriod($lock_date);
+        $this->redirect(dispatch_url("internal.timebalance", "report"));
     }
 }
 ?>
