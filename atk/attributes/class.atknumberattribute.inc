@@ -424,14 +424,14 @@
     function fetchMeta($metadata)
     {
     	parent::fetchMeta($metadata);
-    	
+
     	if (strpos($this->m_size, ',') !== false)
     	{
     		list($this->m_size, $decimals) = explode(',', $this->m_size);
-    		
+
     		if ($this->m_decimals === null)
     		{
-    		  // no decimals explicitly set, so use the one we 
+    		  // no decimals explicitly set, so use the one we
     		  // retrieved from the database
     		  $this->m_decimals = $decimals;
     		}
@@ -442,8 +442,8 @@
     		  $this->m_decimals = min($this->m_decimals, $decimals);
     		}
     	}
-    }    
-    
+    }
+
     /**
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
@@ -465,7 +465,7 @@
       {
         $onchange = '';
       }
-      
+
       $size    = $this->m_size;
       $maxsize = $this->m_maxsize;
       if ($this->getDecimals()>0)
