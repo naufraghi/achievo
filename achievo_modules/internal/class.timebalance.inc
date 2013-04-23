@@ -126,18 +126,23 @@ class timebalance extends atkNode
     {
         $db = &atkGetDb();
 
-        /* Accetta una data in ingresso oppure imposta l'intervallo all'ultimo mese appena concluso*/
+        // Accetta una data in ingresso oppure imposta `date_start` all'inizio
+        // dell'ultimo mese appena concluso
         $last_month_start = mktime(0, 0, 0, date("m")-1, 1, date("Y"));
-        $last_month_end = mktime(0, 0, 0, date("m"), 1, date("Y"));
         $date_start = $this->m_postvars['date_start'];
-        $date_end = $this->m_postvars['date_end'];
         if ($date_start == "")
             $date_start = date("Y-m-d", $last_month_start);
-        else
+        else if (is_array($date_start))
             $date_start = sprintf("%04d",$date_start["year"])."-".sprintf("%02d",$date_start["month"])."-".sprintf("%02d",$date_start["day"]);
-        if ($date_end == "")
-            $date_end = date("Y-m-d", $last_month_end);
-        else
+        // Se non definito imposta `date_end` al primo giorno del mese
+        // successivo a `date_start`
+        $date_end = $this->m_postvars['date_end'];
+        $last_month_end = mktime(0, 0, 0, date("m"), 1, date("Y"));
+        if ($date_end == "") {
+            $date_end = date_create($date_start);
+            $date_end->modify("+1 month");
+            $date_end = format_date($date_end);
+        } else if (is_array($date_end))
             $date_end = sprintf("%04d",$date_end["year"])."-".sprintf("%02d",$date_end["month"])."-".sprintf("%02d",$date_end["day"]);
 
         if ( $userid != 'all' )
@@ -484,6 +489,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
 
         $content .= '<form action="dispatch.php" method="get" name="entryform">';
         $content .= '<input type="submit" value="'.atktext("Esporta").'">';
+        $content .= '<input type="hidden" name="date_start" value="'.$timesummary["date_start"].'">';
         $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
         $content .= '<input type="hidden" name="atkaction" value="export">';
         $content .= '</form>';
