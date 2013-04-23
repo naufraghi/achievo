@@ -610,8 +610,16 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $excel->add_row("");
                 }
 
+                $sum_rows = 2;
+                if ($userdata['tot_allattamento'] > 0)
+                    $sum_rows++;
+                if ($userdata['tot_permessi_certificati'] > 0)
+                    $sum_rows++;
+                if ($userdata['tot_donazioni_sangue'] > 0)
+                    $sum_rows++;
+
                 $head_ore_ordinarie = "*".$userdata['fullname']."*;-1=SUM(RC[2]:RC[33]);Ore ordinarie";
-                $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[2]C[1]);".fformat($userdata['straordinari']).";Straordinarie";
+                $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[$sum_rows]C[1]);".fformat($userdata['straordinari']).";Straordinarie";
                 $head_ferie = "Ore previste;-1=SUM(RC[2]:RC[33]);Ferie/Permessi";
                 $head_malattia = fformat($userdata['tot_contract']).";-1=SUM(RC[2]:RC[33]);Malattia";
                 $head_permessi_certificati = ";-1=SUM(RC[2]:RC[33]);Permessi Certificati";
@@ -622,9 +630,12 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $excel->add_row(explode(";", $head_straordinarie.$straordinarie));
                 $excel->add_row(explode(";", $head_ferie.$ferie));
                 $excel->add_row(explode(";", $head_malattia.$malattia));
-                $excel->add_row(explode(";", $head_allattamento.$allattamento));
-                $excel->add_row(explode(";", $head_permessi_certificati.$permessi_certificati));
-                $excel->add_row(explode(";", $head_donazioni_sangue.$donazioni_sangue));
+                if ($userdata['tot_allattamento'] > 0)
+                    $excel->add_row(explode(";", $head_allattamento.$allattamento));
+                if ($userdata['tot_permessi_certificati'] > 0)
+                    $excel->add_row(explode(";", $head_permessi_certificati.$permessi_certificati));
+                if ($userdata['tot_donazioni_sangue'] > 0)
+                    $excel->add_row(explode(";", $head_donazioni_sangue.$donazioni_sangue));
             }
         }
         $excel->create_worksheet('Develer srl');
