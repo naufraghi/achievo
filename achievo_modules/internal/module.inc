@@ -16,7 +16,7 @@
             registerNode("internal.timesummary",
                          array("report"));
             registerNode("internal.timebalance",
-                         array("report", "export"));
+                         array("report", "export", "add"));
         }
         function getDependencies($mode)
         {

@@ -104,6 +104,7 @@ class timebalance extends atkNode
         $this->m_user = $this->processGlobalVar("userid");
         atkdebug("DEBUG: m_user = ".$this->m_user);
         if($this->m_user=="") $this->m_user = $this->getInitialUser();
+        $this->m_securityMap["bancaore"] = "add";
     }
 
     function getInitialUser() {
