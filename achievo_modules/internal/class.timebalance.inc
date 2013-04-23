@@ -153,7 +153,9 @@ class timebalance extends atkNode
                     hours.activitydate, hours.time/60 AS time_spent,
                     (project.name = '__dipendenti' AND phase.name = 'malattia') AS malattia,
                     (project.name = '__dipendenti' AND phase.name = 'ferie') AS ferie,
-                    (project.name = '__dipendenti' AND LOWER(phase.name) LIKE 'permessi%') AS permessi,
+                    (project.name = '__dipendenti' AND phase.name = 'allattamento') AS allattamento,
+                    (project.name = '__dipendenti' AND phase.name = 'donazioni_sangue') AS donazioni_sangue,
+                    (project.name = '__dipendenti' AND LOWER(phase.name) LIKE 'permessi%') AS permessi_certificati,
                     (project.name LIKE 'd20_%') AS d20
                 FROM hours
                     JOIN person ON hours.userid = person.id
@@ -167,14 +169,17 @@ class timebalance extends atkNode
 
         $select = "
 SELECT id, userid, firstname, lastname, activitydate, SUM(time_worked) as time_worked,
-       SUM(time_malattia) as time_malattia, SUM(time_ferie) as time_ferie, SUM(time_permessi) as time_permessi,
+       SUM(time_malattia) as time_malattia, SUM(time_ferie) as time_ferie, SUM(time_permessi_certificati) as time_permessi_certificati,
+       SUM(time_allattamento) as time_allattamento, SUM(time_donazioni_sangue) as time_donazioni_sangue,
        SUM(time_d20) as time_d20, (SUM(time_worked) >= 5) as tickets
     FROM (
         SELECT id, userid, firstname, lastname, activitydate,
-            (NOT (malattia OR ferie OR permessi OR d20)) * time_spent AS time_worked,
+            (NOT (malattia OR ferie OR allattamento OR donazioni_sangue OR permessi_certificati OR d20)) * time_spent AS time_worked,
             malattia * time_spent AS time_malattia,
             ferie * time_spent AS time_ferie,
-            permessi * time_spent AS time_permessi,
+            allattamento * time_spent AS time_allattamento,
+            donazioni_sangue * time_spent AS time_donazioni_sangue,
+            permessi_certificati * time_spent AS time_permessi_certificati,
             d20 * time_spent AS time_d20
         FROM (
             $ore_registrate
@@ -227,7 +232,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                                        'time_worked' => 0.0,
                                        'time_malattia' => 0.0,
                                        'time_ferie' => 0.0,
-                                       'time_permessi' => 0.0,
+                                       'time_permessi_certificati' => 0.0,
+                                       'time_allattamento' => 0.0,
+                                       'time_donazioni_sangue' => 0.0,
                                        'time_d20' => 0.0,
                                        'tickets' => 0,
                                        'lavoro' => false);
@@ -242,7 +249,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                                                        'tot_worked' => 0.0,
                                                        'tot_malattia' => 0.0,
                                                        'tot_ferie' => 0.0,
-                                                       'tot_permessi' => 0.0,
+                                                       'tot_permessi_certificati' => 0.0,
+                                                       'tot_allattamento' => 0.0,
+                                                       'tot_donazioni_sangue' => 0.0,
                                                        'tot_d20' => 0.0,
                                                        'tot_tickets' => 0,
                                                       );
@@ -251,7 +260,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $activitydate = array('time_worked' => floatval($r['time_worked']),
                                       'time_malattia' => floatval($r['time_malattia']),
                                       'time_ferie' => floatval($r['time_ferie']),
-                                      'time_permessi' => floatval($r['time_permessi']),
+                                      'time_permessi_certificati' => floatval($r['time_permessi_certificati']),
+                                      'time_allattamento' => floatval($r['time_allattamento']),
+                                      'time_donazioni_sangue' => floatval($r['time_donazioni_sangue']),
                                       'time_d20' => floatval($r['time_d20']),
                                       'tickets' => intval($r['tickets']),
                                       'lavoro' => true);
@@ -261,7 +272,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $time_balance[$r['userid']]['tot_worked'] += $activitydate['time_worked'];
                 $time_balance[$r['userid']]['tot_malattia'] += $activitydate['time_malattia'];
                 $time_balance[$r['userid']]['tot_ferie'] += $activitydate['time_ferie'];
-                $time_balance[$r['userid']]['tot_permessi'] += $activitydate['time_permessi'];
+                $time_balance[$r['userid']]['tot_permessi_certificati'] += $activitydate['time_permessi_certificati'];
+                $time_balance[$r['userid']]['tot_allattamento'] += $activitydate['time_allattamento'];
+                $time_balance[$r['userid']]['tot_donazioni_sangue'] += $activitydate['time_donazioni_sangue'];
                 $time_balance[$r['userid']]['tot_d20'] += $activitydate['time_d20'];
                 $time_balance[$r['userid']]['tot_tickets'] += $activitydate['tickets'];
 
@@ -295,7 +308,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         if ($userid!="all") {
             // Tabelle banca ore
             $banca_head = "<tr><th>User</th><th>Nome</th><th>Giorno</th><th>Ore previste</th><th>Ore registro</th>
-                               <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Permessi</th><th>Develer20</th><th>Tickets</th>
+                <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Permessi Certificati</th>
+                <th>Allattamento</th><th>Donazioni</th><th>Develer20</th><th>Tickets</th>
                                </tr>\n";
             foreach ($hours_table['time_balance'] as $iuserid => &$userdata)
             {
@@ -355,7 +369,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                         $userdata['tot_contract'] += $activity['time_contract'];
                         $content .= "<td align='right' title='".float2str($userdata['tot_contract'])."'>".float2str($activity['time_contract'])."</td>";
                         if ($banca_ore > 0) {
-                            $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie'] - $activity['time_permessi'];
+                            $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie']
+                                            - $activity['time_permessi_certificati'] - $activity['time_allattamento'] - $activity['time_donazioni_sangue'];
                             $ore_registro = min($ore_registro, $banca_ore);
                         } else {
                             $ore_registro = 0.0;
@@ -373,12 +388,16 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                         $content .= "<td align='right' title='".float2str($activity['totale_parziale_worked'])."'>".float2str($activity['time_worked'])."</td>";
                         $content .= "<td align='right'>".float2str($activity['time_malattia'])."</td>";
                         $content .= "<td align='right'>".float2str($activity['time_ferie'])."</td>";
-                        $content .= "<td align='right'>".float2str($activity['time_permessi'])."</td>";
+                        $content .= "<td align='right'>".float2str($activity['time_permessi_certificati'])."</td>";
+                        $content .= "<td align='right'>".float2str($activity['time_allattamento'])."</td>";
+                        $content .= "<td align='right'>".float2str($activity['time_donazioni_sangue'])."</td>";
                         $content .= "<td align='right'>".float2str($activity['time_d20'])."</td>";
                         $content .= "<td align='right'>".$activity['tickets']."</td>";
                     }
                     else
                     {
+                        $content .= "<td align='right'>&nbsp</td>";
+                        $content .= "<td align='right'>&nbsp</td>";
                         $content .= "<td align='right'>&nbsp</td>";
                         $content .= "<td align='right'>&nbsp</td>";
                         $content .= "<td align='right'>&nbsp</td>";
@@ -402,12 +421,14 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 }
                 $content .= "<th align='right'>".float2str($userdata['tot_malattia'])."</th>";
                 $content .= "<th align='right'>".float2str($userdata['tot_ferie'])."</th>";
-                $content .= "<th align='right'>".float2str($userdata['tot_permessi'])."</th>";
+                $content .= "<th align='right'>".float2str($userdata['tot_permessi_certificati'])."</th>";
+                $content .= "<th align='right'>".float2str($userdata['tot_allattamento'])."</th>";
+                $content .= "<th align='right'>".float2str($userdata['tot_donazioni_sangue'])."</th>";
                 $content .= "<th align='right' title='".float2str($userdata['tot_d20'])."'>";
                     $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</th>";
                 $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
                 $content .= "</tr>\n";
-                $content .= "<tr><td colspan='11'>$title<dl>\n";
+                $content .= "<tr><td colspan='13'>$title<dl>\n";
                 $content .= "<b>$iuserid:</b> ".$userdata['fullname']."<br>";
                 $content .= "<b>Banca ore al ".$timesummary["date_start"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_start'])."<br>";
                 /*
@@ -427,7 +448,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $content .= float2str($userdata['tot_worked'])."</a><br>";
                 $content .= "<b>Malattia:</b> ".float2str($userdata['tot_malattia'])."<br>";
                 $content .= "<b>Ferie:</b> ".float2str($userdata['tot_ferie'])."<br>";
-                $content .= "<b>Permessi:</b> ".float2str($userdata['tot_permessi'])."<br>";
+                $content .= "<b>Permessi certificati:</b> ".float2str($userdata['tot_permessi_certificati'])."<br>";
+                $content .= "<b>Allattamento:</b> ".float2str($userdata['tot_allattamento'])."<br>";
+                $content .= "<b>Donazioni sangue:</b> ".float2str($userdata['tot_donazioni_sangue'])."<br>";
                 $content .= "<b>Develer20:</b> <a title='".float2str($userdata['tot_d20'])."'>";
                     $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a><br>";
                 $content .= "<b>Tickets:</b> ".$userdata['tot_tickets']."<br>";
@@ -445,7 +468,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $content .= '<input type="hidden" name="atkaction" value="bancaore">';
                     $content .= '</form>';
                 } else if ($userdata['date_end']['balance']['balance'] < 0) {
-                    $content .= 'Banca ore in negativo, le ore mancanti verranno prese dai permessi';
+                    $content .= 'Banca ore in negativo, le ore mancanti verranno prese dalle ferie';
                 } else {
                     $content .= 'Banca ore in pari';
                 }
@@ -541,7 +564,10 @@ GROUP BY id, userid, firstname, lastname, activitydate;
 
                 $ore_ordinarie = "";
                 $straordinarie = "";
-                $feriepermessi = "";
+                $ferie = "";
+                $permessi_certificati = "";
+                $allattamento = "";
+                $donazioni_sangue = "";
                 $malattia = "";
                 $userdata['tot_missing'] = 0.0;
 
@@ -555,7 +581,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     }
                     $value = fformat($activity['time_registro']);
                     $ore_ordinarie .= ";-1=".coalesce(fformat($activity['time_registro']));
-                    $ore_mancanti = $activity['time_contract'] - $activity['time_registro'] - $activity['time_malattia'] - $activity['time_ferie'] - $activity['time_permessi'];
+                    $ore_mancanti = $activity['time_contract'] - $activity['time_registro'] - $activity['time_malattia'] - $activity['time_ferie']
+                                    - $activity['time_permessi_certificati'] - $activity['time_allattamento'] - $activity['time_donazioni_sangue'];
                     if ($ore_mancanti > 0) {
                         $activity['time_missing'] = $ore_mancanti;
                         $userdata['tot_missing'] += $ore_mancanti;
@@ -570,7 +597,10 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                         $value = "RC[$col_tot]-SUM(RC[$col_first]:RC[-1])";
                         $straordinarie .= ";".if_workday($abstime, "-1=IF($value>=1, 1, ".coalesce($value).")");
                     }
-                    $feriepermessi .= ";-1=".coalesce(fformat($activity['time_ferie'])."+".fformat($activity['time_permessi'])."+".fformat($activity['time_missing']));
+                    $ferie .= ";-1=".coalesce(fformat($activity['time_ferie'])."+".fformat($activity['time_missing']));
+                    $permessi_certificati .= ";-1=".coalesce(fformat($activity['time_permessi_certificati']));
+                    $allattamento .= ";-1=".coalesce(fformat($activity['time_allattamento']));
+                    $donazioni_sangue .= ";-1=".coalesce(fformat($activity['time_donazioni_sangue']));
                     $malattia .= ";-1=".coalesce(fformat($activity['time_malattia']));
                 }
                 if ($header) {
@@ -582,13 +612,19 @@ GROUP BY id, userid, firstname, lastname, activitydate;
 
                 $head_ore_ordinarie = "*".$userdata['fullname']."*;-1=SUM(RC[2]:RC[33]);Ore ordinarie";
                 $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[2]C[1]);".fformat($userdata['straordinari']).";Straordinarie";
-                $head_feriepermessi = "Ore previste;-1=SUM(RC[2]:RC[33]);Ferie/Permessi";
+                $head_ferie = "Ore previste;-1=SUM(RC[2]:RC[33]);Ferie/Permessi";
                 $head_malattia = fformat($userdata['tot_contract']).";-1=SUM(RC[2]:RC[33]);Malattia";
+                $head_permessi_certificati = ";-1=SUM(RC[2]:RC[33]);Permessi Certificati";
+                $head_allattamento = ";-1=SUM(RC[2]:RC[33]);Allattamento";
+                $head_donazioni_sangue = ";-1=SUM(RC[2]:RC[33]);Donazioni sangue";
 
                 $excel->add_row(explode(";", $head_ore_ordinarie.$ore_ordinarie));
                 $excel->add_row(explode(";", $head_straordinarie.$straordinarie));
-                $excel->add_row(explode(";", $head_feriepermessi.$feriepermessi));
+                $excel->add_row(explode(";", $head_ferie.$ferie));
                 $excel->add_row(explode(";", $head_malattia.$malattia));
+                $excel->add_row(explode(";", $head_allattamento.$allattamento));
+                $excel->add_row(explode(";", $head_permessi_certificati.$permessi_certificati));
+                $excel->add_row(explode(";", $head_donazioni_sangue.$donazioni_sangue));
             }
         }
         $excel->create_worksheet('Develer srl');
