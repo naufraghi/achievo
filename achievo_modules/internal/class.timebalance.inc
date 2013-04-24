@@ -665,18 +665,16 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $userid = $this->m_postvars['userid'];
         $option = $this->m_postvars['option'];
         $balance_date = $this->m_postvars['balance_date'];
-        $lock_date = date_create($balance_date)->format("Ym");
         if ($option == 'store')
-            $balance = $this->m_postvars['balance'];
+            $balance = max(0.0, $this->overtime_node->getBalance($balance_date, $userid)['balance']);
+        else if ($option == 'empty')
+            $balance = 0.0;
         else
-            $balance = min(0.0, $this->m_postvars['balance']);
-        atkdebug("action_bancaore: $userid $option ".var_export($balance_date, 1)." $balance");
-        if ($balance >= 0)
-        {
-            $this->overtime_node->updateOvertimeBalance($userid, $date_end, $balance);
-        }
-        Locking::lockPeriod($lock_date);
-        $this->redirect(dispatch_url("internal.timebalance", "report"));
+            exit;
+        atkdebug("action_bancaore: $userid $option $balance_date $balance");
+        $this->overtime_node->updateOvertimeBalance($userid, $balance_date, $balance, $manual=1);
+        Locking::lockPeriod(Locking::getPeriod($balance_date), $approved=null, $userid=$userid);
+        //$this->redirect(dispatch_url("internal.timebalance", "report"));
     }
 }
 ?>
