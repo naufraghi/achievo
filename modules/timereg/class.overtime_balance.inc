@@ -495,5 +495,4 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       }
     }
   }
-
 ?>
