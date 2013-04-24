@@ -104,6 +104,8 @@ class timebalance extends atkNode
         $this->m_user = $this->processGlobalVar("userid");
         atkdebug("DEBUG: m_user = ".$this->m_user);
         if($this->m_user=="") $this->m_user = $this->getInitialUser();
+        $this->m_date_start = $this->processGlobalVar("date_start");
+        $this->m_date_end = $this->processGlobalVar("date_end");
         $this->m_securityMap["bancaore"] = "add";
     }
 
@@ -129,14 +131,14 @@ class timebalance extends atkNode
         // Accetta una data in ingresso oppure imposta `date_start` all'inizio
         // dell'ultimo mese appena concluso
         $last_month_start = mktime(0, 0, 0, date("m")-1, 1, date("Y"));
-        $date_start = $this->m_postvars['date_start'];
+        $date_start = $this->m_date_start;
         if ($date_start == "")
             $date_start = date("Y-m-d", $last_month_start);
         else if (is_array($date_start))
             $date_start = sprintf("%04d",$date_start["year"])."-".sprintf("%02d",$date_start["month"])."-".sprintf("%02d",$date_start["day"]);
         // Se non definito imposta `date_end` al primo giorno del mese
         // successivo a `date_start`
-        $date_end = $this->m_postvars['date_end'];
+        $date_end = $this->m_date_end;
         $last_month_end = mktime(0, 0, 0, date("m"), 1, date("Y"));
         if ($date_end == "") {
             $date_end = date_create($date_start);
