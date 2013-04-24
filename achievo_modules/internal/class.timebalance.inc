@@ -460,23 +460,25 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a><br>";
                 $content .= "<b>Tickets:</b> ".$userdata['tot_tickets']."<br>";
 
+                $content .= '<div><form action="dispatch.php" method="get" name="entryform">';
                 if ($userdata['date_end']['balance']['balance'] > 0)
                 {
-                    $content .= '<form action="dispatch.php" method="get" name="entryform">';
                     $content .= 'In banca ore ci sono '.$userdata['date_end']['balance']['balance'].' ore';
-                    $content .= '<button name="option" type="submit" value="store">'.atktext("Lascia tutto in banca ore").'</button>';
-                    $content .= '<button name="option" type="submit" value="empty">'.atktext("Riscatta tutte le ore").'</button>';
-                    $content .= '<input type="hidden" name="userid" value="'.$userdata['id'].'">';
-                    $content .= '<input type="hidden" name="balance_date" value="'.$date_end.'">';
-                    $content .= '<input type="hidden" name="balance" value="'.$userdata['date_end']['balance']['balance'].'">';
-                    $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
-                    $content .= '<input type="hidden" name="atkaction" value="bancaore">';
-                    $content .= '</form>';
+                    $content .= '<button name="option" type="submit" value="store">'.atktext("Conferma mese e lascia tutto in banca ore").'</button>';
+                    $content .= '<button name="option" type="submit" value="empty">'.atktext("Conferma mese e riscatta tutte le ore").'</button>';
                 } else if ($userdata['date_end']['balance']['balance'] < 0) {
                     $content .= 'Banca ore in negativo, le ore mancanti verranno prese dalle ferie';
+                    $content .= '<button name="option" type="submit" value="empty">'.atktext("Conferma mese").'</button>';
                 } else {
                     $content .= 'Banca ore in pari';
+                    $content .= '<button name="option" type="submit" value="empty">'.atktext("Conferma mese").'</button>';
                 }
+                $content .= '<input type="hidden" name="userid" value="'.$userdata['id'].'">';
+                $content .= '<input type="hidden" name="balance_date" value="'.$date_end.'">';
+                $content .= '<input type="hidden" name="balance" value="'.$userdata['date_end']['balance']['balance'].'">';
+                $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
+                $content .= '<input type="hidden" name="atkaction" value="bancaore">';
+                $content .= '</form></div>';
 
                 $content .= "</dl></td></tr>\n";
                 $content .= "</table>\n";
