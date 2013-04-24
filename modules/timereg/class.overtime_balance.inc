@@ -263,7 +263,7 @@ $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"
       return atkArrayNvl($this->getPercentages(), $id, 100);
     }
 
-    function updateOvertimeBalance($userid, $day, $balance)
+    function updateOvertimeBalance($userid, $day, $balance, $manual=0)
     {
 $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
       /*
@@ -278,7 +278,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
         $newid = $db->nextid("overtime_balance");
         $balance = number_format($balance, 2);
         $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
-                  VALUES ('$newid', '$userid', '$day', '$balance', 0)");
+                  VALUES ('$newid', '$userid', '$day', '$balance', '$manual')");
         return $newid;
       }
       else
