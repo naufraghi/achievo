@@ -586,6 +586,14 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $malattia = "";
                 $userdata['tot_missing'] = 0.0;
 
+                $sum_rows = 2;
+                if ($userdata['tot_allattamento'] > 0)
+                    $sum_rows++;
+                if ($userdata['tot_permessi_certificati'] > 0)
+                    $sum_rows++;
+                if ($userdata['tot_donazioni_sangue'] > 0)
+                    $sum_rows++;
+
                 $counter = -1;
                 foreach ($userdata['activity'] as $date => $activity)
                 {
@@ -624,14 +632,6 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 } else {
                     $excel->add_row("");
                 }
-
-                $sum_rows = 2;
-                if ($userdata['tot_allattamento'] > 0)
-                    $sum_rows++;
-                if ($userdata['tot_permessi_certificati'] > 0)
-                    $sum_rows++;
-                if ($userdata['tot_donazioni_sangue'] > 0)
-                    $sum_rows++;
 
                 $head_ore_ordinarie = "*".$userdata['fullname']."*;-1=SUM(RC[2]:RC[33]);Ore ordinarie";
                 $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[$sum_rows]C[1]);".fformat($userdata['straordinari']).";Straordinarie";
