@@ -50,7 +50,7 @@ setlocale(LC_ALL, 'it_IT');
 function str_number_format($var, $digits)
 {
     if (is_numeric($var))
-        return number_format($var, $digits, ",", ".");
+        return number_format($var, $digits, ",", "");
     else
         return $var;
 }
