@@ -555,7 +555,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $excel->add_row(explode(";", ";DEVELER SRL Registro presenze Anno ".strftime("%Y", $report_time)." mese di ".strftime("%B", $report_time)."|30"), 'title');
         $header = true;
         function fformat($number) {
-            return number_format($number, 2);
+            return number_format($number, 2, $dec_point='.', $thousands_sep='');
         }
         function coalesce($value) {
             return "IF($value, ($value), \"\")";
