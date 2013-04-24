@@ -273,17 +273,18 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
       $recs = $db->getrows("SELECT id FROM overtime_balance WHERE userid = '$userid' AND day = '$day'");
+      $balance = number_format($balance, 2);
       if (!count($recs))
       {
         $newid = $db->nextid("overtime_balance");
-        $balance = number_format($balance, 2);
         $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
-                  VALUES ('$newid', '$userid', '$day', '$balance', '$manual')");
+                    VALUES ('$newid', '$userid', '$day', '$balance', $manual)");
         return $newid;
       }
       else
       {
-        $db->query("UPDATE overtime_balance SET balance = $balance WHERE userid = '$userid' AND day = '$day'");
+        $db->query("UPDATE overtime_balance SET balance = '$balance', manual = $manual
+                    WHERE userid = '$userid' AND day = '$day'");
         return $recs[0]["id"];
       }
     }
