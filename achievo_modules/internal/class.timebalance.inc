@@ -666,7 +666,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $option = $this->m_postvars['option'];
         $balance_date = $this->m_postvars['balance_date'];
         if ($option == 'store') {
-            $balance = max(0.0, $this->overtime_node->getBalance($balance_date, $userid)['balance']);
+            $balance_record = $this->overtime_node->getBalance($balance_date, $userid);
+            $balance = max(0.0, $balance_record['balance']);
         } else if ($option == 'empty') {
             $balance = 0.0;
         } else {
