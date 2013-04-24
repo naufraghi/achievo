@@ -14,9 +14,9 @@
         // Ricordarsi sempre di attivare il permesso nei security profiles dal web
         {
             registerNode("internal.timesummary",
-                         array("report"));
+                         array("report", "any_user"));
             registerNode("internal.timebalance",
-                         array("report", "export", "add"));
+                         array("report", "any_user", "export", "add"));
         }
         function getDependencies($mode)
         {
