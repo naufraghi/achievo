@@ -665,16 +665,18 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         $userid = $this->m_postvars['userid'];
         $option = $this->m_postvars['option'];
         $balance_date = $this->m_postvars['balance_date'];
-        if ($option == 'store')
+        if ($option == 'store') {
             $balance = max(0.0, $this->overtime_node->getBalance($balance_date, $userid)['balance']);
-        else if ($option == 'empty')
+        } else if ($option == 'empty') {
             $balance = 0.0;
-        else
-            exit;
+        } else {
+            atkdebug("action_bancaore: option=$option non supportata");
+            return;
+        }
         atkdebug("action_bancaore: $userid $option $balance_date $balance");
         $this->overtime_node->updateOvertimeBalance($userid, $balance_date, $balance, $manual=1);
         Locking::lockPeriod(Locking::getPeriod($balance_date), $approved=null, $userid=$userid);
-        //$this->redirect(dispatch_url("internal.timebalance", "report"));
+        $this->redirect(dispatch_url("internal.timebalance", "report"));
     }
 }
 ?>
