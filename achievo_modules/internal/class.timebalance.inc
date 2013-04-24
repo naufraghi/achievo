@@ -465,7 +465,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 $lock_type = Locking::getLockType($userdata['id'], $date_end);
                 if ($lock_type === "")
                 {
-                    $content .= '<div><form action="dispatch.php" method="get" name="entryform">';
+                    $content .= '<div class="atkmessages_general"><form action="dispatch.php" method="get" name="entryform">';
                     if ($userdata['date_end']['balance']['balance'] > 0)
                     {
                         $content .= 'In banca ore ci sono '.$userdata['date_end']['balance']['balance'].' ore';
@@ -484,7 +484,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $content .= '<input type="hidden" name="atkaction" value="bancaore">';
                     $content .= '</form></div>';
                 } else {
-                    $content .= "Il mese bloccato ($lock_type), chiedere ad un admin di sbloccarlo ci sono errori da correggere.";
+                    $content .= "<div class='atkmessages_general'>Mese bloccato ($lock_type), chiedere ad un admin di sbloccarlo ci sono errori da correggere.</div>";
                 }
 
                 $content .= "</dl></td></tr>\n";
