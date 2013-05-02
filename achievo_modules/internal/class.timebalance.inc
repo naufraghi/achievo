@@ -484,7 +484,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $content .= '<input type="hidden" name="atkaction" value="bancaore">';
                     $content .= '</form></div>';
                 } else {
-                    $content .= "<div class='atkmessages_general'>Mese bloccato ($lock_type), chiedere ad un admin di sbloccarlo ci sono errori da correggere.</div>";
+                    $content .= "<div class='atkmessages_general'>Mese bloccato ($lock_type), chiedere ad un admin di sbloccarlo se ci sono errori da correggere.</div>";
                 }
 
                 $content .= "</dl></td></tr>\n";
