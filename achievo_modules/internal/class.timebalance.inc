@@ -560,8 +560,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         function coalesce($value) {
             return "IF($value, ($value), \"\")";
         }
-        function if_working($value) {
-            return "IF(R[-1]C, ($value), \"\")";
+        function if_working($time_contract, $value) {
+            return "IF(R[-1]C=$time_contract, ($value), \"\")";
         }
         foreach ($users as $iuserid) {
             $hours_table = $this->action_report($handler, $iuserid, $timesummary, true);
@@ -611,12 +611,12 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                         $activity['time_missing'] = 0.0;
                     }
                     if ($counter == 0) {
-                        $straordinarie .= ";-1=".if_working("IF(RC[-2]>=$straordinari_step, $straordinari_step, ".coalesce('RC[-2]').")");
+                        $straordinarie .= ";-1=".if_working($activity['time_contract'], "IF(RC[-2]>=$straordinari_step, $straordinari_step, ".coalesce('RC[-2]').")");
                     } else {
                         $col_tot = -2 - $counter;
                         $col_first = -$counter;
                         $value = "RC[$col_tot]-SUM(RC[$col_first]:RC[-1])";
-                        $straordinarie .= ";-1=".if_working("IF($value>=$straordinari_step, $straordinari_step, ".coalesce($value).")");
+                        $straordinarie .= ";-1=".if_working($activity['time_contract'], "IF($value>=$straordinari_step, $straordinari_step, ".coalesce($value).")");
                     }
                     $ferie .= ";-1=".coalesce(fformat($activity['time_ferie'])."+".fformat($activity['time_missing']));
                     $permessi_certificati .= ";-1=".coalesce(fformat($activity['time_permessi_certificati']));
