@@ -592,7 +592,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $sum_rows++;
 
                 $counter = -1;
-                $straordinari_step = max(1, round($userdata['straordinari']/20));
+                $straordinari_step = max(1, round($userdata['straordinari']/15));
                 foreach ($userdata['activity'] as $date => $activity)
                 {
                     $counter++;
