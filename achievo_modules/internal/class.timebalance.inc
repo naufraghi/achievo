@@ -632,7 +632,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 }
 
                 $head_ore_ordinarie = "*".$userdata['fullname']."*;-1=SUM(RC[2]:RC[33]);Ore ordinarie";
-                $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[$sum_rows]C[1]);".fformat($userdata['straordinari']).";Straordinarie";
+                $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[$sum_rows]C[1]);".fformat($userdata['straordinari']);
+                $head_straordinarie .= ";=IF(RC[-1]=SUM(RC[1]:RC[32]),\"Straordinarie\",CONCATENATE(\"Mancano \",RC[-1]-SUM(RC[1]:RC[32])))";
                 $head_ferie = "Ore previste;-1=SUM(RC[2]:RC[33]);Ferie/Permessi";
                 $head_malattia = fformat($userdata['tot_contract']).";-1=SUM(RC[2]:RC[33]);Malattia";
                 $head_permessi_certificati = ";-1=SUM(RC[2]:RC[33]);Permessi Certificati";
