@@ -560,6 +560,9 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         function coalesce($value) {
             return "IF($value, ($value), \"\")";
         }
+        function if_working($value) {
+            return "IF(R[-1]C, ($value), \"\")";
+        }
         foreach ($users as $iuserid) {
             $hours_table = $this->action_report($handler, $iuserid, $timesummary, true);
             foreach ($hours_table['time_balance'] as $username => $userdata)
@@ -607,12 +610,12 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                         $activity['time_missing'] = 0.0;
                     }
                     if ($counter == 0) {
-                        $straordinarie .= ";-1=IF(AND(RC[-2]>=2, R[-1]C>0), 2, IF(RC[-2], (RC[-2]), \"\"))";
+                        $straordinarie .= ";-1=".if_working("IF(RC[-2]>=2, 2, ".coalesce('RC[-2]').")");
                     } else {
                         $col_tot = -2 - $counter;
                         $col_first = -$counter;
                         $value = "RC[$col_tot]-SUM(RC[$col_first]:RC[-1])";
-                        $straordinarie .= ";-1=IF(AND($value>=2, R[-1]C>0), 2, ".coalesce($value).")";
+                        $straordinarie .= ";-1=".if_working("IF($value>=2, 2, ".coalesce($value).")");
                     }
                     $ferie .= ";-1=".coalesce(fformat($activity['time_ferie'])."+".fformat($activity['time_missing']));
                     $permessi_certificati .= ";-1=".coalesce(fformat($activity['time_permessi_certificati']));
