@@ -607,12 +607,12 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                         $activity['time_missing'] = 0.0;
                     }
                     if ($counter == 0) {
-                        $straordinarie .= ";-1=IF((RC[-2]>=2 AND R[-1]C>0), 2, IF(RC[-2], (RC[-2]), \"\"))";
+                        $straordinarie .= ";-1=IF(AND(RC[-2]>=2; R[-1]C>0), 2, IF(RC[-2], (RC[-2]), \"\"))";
                     } else {
                         $col_tot = -2 - $counter;
                         $col_first = -$counter;
                         $value = "RC[$col_tot]-SUM(RC[$col_first]:RC[-1])";
-                        $straordinarie .= ";-1=IF(($value>=2 AND R[-1]C>0), 2, ".coalesce($value).")";
+                        $straordinarie .= ";-1=IF(AND($value>=2; R[-1]C>0), 2, ".coalesce($value).")";
                     }
                     $ferie .= ";-1=".coalesce(fformat($activity['time_ferie'])."+".fformat($activity['time_missing']));
                     $permessi_certificati .= ";-1=".coalesce(fformat($activity['time_permessi_certificati']));
