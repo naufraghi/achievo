@@ -532,7 +532,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 WHERE startdate <= '$date_start'
                     AND '$date_start' < enddate
                     AND description NOT LIKE '%NO PRESENZE%'
-                ORDER BY person.initials
+                ORDER BY ABS(person.initials)
             ";
             $users = array();
             foreach($db->getRows($select) as $r) {
