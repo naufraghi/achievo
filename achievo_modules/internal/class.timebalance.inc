@@ -249,7 +249,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $time_balance = array();
             $userinfo = $this->weekreport_node->get_employee($userid);
             $time_balance[$userinfo['userid']] = array('id' => $userinfo['id'],
-                                                       'fullname' => $userinfo['firstname']." ".$userinfo['lastname'],
+                                                       'fullname' => $userinfo['lastname']." ".$userinfo['firstname'],
                                                        'activity' => $alldays,
                                                        'tot_contract' => 0.0,
                                                        'tot_registro' => 0.0,
