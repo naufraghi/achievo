@@ -103,7 +103,7 @@ class timebalance extends atkNode
         $this->weekreport_node = &atkGetNode("reports.weekreport");
         $this->m_user = $this->processGlobalVar("userid");
         atkdebug("DEBUG: m_user = ".$this->m_user);
-        if($this->m_user=="") $this->m_user = $this->getInitialUser();
+        if($this->m_user=="" or (!$this->allowed("any_user"))) $this->m_user = $this->getInitialUser();
         $this->m_date_start = $this->processGlobalVar("date_start");
         $this->m_date_end = $this->processGlobalVar("date_end");
         $this->m_securityMap["bancaore"] = "add";
@@ -222,7 +222,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
             $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
             $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'-1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'-1\'})" value="Mese-" />';
             $weekreport = &atkGetNode("reports.weekreport");
-            $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="lastname").'</SELECT>';
+            if ($this->allowed("any_user")) $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="lastname").'</SELECT>';
             $content .= '<input type="submit" value="'.atktext("refresh").'">';
             $content .= '</form>';
             $content .= "<h2>$title</h2>\n";
