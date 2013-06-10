@@ -772,7 +772,8 @@ class hours extends atkNode
     {
       $dayofweek = '('.substr($weekdates[$i]['date'],5,2).'-'.substr($weekdates[$i]['date'],8,2).')';
       if ( $this->holidays_node->isHoliday($weekdates[$i]['date']) ) {
-        $holidayname = $this->holidays_node->getHolidayInfo($weekdates[$i]['date'])[0]['name'];
+        $holidayinfo = $this->holidays_node->getHolidayInfo($weekdates[$i]['date']);
+        $holidayname = htmlentities($holidayinfo[0]['name']);
         $dayofweek = "<strike title='$holidayname'>$dayofweek</strike>";
       }
       if ($weekdates[$i]['date'] <= date("Y-m-d") || atkConfig::get("timereg","timereg_allowfuture", false))
