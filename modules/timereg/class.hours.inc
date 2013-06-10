@@ -16,6 +16,7 @@ atkimport("module.timereg.locking");
 atkimport("module.timereg.timeregutils");
 atkimport("module.project.utils.projectutils");
 atkimport("modules.utils.dateutil");
+atkimport("modules.scheduler.scheduler_holidays");
 
 /**
  * Converts the starttime - endtime notation to a duration notation
@@ -155,6 +156,7 @@ class hours extends atkNode
     $this->m_viewdate = $this->processGlobalVar("viewdate");
     $this->m_user = $this->processGlobalVar("viewuser");
     $this->m_lockmode = atkConfig::get("timereg", "lockmode", "week");
+    $this->holidays_node = &atkGetNode("scheduler.scheduler_holidays");
 
     if (is_array($this->m_viewdate)) // if set by the date jumper, viewdate is an array.
     {
@@ -768,6 +770,10 @@ class hours extends atkNode
     $weekdata[0][] = atktext("project")." - ".atktext("phase");
     for ($i=1;$i<=7;$i++)
     {
+      $dayofweek = '('.substr($weekdates[$i]['date'],5,2).'-'.substr($weekdates[$i]['date'],8,2).')';
+      if ( $this->holidays_node->isHoliday($weekdates[$i]['date']) ) {
+        $dayofweek = "<strike>$dayofweek</strike>";
+      }
       if ($weekdates[$i]['date'] <= date("Y-m-d") || atkConfig::get("timereg","timereg_allowfuture", false))
       {
         // Individual lock icons for each locked day
@@ -777,15 +783,11 @@ class hours extends atkNode
         }
 
         $url = dispatch_url($this->atknodetype(),$this->m_action,array("viewdate"=>$weekdates[$i]['date'],"weekview"=>0));
-        $weekdata[0][] = href($url,$weekdates[$i]['day']).$lockicon.'<br>
-                              ('.substr($weekdates[$i]['date'],5,2).
-                              '-'.substr($weekdates[$i]['date'],8,2).')';
+        $weekdata[0][] = href($url,$weekdates[$i]['day']).$lockicon.'<br>'.$dayofweek;
       }
       else
       {
-        $weekdata[0][] = $weekdates[$i]['day'].'<br>('.
-                         substr($weekdates[$i]['date'],5,2).'-'.
-                         substr($weekdates[$i]['date'],8,2).')';
+        $weekdata[0][] = $weekdates[$i]['day'].'<br>'.$dayofweek;
       }
       $table->setColAlignment($i, TBL_CENTER);
     }
