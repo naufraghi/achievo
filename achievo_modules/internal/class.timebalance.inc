@@ -355,7 +355,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
 
                 foreach ($userdata['activity'] as $date => &$activity)
                 {
-                    if ( $this->holidays_node->isHoliday($date) ) {
+                    $holiday = $this->holidays_node->isHoliday($date);
+                    if ( $holiday ) {
                         $bgcolor = "#CCBBFF";
                     } else {
                         $bgcolor = flipflop("#9999FF", "#BBBBFF");
@@ -394,7 +395,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     {
                         $time_other = $activity['time_malattia'] + $activity['time_ferie'] + $activity['time_permessi_certificati'] +
                                       $activity['time_allattamento'] + $activity['time_donazioni_sangue'];
-                        if ( !$activity['lavoro'] and $time_other>0) {$style="";} else {$style="color: red";}
+                        if ( $holiday and ($time_other>0) ) {$style="color: red";} else {$style="";}
                         $content .= "<td align='right' style='$style' title='".float2str($activity['totale_parziale_worked'])."'>".float2str($activity['time_worked'])."</td>";
                         $content .= "<td align='right' style='$style'>".float2str($activity['time_malattia'])."</td>";
                         $content .= "<td align='right' style='$style'>".float2str($activity['time_ferie'])."</td>";
