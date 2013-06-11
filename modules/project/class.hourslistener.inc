@@ -70,6 +70,36 @@
     }
 
     /**
+     * Determines whether a phase is inside the planning or not
+     *
+     * @param array $phase Phase record for which the planned hours should be evaluated
+     * @return boolean True if the phase is overtime, false if not
+     */
+    function isPhaseOvertime($phase)
+    {
+      return false;
+      $hours_planning = null;
+      if ($phase["initial_planning"]>0) {
+        $hours_planning = $phase["initial_planning"];
+      }
+      if ($phase["current_planning"]>0) {
+        $hours_planning = $phase["current_planning"];
+      }
+      if ($hours_planning == null) {
+        return false;
+      }
+
+      $HOURS_BEFORE = 8;
+      atkdebug("DEBUG[phase]: ".var_export($phase, 1));
+      if($phase["spend_hours"]>$phase["current_planning"]-(60*$HOURS_BEFORE))
+      {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    /**
      * Converts a date array into a user-friendly string
      *
      * @param array $arrdate Array containing a day, month and year element
@@ -123,8 +153,11 @@
       // Is the phase not started yet?
       $phasenotstarted = !$this->isPhaseStarted($phaserecords[0]);
 
+      // Is the phase overtime?
+      $phaseovertime = $this->isPhaseOvertime($phaserecords[0]);
+
       // If there is a reason to send a mail (the deliverable is not complete when adding the
-      if ($deliverableincomplete || $phasenotstarted)
+      if ($deliverableincomplete || $phasenotstarted || $phaseovertime)
       {
 
         // Get the project and throw an error if not found
@@ -175,6 +208,15 @@
           $body.= atktext("name", "project") . ": " . $phaserecords[0]["name"] . "\r\n";
           $body.= atktext("startdate", "project") . ": " . $this->arr2str($phaserecords[0]["startdate"]) . "\r\n";
           $body.= atktext("enddate", "project") . ": " . $this->arr2str($phaserecords[0]["enddate"]) . "\r\n";
+        }
+
+        if ($phaseovertime)
+        {
+          $body.= atktext("the_phase_is_overtime", "project") . ":\r\n";
+          $body.= atktext("name", "project") . ": " . $phaserecords[0]["name"] . "\r\n";
+          $body.= atktext("initial_planning", "project") . ": " . $phaserecords[0]["initial_planning"] . "\r\n";
+          $body.= atktext("current_planning", "project") . ": " . $phaserecords[0]["current_planning"] . "\r\n";
+          $body.= atktext("spend_hours", "project") . ": " . $phaserecords[0]["spend_hours"] . "\r\n";
         }
 
         // Send the mail
