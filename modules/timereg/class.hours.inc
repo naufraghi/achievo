@@ -645,10 +645,10 @@ class hours extends atkNode
       $filterArr[] = "role='employee'";
       $filter = implode(" AND ",$filterArr);
 
-      //Init order by
+      // Init order by
       $orderby = $this->viewuserOrderBy();
 
-      //Init desc fields
+      // Init desc fields
       $empNode = &atkGetNode("employee.employeeselector");
       $fieldsArr = $empNode->descriptorFields();
       if(!in_array("id", $fieldsArr)) $fieldsArr[] = "id";
@@ -667,7 +667,7 @@ class hours extends atkNode
     }
     return $res;
   }
-  
+
     /**
      * Check rights for an hours record
      *
@@ -680,7 +680,7 @@ class hours extends atkNode
         atk_var_dump($record, "Allowed: ".$action);
         if(is_array($record))
         {
-            if($record['userid']['id'] == atkGetUserId() || 
+            if($record['userid']['id'] == atkGetUserId() ||
                   parent::allowed('any_user')) {
               atkdebug('ALLOWED');
               return true;
