@@ -378,7 +378,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                         if ($banca_ore > 0) {
                             $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie']
                                             - $activity['time_permessi_certificati'] - $activity['time_allattamento'] - $activity['time_donazioni_sangue'];
-                            $ore_registro = min($ore_registro, $banca_ore);
+                            $ore_registro = max(min($ore_registro, $banca_ore), 0);
                         } else {
                             $ore_registro = 0.0;
                         }
@@ -392,14 +392,17 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     }
                     if ( $activity['lavoro'] or ($activity['time_contract'] > 0) )
                     {
-                        $content .= "<td align='right' title='".float2str($activity['totale_parziale_worked'])."'>".float2str($activity['time_worked'])."</td>";
-                        $content .= "<td align='right'>".float2str($activity['time_malattia'])."</td>";
-                        $content .= "<td align='right'>".float2str($activity['time_ferie'])."</td>";
-                        $content .= "<td align='right'>".float2str($activity['time_permessi_certificati'])."</td>";
-                        $content .= "<td align='right'>".float2str($activity['time_allattamento'])."</td>";
-                        $content .= "<td align='right'>".float2str($activity['time_donazioni_sangue'])."</td>";
-                        $content .= "<td align='right'>".float2str($activity['time_d20'])."</td>";
-                        $content .= "<td align='right'>".$activity['tickets']."</td>";
+                        $time_other = $activity['time_malattia'] + $activity['time_ferie'] + $activity['time_permessi_certificati'] +
+                                      $activity['time_allattamento'] + $activity['time_donazioni_sangue'];
+                        if ( !$activity['lavoro'] and $time_other>0) {$style="";} else {$style="color: red";}
+                        $content .= "<td align='right' style='$style' title='".float2str($activity['totale_parziale_worked'])."'>".float2str($activity['time_worked'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_malattia'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_ferie'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_permessi_certificati'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_allattamento'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_donazioni_sangue'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_d20'])."</td>";
+                        $content .= "<td align='right' style='$style'>".$activity['tickets']."</td>";
                     }
                     else
                     {
