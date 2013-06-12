@@ -77,7 +77,7 @@
      */
     function isPhaseOvertime($phase)
     {
-      return false;
+      //return false;
       $hours_planning = null;
       if ($phase["initial_planning"]>0) {
         $hours_planning = $phase["initial_planning"];
@@ -91,7 +91,7 @@
 
       $HOURS_BEFORE = 8;
       atkdebug("DEBUG[phase]: ".var_export($phase, 1));
-      if($phase["spend_hours"]>$phase["current_planning"]-(60*$HOURS_BEFORE))
+      if($phase["spend_hours"]*60>$phase["current_planning"]-(60*$HOURS_BEFORE))
       {
         return true;
       } else {
@@ -177,6 +177,7 @@
           atkerror("Cannot find employee who registered the hours.");
           return false;
         }
+        $to_employee = $employeerecords[0]["email"];
 
         // Try to find the projectcoordinator and exit (with debug messag) if not found
         $coordinatorrecords = $employeenode->selectDb("person.id='".$projectrecords[0]["coordinator"]["id"]."'");
@@ -188,7 +189,7 @@
 
         // Initialize the subject and recipient for the mail
         $subject = sprintf(atktext("problems_occured_while_registering_hours_on_phase_%s", "project"), $phaserecords[0]["name"]);
-        $to = $coordinatorrecords[0]["email"];
+        $to_coordinator = $coordinatorrecords[0]["email"];
 
         // Compose the body of the mail
         $translatedline = atktext("the_following_problems_occured_while_employee_%s_registered_time_on_phase_%s_of_project_%s", "project");
@@ -212,15 +213,16 @@
 
         if ($phaseovertime)
         {
-          $body.= atktext("the_phase_is_overtime", "project") . ":\r\n";
+          $body.= atktext("the_phase_is_almost_overtime", "project") . ":\r\n";
           $body.= atktext("name", "project") . ": " . $phaserecords[0]["name"] . "\r\n";
-          $body.= atktext("initial_planning", "project") . ": " . $phaserecords[0]["initial_planning"] . "\r\n";
-          $body.= atktext("current_planning", "project") . ": " . $phaserecords[0]["current_planning"] . "\r\n";
-          $body.= atktext("spend_hours", "project") . ": " . $phaserecords[0]["spend_hours"] . "\r\n";
+          $body.= atktext("initial_planning", "project") . ": " . $phaserecords[0]["initial_planning"]/60 ." ". atktext("hours", "project") . "\r\n";
+          $body.= atktext("current_planning", "project") . ": " . $phaserecords[0]["current_planning"]/60 ." ". atktext("hours", "project") . "\r\n";
+          $body.= atktext("spend_hours", "project") . ": " . $phaserecords[0]["spend_hours"] ." ". atktext("hours", "project") . "\r\n";
         }
 
         // Send the mail
-        usermail($to, $subject, $body);
+        usermail($to_employee, $subject, $body);
+        usermail($to_coordinator, $subject, $body);
       }
       
       return true;
