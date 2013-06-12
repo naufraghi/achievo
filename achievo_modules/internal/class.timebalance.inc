@@ -567,6 +567,7 @@ GROUP BY id, userid, firstname, lastname, activitydate;
         function if_working($time_contract, $value) {
             return "IF(R[-1]C=$time_contract, ($value), \"\")";
         }
+        $buoni_pasto = array();
         foreach ($users as $iuserid) {
             $hours_table = $this->action_report($handler, $iuserid, $timesummary, true);
             foreach ($hours_table['time_balance'] as $username => $userdata)
@@ -577,6 +578,8 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                 if ($header) {
                     $totali = ";Totali;";
                 }
+
+                $buoni_pasto[$userdata['fullname']] = $userdata['tot_tickets'];
 
                 $ore_ordinarie = "";
                 $straordinarie = "";
@@ -656,6 +659,14 @@ GROUP BY id, userid, firstname, lastname, activitydate;
                     $excel->add_row(explode(";", $head_donazioni_sangue.$donazioni_sangue));
             }
         }
+
+        $excel->add_row("");
+        $excel->add_row("*Buoni Pasto*");
+        ksort($buoni_pasto);
+        foreach ($buoni_pasto as $fullname => $buoni_pasto_user) {
+            $excel->add_row(array($fullname, $buoni_pasto_user));
+        }
+
         $excel->create_worksheet('Develer srl');
         $xml = $excel->generate();
         if ($userid == "all")
