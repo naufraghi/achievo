@@ -90,8 +90,7 @@
       }
 
       $HOURS_BEFORE = 8;
-      atkdebug("DEBUG[phase]: ".var_export($phase, 1));
-      if($phase["spend_hours"]*60>$phase["current_planning"]-(60*$HOURS_BEFORE))
+      if($phase["spend_hours"]*60 > $hours_planning-(60*$HOURS_BEFORE))
       {
         return true;
       } else {
