@@ -32,7 +32,7 @@ class sumAttribute extends atkDurationAttribute
         $groupby = $tablename.".".$field;
         if ($groupby == "hours.projectid") { $groupby = "phaseid.projectid"; }
         if ($groupby == "hours.functionlevel") { $groupby = "userid.functionlevel"; }
-        if ($groupby == "hours.creditor_id") { $groupby = "userid.creditor_id"; }
+        if ($groupby == "hours.employer_id") { $groupby = "userid.employer_id"; }
         $query->addGroupBy($groupby);
       }
     }
@@ -114,7 +114,7 @@ class billingTypeViewAttribute extends atkAttribute {
   }
 }
 
-class creditorViewAttribute extends atkAttribute {
+class employerViewAttribute extends atkAttribute {
 
   /**
      * Make sure the value is not stored. (always calculated on the fly)
@@ -125,12 +125,12 @@ class creditorViewAttribute extends atkAttribute {
 
   function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec="", $level, $mode)
   {
-    $query->addJoin("organization", "creditor_id", "userid.creditor_id = creditor_id.id", true);
-    $query->addField("name","","creditor_id","creditor_",!$this->hasFlag(AF_NO_QUOTES),true);
+    $query->addJoin("organization", "employer_id", "userid.employer_id = employer_id.id", true);
+    $query->addField("name","","employer_id","employer_",!$this->hasFlag(AF_NO_QUOTES),true);
   }
   function db2value($record)
   {
-    return atkArrayNvl($record, "creditor_name");
+    return atkArrayNvl($record, "employer_name");
   }
 }
 
@@ -157,9 +157,9 @@ class hoursurvey extends atkNode
             case "functionlevel":
               $itsOrderby = "functionlevelid.name";
               break;
-              //creditor_id has another table- AND fieldname
-            case "creditor_id":
-              $itsOrderby = "creditor_id.name";
+              //employer_id has another table- AND fieldname
+            case "employer_id":
+              $itsOrderby = "employer_id.name";
               break;
               //projectid has the table phaseid
             case "projectid":
@@ -257,7 +257,7 @@ class hoursurvey extends atkNode
 
     $department_name =    $g_sessionManager->pageVar("departmentid");
     $functionlevelswitch =$g_sessionManager->pageVar("functionlevelswitch");
-    $creditor_id =        $g_sessionManager->pageVar("creditor_id");
+    $employer_id =        $g_sessionManager->pageVar("employer_id");
     $outputType =         atkArrayNvl($this->m_postvars, "outputType", "");
     $subProject =         atkArrayNvl($this->m_postvars, "subproject", 0);
 
@@ -293,7 +293,7 @@ class hoursurvey extends atkNode
       $attbilling_projecttypeid = &$hoursnode->add(new billingTypeViewAttribute("billing_projecttypeid"));
       $attbilling_projecttypeid->m_ownerInstance = &$hoursnode;
     }
-    $hoursnode->add(new creditorViewAttribute("creditor_id", AF_FORCE_LOAD));
+    $hoursnode->add(new employerViewAttribute("employer_id", AF_FORCE_LOAD));
 
     $columnConfig = &$hoursnode->getColumnConfig();
 
@@ -415,10 +415,12 @@ class hoursurvey extends atkNode
 
       $this->_addHiddenFields($content);
 
-      if(isset($this->m_postvars['add_project']))
+      $current = unserialize(atkArrayNvl($this->m_postvars,'projects'));
+      
+      if(isset($this->m_postvars['add_project']) || ($current && !empty($projectid)) )
       {
         //add_project button has been pressed
-        $list = $this->_addHiddenProjects($content,array($projectid, $phaseid));
+        $list = $this->_addHiddenProjects($content,array($projectid, $phaseid),null,$current);
         //clear current project/phase selection and remove it from stack
         $projectid = $phaseid = "";
         $g_sessionManager->pageVar("projectid"," ");
@@ -426,7 +428,7 @@ class hoursurvey extends atkNode
       }
       else 
       {
-        $list = $this->_addHiddenProjects($content,array(),atkArrayNvl($this->m_postvars,"delete_project"));
+        $list = $this->_addHiddenProjects($content,array(),atkArrayNvl($this->m_postvars,"delete_project"),$current);
       }
       
       $tbl = &atknew("atk.utils.atktablerenderer");
@@ -490,18 +492,18 @@ class hoursurvey extends atkNode
         $dummyrec["orderdirection[$i]"]=$columnConfig->getDirectionByOrder($i+1);
         $dummyrec["subtotal[$i]"]=($columnConfig->hasSubTotalByOrder($i+1)?1:0);
       }
+
+      if(!empty($list))
+      {
+        $data[] = array(atktext('projectlist','project').':',$this->_drowProjectsList($list));
+        $data[] = array('<hr>');
+      }
       
       $text = atktext("add_project");
       $link = atkHref(dispatch_url("reports.hoursurvey", "report",array("add_project"=>1)), $text,SESSION_DEFAULT,true);
 
       $data[] = array(atktext('project','project').':',$projectatt->edit($dummyrec)." ".$link);
 
-      if(count($list)>0)
-      {
-        $data[] = array('<hr>'.atktext('projectlist','project').':');
-        $data[] = array("",$this->_drowProjectsList($list));
-        $data[] = array('<hr>');
-      }
       
       $p_attr = new atkBoolAttribute("subproject");
       $p_attr->addDependee("phaseid");
@@ -509,6 +511,21 @@ class hoursurvey extends atkNode
       $p_attr->_registerDependees();
 
       $data[] = array(atktext('subproject','project').':',$p_attr->edit($dummyrec));
+
+      $phaseatt = &$hoursnode->m_attribList["phaseid"];
+      $phaseatt->setDestinationFilter("phase.projectid='[projectid.id]'");
+      $phaseatt->m_ownerInstance = &$hoursnode;
+
+      $g_sessionManager->stackVar("reportnodetype","hoursurvey");
+
+      //We add an array as a row to the data with the value and id fields,
+      //to make the atkTableRenderer render the id in the TD of this attribute.
+      $data[] = array(atktext('phase','project').':',
+      array('value'=>$phaseatt->edit($dummyrec),
+      'id'=>str_replace(".","_",$this->getHoursNodeName())."_".$phaseatt->m_name)
+      );
+
+      $this->_addOr($data);
       
       $p_attr = new atkManyToOneRelation("project_category","project.project_category");
       $p_attr->m_ownerInstance = &$hoursnode;
@@ -527,23 +544,8 @@ class hoursurvey extends atkNode
         $this->_addOr($data);
       }
 
-      $phaseatt = &$hoursnode->m_attribList["phaseid"];
-      $phaseatt->setDestinationFilter("phase.projectid='[projectid.id]'");
-      $phaseatt->m_ownerInstance = &$hoursnode;
-
-      $g_sessionManager->stackVar("reportnodetype","hoursurvey");
-
-      //We add an array as a row to the data with the value and id fields,
-      //to make the atkTableRenderer render the id in the TD of this attribute.
-      $data[] = array(atktext('phase','project').':',
-      array('value'=>$phaseatt->edit($dummyrec),
-      'id'=>str_replace(".","_",$this->getHoursNodeName())."_".$phaseatt->m_name)
-      );
-
-      $this->_addOr($data);
-
-      $organizationatt = &$hoursnode->getAttribute("organizationid");
-
+      $organizationatt = &$hoursnode->add(new atkManyToOneRelation("organizationid", "organization.organization"));
+      
       if(atkconfig::get("timereg","timereg_contact_link",false))
       {
         $organizationatt->addDependee("contact_id");
@@ -568,7 +570,7 @@ class hoursurvey extends atkNode
       $data[] = array(atkText("department","project").':','<SELECT name="departmentid">'.$this->get_departments($department_name).'</SELECT>');
       $this->_addOr($data);
 
-      $data[] = array(atkText("creditor_id","employee").':','<SELECT name="creditor_id">'.$this->get_creditors($creditor_id).'</SELECT>');
+      $data[] = array(atkText("employer_id","employee").':','<SELECT name="employer_id">'.$this->get_employers($employer_id).'</SELECT>');
 
       $data[] = array("<hr>");
 
@@ -843,8 +845,8 @@ class hoursurvey extends atkNode
         $filterarray[] = $this->_addFilterArrayItem("functionlevel"," = '".$functionlevelswitch."'","userid");
     }
 
-    if(!empty($creditor_id) && $creditor_id != "all")
-    $filterarray[] = $this->_addFilterArrayItem("id","='$creditor_id'","creditor_id");
+    if(!empty($employer_id) && $employer_id != "all")
+    $filterarray[] = $this->_addFilterArrayItem("employer_id","='$employer_id'","userid");
 
     //Add external columns to the filterarray
     foreach ($externalHourSurveyColumns as $module => $attrlist)
@@ -1090,24 +1092,24 @@ class hoursurvey extends atkNode
     return $depcode;
   }
 
-  function get_creditors($creditor_id)
+  function get_employers($employer_id)
   {
     $db = &atkGetDB();
 
     $sql = "SELECT organization.id,organization.name,count(organization.id) AS cnt
               FROM person
-              INNER JOIN organization ON person.creditor_id = organization.id
+              INNER JOIN organization ON person.employer_id = organization.id
               WHERE person.role='employee'
               GROUP BY organization.id";
 
     $records = $db->getrows($sql);
-    $creditorscode = "<OPTION VALUE='all'>".atktext('allcreditors')."</OPTION>";
-    foreach ($records as $creditor)
+    $employerscode = "<OPTION VALUE='all'>".atktext('allemployers')."</OPTION>";
+    foreach ($records as $employer)
     {
-      $sel = $creditor['id'] == $creditor_id ? " SELECTED" : "";
-      $creditorscode .= "<OPTION VALUE='".$creditor['id']."'$sel>".$creditor['name']."</OPTION>";
+      $sel = $employer['id'] == $employer_id ? " SELECTED" : "";
+      $employerscode .= "<OPTION VALUE='".$employer['id']."'$sel>".$employer['name']."</OPTION>";
     }
-    return $creditorscode;
+    return $employerscode;
   }
 
   function get_employees($user_id)
@@ -1181,45 +1183,39 @@ class hoursurvey extends atkNode
     $content.='<input type="hidden" name="atkaction" value="report">';
   }
   
-  function _addHiddenProjects(&$content,$item=array(),$id=null)
+  function _addHiddenProjects(&$content,$item=array(),$id=null,$current)
   {
-    $res = array();
-    $current = atkArrayNvl($this->m_postvars,'projects');
-    
     if(isset($id))
     {
-      $res = unserialize($current);
-      unset($res[$id]);
-      $this->_hiddenProjects($content,serialize($res));
+      unset($current[$id]);
+      $this->_hiddenProjects($content, $current);
     }
-    elseif( $current )
+    elseif( !empty($current) )
     {
-      if(count($item) > 0)
+      if(!empty($item))
       {
-        $res = unserialize($current);
-        $res[] = $item;
-        $this->_hiddenProjects($content,serialize($res));
+        $current[] = $item;
+        $this->_hiddenProjects($content,$current);
       }
       else
       {
         $this->_hiddenProjects($content,$current);
-        $res = unserialize($current);
       }
       
     }
-    elseif(count($item)> 0) 
+    elseif(!empty($item)) 
     {
-      $res[] = $item;
-      $this->_hiddenProjects($content,serialize($res));
+      $current = array($item);
+      $this->_hiddenProjects($content,$current);
     }
-    return $res;
+    return $current;
   }
 
   function _hiddenProjects(&$content,$value='')
   {
-    if($value)
+    if(!empty($value))
     {
-      $content .= '<input type="hidden" name="projects" '.'value="'.htmlspecialchars($value, ENT_QUOTES).'">';
+      $content .= '<input type="hidden" name="projects" '.'value="'.htmlspecialchars(serialize($value), ENT_QUOTES).'">';
     }
   }
   
