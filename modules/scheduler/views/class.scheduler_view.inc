@@ -240,20 +240,17 @@ class scheduler_view
 
     $nextTime = date("Y-m-d", mktime(0,0,0,$month+1, 1, $year));
     $nextUrl  = $_SERVER["PHP_SELF"]."?view=".$this->m_view."&viewdate=".$this->m_viewdate."&small_viewdate=$nextTime&user=".$this->m_viewUser;
+    $currentTime = date("Y-m-d", mktime(0,0,0,$month, 1, $year));
+    $currentUrl  = $_SERVER["PHP_SELF"]."?view=month&viewdate=".$this->m_viewdate."&small_viewdate=$currentTime&user=".$this->m_viewUser;
 
-    /*
-    $tmp = '<h3 align="center">';
-    if($monthNav) $tmp.= href($prevUrl,"&lt&lt");
-    $tmp.= " ".$months[$month]." $year ";
-    if($monthNav) $tmp.= href($nextUrl,"&gt;&gt;");
-    */
+
     $tmp ='<table border="0" cellpadding="1" cellspacing="0">';
     $tmp.='<tr style="background-color: #dddddd">';
     $tmp.='<td align="left">';
     if($monthNav) $tmp.= href($prevUrl,"&lt&lt");
     $tmp.='</td>';
     $tmp.='<td align="center" colspan="'.($this->m_showWeekNumbers?6:5).'">';
-    $tmp.= $months[intval($month)].' '.$year;
+  	$tmp.= href($currentUrl,$months[intval($month)].' '.$year);
     $tmp.='</td>';
     $tmp.='<td align="right">';
     if($monthNav) $tmp.= href($nextUrl,"&gt;&gt;");
@@ -533,7 +530,6 @@ class scheduler_view
               AND scheduler_scheduler.lastdate > $tmp_startdate AND scheduler_scheduler.lastdate < $tmp_enddate
               AND scheduler_cyclus.cyclus_enddate >='$startdate' AND scheduler_cyclus.cyclus_enddate <= '$enddate' ";
     $nrows = $db->getrows($sql);
-    atk_var_dump($nrows,"UPDATE RECURRING EVENTS");
     for($i=0,$_i=count($nrows);$i<$_i;$i++)
     {
       $id = $nrows[$i]["id"];
@@ -728,8 +724,7 @@ class scheduler_view
           }
         }
       }
-    }
-    atk_var_dump($this->m_appointmentItems,"Appointments");
+    }    
     $this->getAttendees($items);
 
   }
@@ -756,8 +751,7 @@ class scheduler_view
 
     $query->addField('lastname', ' ', 'person');
     $query->addField('firstname', ' ', 'person');
-    $query->addField('role', ' ', 'person');
-    atk_var_dump($items,"SANDY ITEMS");
+    $query->addField('role', ' ', 'person');    
     $query->addCondition("scheduler_attendees.schedule_id IN (".implode(",",$items).")");
 
     $querystring = $query->buildSelect(TRUE);
@@ -844,7 +838,7 @@ class scheduler_view
     $user = getUser();
 
     if(!is_array($item)) return "";
-    
+
     if($itemDate=="") $itemDate=$this->m_viewdate;
     $tmp="";
     if($admin)
@@ -885,7 +879,7 @@ class scheduler_view
       {
         $attendees='<img src="'.$theme->imgPath("single.png","scheduler").'" width=15 height=15 title="'.$names.'" alt="'.$names.'">';
       }
-      else 
+      else
       {
         $attendees='<img src="'.$theme->imgPath("multi.png","scheduler").'" width=15 height=15 title="'.$names.'" alt="'.$names.'">';
       }
@@ -953,8 +947,7 @@ class scheduler_view
    */
   function _setUserSettings()
   {
-   $user = getUser();
-    atk_var_dump($user,"CURRENT USER");
+   $user = getUser();    
     $schedulerNode = &getNode("scheduler.scheduler");
     $userprefs = $schedulerNode->getUserSchedulerPrefs($user["id"]);
 

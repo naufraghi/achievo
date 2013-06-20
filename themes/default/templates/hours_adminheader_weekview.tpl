@@ -8,15 +8,15 @@
     &nbsp;&nbsp;<a href="{$thisweekurl}">{atktext thisweek}</a>
     &nbsp;&nbsp;<a href="{$dayviewurl}">{atktext dayview}</a>
 
-    {if $lockurl}         &nbsp;&nbsp;<a href="{$lockurl}"><b>{atktext lock}</b>
-    {else if $unlockurl}  &nbsp;&nbsp;<b>{atktext unlock}</b>
+    {if $lockurl}         &nbsp;&nbsp;<a href="{$lockurl}"><b>{atktext lock}</b></a>
+    {elseif $unlockurl}  &nbsp;&nbsp;<a href="{$unlockurl}"><b>{atktext unlock}</b></a>
     {/if}
-    
+
     </td><td valign="top" align="right">
     {$datejumper}
     &nbsp;<input type="submit" value="{atktext goto}">
     </td></tr></table></form>
 
     <b>{if $curuser.firstname && $curuser.lastname}{$curuser.firstname} {$curuser.lastname} - {/if}{atktext week} {$curdate}</b>
-    {$lockicon}
+    {$lockicon} {if $locktext}({$locktext}){/if}
     <br><br><br>

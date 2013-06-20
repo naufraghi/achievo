@@ -759,7 +759,6 @@
     {
       $db = &atkGetDb();
       $meta = $db->metadata($table, true);
-      atk_var_dump($meta,"META VAN $table");
       for ($i=0, $_i=count($meta); $i<$_i; $i++)
       {
         if (strtolower($meta[$i]["name"]) == strtolower($column))
@@ -912,10 +911,10 @@
     {
       $node = &atkGetNode($node);
       $table = $node->m_table;
-      $seg = $node->m_seg;
+      $seq = $node->m_seq;
 
       $this->dropTable($table);
-      if($seg>"") $this->dropSequence($seg);
+      if($seq>"") $this->dropSequence($seq);
     }
 
     function action_legacyupgrade(&$handler)
