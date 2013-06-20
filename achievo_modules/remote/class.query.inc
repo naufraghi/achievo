@@ -1,4 +1,12 @@
 <?php
+/*
+ * Copyright 2007 Develer S.r.l. (http://www.develer.com/)
+ * All rights reserved.
+ *
+ * $Id: $
+ * Author: Matteo Bertini <naufraghi@develer.com>
+ */
+
 include_once (moduleDir("remote")."class.timereg.inc");
 
 function isTime($time)
@@ -25,7 +33,7 @@ function isTime($time)
 
 function smartLike($field, $s)
 {
-    return "LOWER($field) LIKE LOWER('$s%')";
+    return "LOWER($field) LIKE LOWER('%$s%')";
 }
 
 function tokenize($s)
@@ -33,6 +41,7 @@ function tokenize($s)
     // Trim extra spaces
     $s = preg_replace("/\s+/", " ", $s);
     $s = trim($s);
+    $s = addslashes($s);
 
     return split(" ", $s);
 }
@@ -125,7 +134,7 @@ class query extends atkNode
                     project.status = 'active' AND
                     project_person.personid = " . $g_user["id"] . " AND
                     (
-                    (" . smartLike("project.name", "%".$guesses[$k]["in_prj"]) . ") AND
+                    (" . smartLike("project.name", $guesses[$k]["in_prj"]) . ") AND
                     (" . smartLike("phase.name", $guesses[$k]["in_pha"]) . ") AND
                     (" . smartLike("activity.name", $guesses[$k]["in_act"]) . ")
                     )";

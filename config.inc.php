@@ -22,9 +22,9 @@
   //
   $config_db["default"]["host"] = "localhost";
 
-  $config_db["default"]["db"] = "achievo_1_2";
-  $config_db["default"]["user"] = "demo";
-  $config_db["default"]["password"] = "demo";
+  $config_db["default"]["db"] = "achievo";
+  $config_db["default"]["user"] = "achievo";
+  $config_db["default"]["password"] = "XXXXXXXXXXXXXXXXXXXXXXXXX";
 
   // -------------------------------------------
   //           LAYOUT CONFIGURATION
@@ -39,7 +39,7 @@
   // themes there are in the directory themes. Users can choose their own
   // theme in the user preferences section.
   //
-  $config_defaulttheme = "outlook";
+  $config_defaulttheme = "default";
 
   // The language of the application. You can use any language for which
   // a language file is present in the languages directory.
@@ -59,7 +59,7 @@
   // useraccounts in Achievo. If you don't, users can login, but won't
   // have permission to do anything.
   //
-  $config_authentication = "db";
+  $config_authentication = "server";
 
   // If you set $config_authentication to "pop3", you must configure
   // which server to use:
@@ -78,7 +78,7 @@
   // set up the entire system and enable it only when you need it.
   // (disable it by putting // in front of it)
   //
-  $config_administratorpassword = "demo";
+  //$config_administratorpassword = "demo";
 
   // If you set $config_auth_dropdown to true, the login screen will contain
   // a list of available usernames. If you set it to false, there will be
@@ -127,12 +127,12 @@
 
   // Default view in time registration. Can be "week" or "day"
   //
-  $config_timereg_defaultview = "day";
+  $config_timereg_defaultview = "week";
 
   // Number of lines of the 'remark' field for time entry. Defaults to a
   // single line. (Regardless of this setting, the actual amount of text 
   // that can be entered is unlimited.)
-  $config_timereg_remark_lines = 1;
+  $config_timereg_remark_lines = 3;
 
   // Allow registration of time in the future. By default, this is false, so
   // only time actually spent can be registered.
@@ -168,7 +168,7 @@
   // -------------------------------------------
   // This variable indicated whether contacts in the project module are
   // obligatory
-  $config_project_contact_obligatory = true;
+  $config_project_contact_obligatory = false;
   
   
   // -------------------------------------------
@@ -182,6 +182,7 @@
   // module("somemodule","../achievo_modules/somemodule/");
   
   module("customer_stats","achievo_modules/customer_stats/");
+  module("remote","achievo_modules/remote/");
 
 
   // -------------------------------------------
