@@ -94,8 +94,8 @@
       $this->add($percattrib);
 
       $this->add(new atkNumberAttribute("profit_expectance",AF_HIDE_ADD|AF_HIDE_EDIT|AF_TOTAL,10,2));
-      $this->add(new atkManyToOneRelation("campaign","organization.campaign",AF_HIDE_LIST));
-      $this->add(new atkManyToOneRelation("source","organization.source",AF_HIDE_LIST));
+      $this->add(new atkManyToOneRelation("campaign","crm.campaign",AF_HIDE_LIST));
+      $this->add(new atkManyToOneRelation("source","crm.source",AF_HIDE_LIST));
 
       $this->add(new atkCreatedByAttribute("created_by",AF_HIDE_LIST),"history");
       $this->add(new atkCreateStampAttribute("created_on",AF_HIDE_LIST),"history");
@@ -298,7 +298,7 @@
       $record = array_pop($this->selectDb($this->m_table.".id='$id'"));
       $quotation_number = $record['quotation_nr'];
 
-      if ($newstatus == "accepted" && atkconfig("quotation_addproject", true)) $this->redirect(session_url(dispatch_url("project.project", "add", array("name"=>$this->m_postvars["title"],"quotation_number"=>$quotation_number, "customer"=>array("id" => $record["organization_id"]["id"]))), SESSION_NESTED));
+      if ($newstatus == "accepted" && atkConfig::get('quotation','quotation_addproject',true)) $this->redirect(session_url(dispatch_url("project.project", "add", array("name"=>$this->m_postvars["title"],"quotation_number"=>$quotation_number, "customer"=>array("id" => $record["organization_id"]["id"]))), SESSION_NESTED));
       else $this->redirect();
     }
 

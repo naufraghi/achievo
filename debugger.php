@@ -3,7 +3,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * This file is the skeleton dispatcher file, which you can copy
@@ -22,7 +22,7 @@
    * @version $Revision: 1.1 $
    * $Id: debugger.php,v 1.1 2005/11/04 11:22:05 ivo Exp $
    */
-   
+
   /**
    * @internal Setup the system
    */

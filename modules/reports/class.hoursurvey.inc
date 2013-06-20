@@ -181,9 +181,9 @@ class hoursurvey extends atkNode
   function action_report(&$handler)
   {
     global $g_user, $g_sessionManager;
-    
+
     require_once(moduleDir('report').'utils/class.reportutils.inc');
-    
+
     $repUtils = &atknew('report.utils.reportutils');
 
     $ui = &$this->getUi();
@@ -191,6 +191,8 @@ class hoursurvey extends atkNode
     $this->addStyle("style.css");
     $page->register_script(atkconfig("atkroot")."atk/javascript/formsubmit.js");
     $page->register_style(moduleDir("reports")."style/printablereport.css", "print");
+
+    $contentblocks = array();
 
     // Manual sort config
     $orderby =            atkArrayNvl($this->m_postvars, "orderby", "");
@@ -359,7 +361,7 @@ class hoursurvey extends atkNode
       $view_level = $this->allowed('view_level');
     else
       $view_level = false;
-    
+
     $groupfields = $columnConfig->getOrderFields();
     if ($aggregate==1 && count($groupfields)>0)
     {
@@ -479,7 +481,7 @@ class hoursurvey extends atkNode
 
       $this->_addOr($data);
 
-      $organizationatt = &new atkManyToOneRelation("organizationid", "organization.organization");
+      $organizationatt = &$this->add(new atkManyToOneRelation("organizationid", "organization.organization"));
 
       $data[] = array(atktext("organization","project").':','<SELECT name="roleid">'.$this->get_roles($roleid).'</SELECT> '.$organizationatt->edit($dummyrec));
       $this->_addOr($data);
@@ -646,7 +648,7 @@ class hoursurvey extends atkNode
       for($i=0,$_i=count($arr_col);$i<$_i;$i++)
       {
         $checked = (in_array($arr_col[$i],$col) ? "checked" : "");
-        $cell ='<input type="checkbox" name="col[]" value="'.$arr_col[$i].'" '.$checked.'>'.$arr_collabel[$i].'&nbsp;';
+        $cell ='<input type="checkbox" name="col[]" class="atkcheckbox" value="'.$arr_col[$i].'" '.$checked.'>'.$arr_collabel[$i].'&nbsp;';
         if (count($showcolumnsdata[count($showcolumnsdata)-1]) == 4)
         $showcolumnsdata[] = array();
         $showcolumnsdata[count($showcolumnsdata)-1][] = $cell;
@@ -678,9 +680,9 @@ class hoursurvey extends atkNode
       $content.=$tbl->render($data);
       $content.='</form><br>';
       if (atkConfig("report_hide_parameters", false))
-      $page->addContent('<div class="displaynone">'.$ui->renderBox(array("title"=>$title, "content"=>$content)).'</div>');
+        $contentblocks[] = '<div class="displaynone">'.$ui->renderBox(array("title"=>$title, "content"=>$content)).'</div>';
       else
-      $page->addContent('<div class="contentblock">'.$ui->renderBox(array("title"=>$title, "content"=>'<div class="content">'.$content.'</div>')).'</div>');
+        $contentblocks[] = '<div class="contentblock">'.$ui->renderBox(array("title"=>$title, "content"=>'<div class="content">'.$content.'</div>')).'</div>';
     }
 
     /** Create filter array **/
@@ -706,7 +708,7 @@ class hoursurvey extends atkNode
 
     if($department_name && $department_name != "all")
       $filterarray[] = $this->_addFilterArrayItem("department","='".escapeSQL($department_name)."'","userid");
-  
+
     if($functionlevelswitch && $functionlevelswitch != "all")
     {
       if (moduleExists('advancedsecurity') && $lowerlevels == 'on')
@@ -781,11 +783,11 @@ class hoursurvey extends atkNode
       switch($item["table"].".".$item["columnname"])
       {
         case "phaseid.projectid":
-          if(!in_array("phaseid",$col))   
+          if(!in_array("phaseid",$col))
             $col[] = "phaseid";
           break;
         case "projectid.billing_type":
-          if(!in_array("projectid",$col)) 
+          if(!in_array("projectid",$col))
             $col[] = "projectid";
           break;
         default:
@@ -802,7 +804,7 @@ class hoursurvey extends atkNode
         switch($itsOrderby)
         {
           case "phaseid":
-            if(!in_array("phaseid",$col)) 
+            if(!in_array("phaseid",$col))
               $col[] = "phaseid";
           default:
             //do nothing
@@ -817,7 +819,7 @@ class hoursurvey extends atkNode
 
     //render filter
     $filter = "";
-    
+
     for($i=0,$_i=count($filterarray);$i<$_i;$i++)
     {
       if($i!=0)
@@ -846,7 +848,9 @@ class hoursurvey extends atkNode
       $rl->setMasterNode($this);
       $content.=$rl->render($hoursnode, $data, $actions, RL_EXT_SORT|RL_MRA|RL_NO_SORT, $suppress);
       $content.='<br>'.(atkLevel()>0?atkButton('<< '.atktext("back"), "", SESSION_BACK)."<br>":"").'<br>';
-      $page->addContent('<div class="contentblock">'.$ui->renderBox(array("title"=>$title, "content"=>'<div class="content">'.$content.'</div>')).'</div>');
+      $contentblocks[] = '<div class="contentblock">'.$ui->renderBox(array("title"=>$title, "content"=>'<div class="content">'.$content.'</div>')).'</div>';
+      $actionpage = $this->renderActionPage("admin", $contentblocks);
+      $page->addContent($actionpage);;
     }
 
     if ($outputType=="2")
@@ -865,9 +869,9 @@ class hoursurvey extends atkNode
   function getHourRecords($nameswitch, $user, $filter, $orderby, $col)
   {
     require_once(moduleDir('report').'utils/class.reportutils.inc');
-    
+
     $repUtils = &atknew('report.utils.reportutils');
-    
+
     if ($nameswitch == 'supervisor')
     {
       $employees = $repUtils->getEmployeesArray($user);
@@ -922,20 +926,20 @@ class hoursurvey extends atkNode
               ORDER BY name
              ";
     $records = $db->getrows($sql);
-    
-    if($act_id==-1) 
-      $sel="SELECTED";  
-    else  
-      $sel=""; 
-      
+
+    if($act_id==-1)
+      $sel="SELECTED";
+    else
+      $sel="";
+
     $activity_code='<OPTION VALUE="" '.$sel.'>'.atktext('allactivities').'</OPTION>';
     for($i=0,$_i=count($records);$i<$_i;$i++)
     {
-      if($act_id==$records[$i]["id"]) 
-        $sel="SELECTED";  
-      else 
-        $sel=""; 
-        
+      if($act_id==$records[$i]["id"])
+        $sel="SELECTED";
+      else
+        $sel="";
+
       $activity_code.='<OPTION VALUE="'.$records[$i]["id"].'" '.$sel.'>'.$records[$i]["name"].'</OPTION>';
     }
     return $activity_code;
@@ -996,25 +1000,25 @@ class hoursurvey extends atkNode
     {
       $records = $this->getEmployeesArray($user['id']);
 
-      if ($user_id == "new" || !$user_id || $user_id=="") 
-        $sel = " SELECTED";  
-      else 
-        $sel = ""; 
-      
+      if ($user_id == "new" || !$user_id || $user_id=="")
+        $sel = " SELECTED";
+      else
+        $sel = "";
+
       $employee_code='<OPTION VALUE="all"'.$sel.'>'.atktext("allusers");
       $employee_code .= '<OPTION VALUE="'.addslashes($user["id"]).'" '.$sel.'>'.$user["lastname"].', '.$user["firstname"].'</OPTION>';
       for($i=0,$_i=count($records);$i<$_i;$i++)
       {
-        if($user_id==$records[$i]["id"]) 
-          $sel="SELECTED";  
-        else  
-          $sel=""; 
-        
+        if($user_id==$records[$i]["id"])
+          $sel="SELECTED";
+        else
+          $sel="";
+
         $employee_code.='<OPTION VALUE="'.addslashes($records[$i]["id"]).'" '.$sel.'>'.$records[$i]["lastname"].', '.$records[$i]["firstname"].'</OPTION>';
       }
       return $employee_code;
     }
-  }  
+  }
 
   function get_roles($role)
   {
@@ -1028,11 +1032,11 @@ class hoursurvey extends atkNode
     $role_code='<OPTION VALUE="">'.atktext("allroles");
     for($i=0,$_i=count($records);$i<$_i;$i++)
     {
-      if ($role == $records[$i]["id"]) 
-        $sel = "SELECTED"; 
-      else 
+      if ($role == $records[$i]["id"])
+        $sel = "SELECTED";
+      else
         $sel = "";
-        
+
       $role_code.='<OPTION VALUE="'.$records[$i]["id"].'" '.$sel.'>'.$records[$i]["name"].':</OPTION>';
     }
     return $role_code;
