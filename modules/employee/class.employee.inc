@@ -65,23 +65,27 @@ class employee extends person
     //$this->add(new useridAttribute("userid" ,AF_OBLIGATORY|AF_UNIQUE|AF_SEARCHABLE), 1); // first field
 
     if (in_array("db",explode(",",strtolower(atkconfig('authentication')))))
-    {
-      $this->add(new atkDummyAttribute("passwordexplanation", atktext("password_leaveblankifunchanged"), AF_HIDE_ADD|AF_HIDE_LIST|AF_HIDE_SEARCH|AF_HIDE_VIEW));
-      $passwordrestrictions = array(
-        "minsize" => atkconfig("password_minsize", 0),
-        "minupperchars" => atkconfig("password_minupperchars", 0),
-        "minlowerchars" => atkconfig("password_minlowerchars", 0),
-        "minalphabeticchars" => atkconfig("password_minalphabeticchars", 0),
-        "minnumbers" => atkconfig("password_minnumbers", 0),
-        "minspecialchars" => atkconfig("password_minspecialchars", 0)
-      );
-      $this->add(new atkPasswordAttribute("password", false, AF_HIDE_LIST|AF_PASSWORD_NOVALIDATE, 40, $passwordrestrictions));
-    }
+      $this->addPasswordAttribute();
+
     $this->add(new atkAttribute("role", AF_OBLIGATORY|AF_READONLY|AF_HIDE, 15)); // discriminator.
 
     $this->m_securityMap["deactivate"] = "edit"; // If you may edit, you may also deactivate.
 
     $this->setOrder("lastname");
+  }
+
+  function addPasswordAttribute()
+  {
+    $this->add(new atkDummyAttribute("passwordexplanation", atktext("password_leaveblankifunchanged"), AF_HIDE_ADD|AF_HIDE_LIST|AF_HIDE_SEARCH|AF_HIDE_VIEW));
+    $passwordrestrictions = array(
+      "minsize" => atkconfig("password_minsize", 0),
+      "minupperchars" => atkconfig("password_minupperchars", 0),
+      "minlowerchars" => atkconfig("password_minlowerchars", 0),
+      "minalphabeticchars" => atkconfig("password_minalphabeticchars", 0),
+      "minnumbers" => atkconfig("password_minnumbers", 0),
+      "minspecialchars" => atkconfig("password_minspecialchars", 0)
+    );
+    $this->add(new atkPasswordAttribute("password", false, AF_HIDE_LIST|AF_PASSWORD_NOVALIDATE, 40, $passwordrestrictions));
   }
 
   function initial_values()
@@ -304,6 +308,68 @@ class employee extends person
         }
       }
     }
+  }
+
+  function postAdd($record)
+  {
+    $this->removeBirthdaysCache();
+    return true;
+  }
+
+  function postUpdate($record)
+  {
+    $this->removeBirthdaysCache();
+    return true;
+  }
+
+  function postDel($record)
+  {
+    $this->removeBirthdaysCache();
+    return true;
+  }
+
+  /**
+   * Remove birthdays cache file
+   */
+  function removeBirthdaysCache()
+  {
+    atkimport("atk.utils.atktmpfile");
+    $file = new atkTmpFile("employee_birthdays.inc");
+    if($file->exists())
+      $file->remove();
+  }
+
+  /**
+   * Get birthdays from all employees
+   *
+   * @return array Array with all employees birthdays
+   */
+  function getBirthdates()
+  {
+    atkimport("atk.utils.atktmpfile");
+    $file = new atkTmpFile("employee_birthdays.inc");
+    if(!$file->exists())
+    {
+      $birthday_recs = $this->selectDb("birthdate IS NOT NULL AND status='active'","month(birthdate), day(birthdate)","","",array("firstname","lastname","birthdate"));
+      $items = array();
+      foreach($birthday_recs as $birthday)
+      {
+
+        $day = intval($birthday["birthdate"]["day"]);
+        $month = intval($birthday["birthdate"]["month"]);
+        $name = $birthday["firstname"]." ".$birthday["lastname"];
+        atkdebug("$day - $month - $name");
+        $items[$month][$day][] = $name;
+      }
+
+      $file->writeAsPhp("birthdays",$items);
+    }
+    else
+    {
+      include $file->getPath();
+    }
+
+    return $birthdays;
   }
 
 

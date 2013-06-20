@@ -72,7 +72,7 @@
       $this->add(new atkFuzzySearchAttribute("member_add", "employee.employee", "storeMembers", "multiselect", AF_HIDE_ADD|AF_BLANK_LABEL), "planning");
 
       // This is a listattrib and not a boolattrib, because more options may be added in the future.
-      $this->add(new atkListAttribute("timereg_limit", array("all_users", "members_only"), array(PRJ_TIMEREG_ALL_USERS, PRJ_TIMEREG_MEMBERS_ONLY), AF_HIDE_ADD|AF_HIDE_LIST), "planning");
+      $this->add(new atkListAttribute("timereg_limit", array("all_users", "members_only"), array(PRJ_TIMEREG_ALL_USERS, PRJ_TIMEREG_MEMBERS_ONLY), AF_LIST_NO_NULL_ITEM|AF_HIDE_ADD|AF_HIDE_LIST), "planning");
 
       $this->add(new atkBoolAttribute("alwaysvisibleintimereg", AF_HIDE_LIST|AF_HIDE_ADD), "planning");
       $this->add(new atkDummyAttribute("separator", "<br><hr><br>", AF_HIDE_LIST|AF_HIDE_ADD), "planning");
@@ -86,7 +86,7 @@
       $tmp->m_remoteKey = "template";
       $tmp->setStoreDeletionFilter("phase.template IS NOT NULL AND phase.template!='' AND phase.template!=0");
       //The phasetemplatematrix is in add mode visible on tab 'default' and in other modes on the 'planning' tab
-      $tab = ($ATK_VARS["atkaction"]=="edit"||$ATK_VARS["atkaction"]=="update"?"planning":"default");
+      $tab = ($ATK_VARS["atkaction"]=="view"||$ATK_VARS["atkaction"]=="edit"||$ATK_VARS["atkaction"]=="update"?"planning":"default");
       $this->add($tmp, $tab);
 
       //all phases (including manyally added ones) are shown in this relation.
@@ -893,19 +893,19 @@
     function addActivitiesPerPhase($tpl_phase_id, $phaseid)
     {
       atkdebug("Adding activities per phase");
-      
+
       //Add activities per phase (if they do not exist yet).
       $node = &atkGetNode("project.phase_activity");
       /* @var $node atkNode */
       $selector = "phaseid='$phaseid'";
       $records = $node->selectDb($selector,"","","",array("activityid"));
-      
+
       $ids = array();
-      foreach($records as $rec)      
-        $ids[] = $rec["activityid"]["id"];      
-      
+      foreach($records as $rec)
+        $ids[] = $rec["activityid"]["id"];
+
       $and_where = count($ids) ? " AND activityid NOT IN (".implode(",",$ids).")" : "";
-            
+
       //activities per phase
       $db = &atkGetDb();
       $query = "INSERT INTO phase_activity (activityid, phaseid)
