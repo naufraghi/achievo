@@ -10,12 +10,18 @@ class test_recent_project extends atkTestCase
     parent::atkTestCase();
     
     $this->addFixture('timereg.person');
-    $this->addFixture('timereg.hours');
+    $this->addFixture('timereg.hoursbase');
     $this->addFixture('timereg.project');
     $this->addFixture('timereg.phase');
     $this->addFixture('timereg.project_person');
     $this->addFixture('timereg.accessright');
   }
+  
+  public function skip()
+  {
+    $this->skipIf(!$this->useTestDatabase() && $this->useFixture(),'Test database isn\'t configured');
+  }
+  
   
   public function setUp()
   {

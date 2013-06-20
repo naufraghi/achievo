@@ -105,18 +105,18 @@
       $this->add(new atkDummyAttribute("recur_info",'',AF_NO_LABEL),'cyclus');
       $this->add($recur_attr = new atkListAttribute("recur",array("once","daily","weekly","monthly","yearly"),array(), AF_LIST_NO_NULL_ITEM), "cyclus");
       $this->add(new atkDateAttribute("startdate", "F d Y","d F Y", 0, 0));
-      $this->add(new atkDateAttribute("enddate", "F d Y","d F Y", 0, 0,AF_FORCE_LOAD))->setManualPaint(true);
+      $this->add(new atkDateAttribute("enddate", "F d Y","d F Y", 0, 0,AF_FORCE_LOAD))->addDisabledMode(DISABLED_ALL);
       $this->add($duration_attr = new dummydurationattribute('duration'));
       $this->add(new atkBoolAttribute("allday"));
-      $this->add(new atkTimeAttribute("starttime", 0, 23, $m_arr_minute_step, $default_start_time,AF_FORCE_LOAD))->setManualPaint(true);
-      $this->add(new atkTimeAttribute("endtime", 0, 23, $m_arr_minute_step, $default_end_time, AF_FORCE_LOAD))->setManualPaint(true);
+      $this->add(new atkTimeAttribute("starttime", 0, 23, $m_arr_minute_step, $default_start_time,AF_FORCE_LOAD))->addDisabledMode(DISABLED_ALL);
+      $this->add(new atkTimeAttribute("endtime", 0, 23, $m_arr_minute_step, $default_end_time, AF_FORCE_LOAD))->addDisabledMode(DISABLED_ALL);
       $this->add(new atkOneToOneRelation("cyclus","scheduler.scheduler_cyclus","scheduler_id",AF_ONETOONE_INTEGRATE|AF_ONETOONE_ERROR|AF_CASCADE_DELETE|AF_FORCE_LOAD),"cyclus");
       $this->add(new atkManyToOneRelation("category", "scheduler.scheduler_category",AF_OBLIGATORY|AF_RELATION_AUTOLINK));
       $this->add(new atkBoolAttribute("all_users"));
       $this->add(new atkListAttribute("priority",array("","low","normal","high"),array(0,1,2,3),AF_LIST_NO_NULL_ITEM));
       $this->add(new atkBoolAttribute("private"));
       $this->add(new atkBoolAttribute("nonblocking"));
-      //$this->add(new atkOneToManyRelation("alarms", "scheduler.scheduler_alarms", "scheduler_id", AF_HIDE_LIST|AF_HIDE_ADD|AF_CASCADE_DELETE), "alarms"); // Disabled, not working yet
+      $this->add(new atkOneToManyRelation("alarms", "scheduler.scheduler_alarms", "scheduler_id", AF_HIDE_LIST|AF_HIDE_ADD|AF_CASCADE_DELETE), "alarms"); // Disabled, not working yet
       $this->add(new atkOneToManyRelation("notes", "scheduler.scheduler_notes", "scheduler_id", AF_HIDE_LIST|AF_HIDE_ADD|AF_CASCADE_DELETE), "notes");
       $this->add(new atkManyToOneRelation("owner", "employee.employee", AF_READONLY|AF_OBLIGATORY));
       $this->add(new atkBoolAttribute("owner_attendee"));
@@ -558,8 +558,8 @@
 
       if($record["recur"]!="once")
       {
-        $buttons[] = '<input name="confirmsingle" class="btn" type="submit" value="'.$this->text("delete_single").'">';
-        $buttons[] = '<input name="confirm" class="btn" type="submit" value="'.$this->text("delete_cyclus").'">';
+        $buttons[] = '<input name="confirmsingle" class="btn" type="submit" value="'.$this->text("delete_single",'scheduler').'">';
+        $buttons[] = '<input name="confirm" class="btn" type="submit" value="'.$this->text("delete_cyclus",'scheduler').'">';
       }
       else
       {
@@ -666,9 +666,9 @@
      * Edit copy action for when a user edits a single item of a recurring item
      *
      */
-    function action_editcopy(&$handler)
+    function action_editcopy($handler="")
     {
-      if ($this->m_postvars['call_original_editcopy'] == true)
+      if ($this->m_postvars['call_original_editcopy'] == true && is_object($handler))
       {
         return $handler->action_editcopy();
       }
@@ -734,9 +734,7 @@
          $sql = "DELETE FROM scheduler_cyclus_not WHERE scheduler_id='$scheduler_id' AND date='$itemDate'";
          $db = &atkGetDb();
          $db->query($sql);
-         $this->removeSchedulerDates($scheduler_id);
-         $sql = "UPDATE scheduler_scheduler SET lastdate=null,times=null WHERE id='$scheduler_id'";
-         $db->query($sql);
+         $this->removeSchedulerDates($scheduler_id,$record);
       }
       return $handler->action_update();
     }
@@ -815,7 +813,7 @@
 
     function postDelete($rec)
     {
-      $this->removeSchedulerDates($rec['id']);
+      $this->removeSchedulerDates($rec['id'],$rec);
       return true;
     }
 
@@ -829,14 +827,22 @@
     function preAdd(&$record)
     {
       $this->updateEndDate($record);
+      $this->setLastDate($record);
       return true;
     }
 
     function preUpdate(&$record)
     {
-      $this->removeSchedulerDates($record['id']);
+      atk_var_dump($record,"PRE UPDATE RECORD");
+      $this->removeSchedulerDates($record['id'],$record);
       $this->updateEndDate($record);
+      $this->setLastDate($record);
       return true;
+    }
+
+    function setLastDate(&$rec)
+    {
+      $rec['lastdate'] = mktime($rec["starttime"]["hours"],$rec["starttime"]["minutes"],$rec["starttime"]["seconds"],$rec['startdate']['month'],$rec['startdate']['day'],$rec['startdate']['year']);
     }
 
     /**
@@ -857,7 +863,6 @@
         $rec['enddate']['month']=date("m",$enddate);
         $rec['enddate']['year']=date("Y",$enddate);
       }
-      $rec['lastdate'] = mktime($rec["endtime"]["hours"],$rec["endtime"]["minutes"],$rec["endtime"]["seconds"],$rec['enddate']['month'],$rec['enddate']['day'],$rec['enddate']['year']);
     }
 
     /**
@@ -1009,6 +1014,7 @@
       atkimport("module.scheduler.utils.schedulertools");
       $startdate = date("Y-m-d",mktime(12,0,0,$rec["startdate"]["month"],$rec["startdate"]["day"],$rec["startdate"]["year"]));
       $enddate = date("Y-m-d",mktime(12,0,0,(substr($this->m_viewdate,5,2)+2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4)));
+      atkdebug("scheduler::updateSchedulerDates -> UpdateRecurring events ($startdate till $enddate");
       schedulertools::updateRecurringEvents($startdate,$enddate,$rec);
     }
 
@@ -1016,14 +1022,17 @@
      * Remove calculated scheduler dates
      *
      * @param integer $id Scheduler item id
+     * @param array $rec Scheduler Record
      */
-    function removeSchedulerDates($id)
+    function removeSchedulerDates($id,&$rec)
     {
       $s_dates = &atkGetNode("scheduler.scheduler_dates");
       $s_dates->deleteDb("scheduler_id = '$id'");
       $db = $this->getDb();
       $db->query("UPDATE scheduler_scheduler SET lastdate = NULL, times = 0 WHERE id='$id'");
       $db->commit();
+      $rec['lastdate']=null;
+      $rec['times']=0;
     }
   }
 

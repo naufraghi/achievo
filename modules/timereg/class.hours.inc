@@ -112,7 +112,7 @@ class to_date extends atkDateAttribute
 {
   function to_date()
   {
-    $this->atkDateAttribute("todate", "","", 0, atkConfig("timereg_allowfuture", false) ? 0 : date("Ymd"), AF_NO_LABEL|AF_HIDE);
+    $this->atkDateAttribute("todate", "","", 0, atkConfig::get("timereg","timereg_allowfuture", false) ? 0 : date("Ymd"), AF_NO_LABEL|AF_HIDE);
   }
 
   function load() { return array();}
@@ -181,7 +181,7 @@ class hours extends atkNode
     // Default view if none is set
     if (!isset($this->m_weekview)||$this->m_weekview=="")
     {
-      if (atkconfig("timereg_defaultview")=="week") $this->m_weekview=1;
+      if (atkconfig::get("timereg","timereg_defaultview")=="week") $this->m_weekview=1;
     }
 
     if (isset($this->m_weekview)&&$this->m_weekview!="") {
@@ -223,11 +223,11 @@ class hours extends atkNode
 
 
     $this->add(new atkNumberAttribute("id",AF_AUTOKEY));
-    
+
     $p_attr = &$this->add(new atkBoolAttribute("virtual_time",AF_HIDE));
     $p_attr->setForceInsert(true);
 
-    $this->add(new atkDateAttribute("activitydate","","", 0, (atkconfig("timereg_allowfuture", false)?0:date("Ymd")), AF_OBLIGATORY|AF_FORCE_LOAD|($this->m_weekview?0:AF_HIDE_LIST)),null,10);
+    $this->add(new atkDateAttribute("activitydate","","", 0, (atkconfig::get("timereg","timereg_allowfuture", false)?0:date("Ymd")), AF_OBLIGATORY|AF_FORCE_LOAD|($this->m_weekview?0:AF_HIDE_LIST)),null,10);
     $this->add(new to_date());
     $this->add(new atkDummyAttribute("dayfilter", "", AF_HIDE), null, 11);
 
@@ -258,7 +258,7 @@ class hours extends atkNode
     if($oneActivity)
       $activity_flag = AF_HIDE|AF_FORCE_LOAD;
     else
-      $activity_flag = AF_LIST_OBLIGATORY_NULL_ITEM;
+      $activity_flag = AF_FORCE_LOAD;
     $activity = &new atkManyToOneRelation("activityid","project.activity",AF_OBLIGATORY|$activity_flag);
     $this->add($activity);
 
@@ -267,12 +267,12 @@ class hours extends atkNode
       $this->add(new atkManyToOneRelation("contact_id","organization.contact"));
     }
 
-    $this->add(new atkTextAttribute("remark", atkconfig("timereg_remark_lines", 1), 0));
+    $this->add(new atkTextAttribute("remark", atkconfig::get("timereg","timereg_remark_lines", 1), 0));
     $this->addTime();
 
     // If we don't use duration, then we won't need this
     // Because we can set the rates with the billing module
-    if (atkconfig("use_duration", true))
+    if (atkconfig::get("timereg","use_duration", true))
     {
       $relation = &new atkManyToOneRelation("workperiod","timereg.workperiod", AF_HIDE_LIST|AF_RELATION_NO_NULL_ITEM);
       $relation->setHideWhenEmpty(true);
@@ -287,7 +287,7 @@ class hours extends atkNode
  */
     $this->setOrder("projectid.abbreviation");
 
-    $this->setTable("hours","hours");
+    $this->setTable("hours","hoursbase");
     $this->addSecurityMap("mra_move", "edit");
   }
 
@@ -339,7 +339,7 @@ class hours extends atkNode
   {
     $durationflags = AF_TOTAL;
 
-    if (!atkconfig("use_duration", true))
+    if (!atkconfig::get("timereg","use_duration", true))
     {
       $this->add(new atkTimeAttribute("starttime","0","23",array(0,15,30,45),"12", AF_OBLIGATORY));
       $this->add(new to_time());
@@ -350,7 +350,7 @@ class hours extends atkNode
       $durationflags|=AF_OBLIGATORY;
     }
 
-    $this->add(new atkDurationAttribute("time",atkconfig("timereg_resolution", "15m"), atkconfig("max_bookable",10).'h',$durationflags));
+    $this->add(new atkDurationAttribute("time",atkconfig::get("timereg","timereg_resolution", "15m"), atkconfig::get("timereg","max_bookable",10).'h',$durationflags));
   }
 
   function setLock()
@@ -486,7 +486,8 @@ class hours extends atkNode
   // in a confirm box on the first timeregistration for the project
   function action_save(&$handler)
   {
-    if (atkconfig("hours_confirm_save") && ($this->_isThisTheFirstTimeRegForThisProject() || !empty($this->m_postvars['confirm'])))
+    $this->setTable("hoursbase");
+    if (atkconfig::get("timereg","hours_confirm_save") && ($this->_isThisTheFirstTimeRegForThisProject() || !empty($this->m_postvars['confirm'])))
     {
       $sessionManager = &atkGetSessionManager();
       if (!empty($this->m_postvars['confirm'])) // was 'yes' clicked?
@@ -516,7 +517,7 @@ class hours extends atkNode
 
   function confirmSaveText()
   {
-    return atkconfig("hours_confirm_save");
+    return atkconfig::get("timereg","hours_confirm_save");
   }
 
   /**
@@ -541,11 +542,15 @@ class hours extends atkNode
   // override the admin action, because we have the weekview/dayview switch..
   function action_admin(&$handler)
   {
-    $this->setTable("hoursbase");
     $page = &$this->getPage();
+    if ($this->m_partial == 'datagrid')
+    {
+       $page->addContent($handler->partial_datagrid());
+       return;
+    }
 
+    $this->setTable("hoursbase");
     $this->setLock();
-
     $this->addFilter($this->getTable().".userid",$this->m_user);
 
     //we need to make sure the activitydate has the same value as $this->m_viewdate.
@@ -559,7 +564,7 @@ class hours extends atkNode
     }
     else
     {
-      if (atkconfig("timereg_week_bookable")==true && $this->m_lock=="") $res[] = $handler->invoke("addPage", $handler->getRejectInfo());
+      if (atkconfig::get("timereg","timereg_week_bookable")==true && $this->m_lock=="") $res[] = $handler->invoke("addPage", $handler->getRejectInfo());
       $res[] = $this->weekview();
     }
 
@@ -589,7 +594,7 @@ class hours extends atkNode
                       'lockicon'=>Locking::getLockIcon($this->m_lock),
                      );
 
-    if ($this->m_viewdate<date('Y-m-d') || atkConfig("timereg_allowfuture", false))
+    if ($this->m_viewdate<date('Y-m-d') || atkConfig::get("timereg","timereg_allowfuture", false))
     {
       // If current is not today we can also move forward
       $tplvars['tomorrowurl'] = session_url(dispatch_url($this->atknodetype(),$this->m_action,array("viewuser"=>$this->m_user,"viewdate"=>$tomorrow)));
@@ -617,7 +622,7 @@ class hours extends atkNode
   function getDateJumper()
   {
     $dummy_rec = array("viewdate"=>$this->getInitialDate());
-    $datebox = new atkDateAttribute("viewdate","","",0, atkConfig("timereg_allowfuture", false) ? 0 : date("Ymd"),AF_OBLIGATORY);
+    $datebox = new atkDateAttribute("viewdate","","",0, atkConfig::get("timereg","timereg_allowfuture", false) ? 0 : date("Ymd"),AF_OBLIGATORY);
     return $datebox->edit($dummy_rec);
   }
 
@@ -734,7 +739,7 @@ class hours extends atkNode
     $weekdata[0][] = atktext("project")." - ".atktext("phase");
     for ($i=1;$i<=7;$i++)
     {
-      if ($weekdates[$i]['date'] <= date("Y-m-d") || atkConfig("timereg_allowfuture", false))
+      if ($weekdates[$i]['date'] <= date("Y-m-d") || atkConfig::get("timereg","timereg_allowfuture", false))
       {
         // Individual lock icons for each locked day
         if ($this->m_lockmode != "week")
@@ -774,7 +779,7 @@ class hours extends atkNode
 
     for ($i=1;$i<=7;$i++)
     {
-      if ($daytotals[$weekdates[$i]['date']]>atkconfig("overtimethreshold"))
+      if ($daytotals[$weekdates[$i]['date']]>atkconfig::get("timereg","overtimethreshold"))
       {
         $color = "#FF0000";
       }
@@ -826,7 +831,7 @@ class hours extends atkNode
                       'dispatch'=>getDispatchFile(),
                       'locktext'=>($locks > 0 && $locks < 7) ? atktext("locked_partially") : null
                      );
-    if ($weekdates[8]['date'] <= date("Y-m-d") || atkConfig("timereg_allowfuture", false))
+    if ($weekdates[8]['date'] <= date("Y-m-d") || atkConfig::get("timereg","timereg_allowfuture", false))
     {
       $tplvars['nextweekurl']=session_url(dispatch_url($this->atknodetype(),$this->m_action,array("weekview"=>1,"viewdate"=>$weekdates[8]['date'])));
     }
@@ -838,7 +843,7 @@ class hours extends atkNode
       }
       // users may only lock weeks that are not already locked. they must have the proper permission
       // and, if configured, they may only lock a week once they have booked all their hours.
-      else if ($this->m_lock=="" && $this->allowed("lock") && (atkconfig("timereg_incompleteweeklock") || $this->weekComplete($userid, $this->m_viewdate)))
+      else if ($this->m_lock=="" && $this->allowed("lock") && (atkconfig::get("timereg","timereg_incompleteweeklock") || $this->weekComplete($userid, $this->m_viewdate)))
       {
         $tplvars['lockurl']=session_url(dispatch_url($this->atknodetype(),"lock",array("userid"=>$userid,"viewdate"=>$this->m_viewdate)), SESSION_NESTED);
       }
@@ -988,7 +993,7 @@ class hours extends atkNode
     // first get the total of contract hours
     $sql = "SELECT sum(uc_hours*60) as contract FROM usercontract WHERE startdate <= '$start'
                 AND (enddate > '$start' OR enddate IS NULL) AND userid = '$userid'";
-    $result = $db->getRows($sql);
+    list($result) = $db->getRows($sql);
 
     // get the total of time already registered this week
     $query = "SELECT sum(time) as totaal
@@ -997,15 +1002,16 @@ class hours extends atkNode
               WHERE
                 hours.userid = '$userid'
                 AND activitydate between '$start' and '$end'";
-    $res = $db->getrows($query);
-    if (count($res)==0 || count($result)==0)
-    {
+    list($res) = $db->getrows($query);
+    
+    if ($res['contract']==0 || $result['totaal']==0)
+    {    
       // either no contract in this period, or no hours booked at all..
       return false;
     }
     else
     {
-      return ($result[0]["contract"] - $res[0]["totaal"]<=0);
+      return ($result["contract"] - $res["totaal"]<=0);
     }
   }
 
@@ -1166,7 +1172,7 @@ class hours extends atkNode
       if ($this->m_insertmode=="multi")
       {
         $res = $this->m_attribList["activitydate"]->edit($record, $prefix, $mode);
-        $toDate = new atkDateAttribute("todate", "","", 0, atkConfig("timereg_allowfuture", false) ? 0 : date("Ymd"), AF_OBLIGATORY);
+        $toDate = new atkDateAttribute("todate", "","", 0, atkConfig::get("timereg","timereg_allowfuture", false) ? 0 : date("Ymd"), AF_OBLIGATORY);
 
         $res.= " ".atktext("uptoandincluding")." ".$toDate->edit($record, $prefix, $mode);
         $res.= '<input type="hidden" name="'.$prefix.'activitydate[multi]" value="1">';

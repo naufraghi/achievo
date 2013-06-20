@@ -12,7 +12,7 @@ class sumAttribute extends atkDurationAttribute
 
   function sumAttribute($name, $groupbyfields)
   {
-    $this->atkDurationAttribute($name, atkconfig("timereg_resolution", "15m"), '10h',AF_OBLIGATORY|AF_TOTAL);
+    $this->atkDurationAttribute($name, atkconfig::get("timereg","timereg_resolution", "15m"), '10h',AF_OBLIGATORY|AF_TOTAL);
 
     $this->m_groupbyfields = $groupbyfields;
   }
@@ -30,9 +30,12 @@ class sumAttribute extends atkDurationAttribute
       if ($field!=$this->fieldName()) // can't aggregate on ourselves
       {
         $groupby = $tablename.".".$field;
-        if ($groupby == "hours.projectid") { $groupby = "phaseid.projectid"; }
-        if ($groupby == "hours.functionlevel") { $groupby = "userid.functionlevel"; }
-        if ($groupby == "hours.employer_id") { $groupby = "userid.employer_id"; }
+        if ($tablename=="hours" || $tablename =="hoursbase")
+        {
+          if ($field == "projectid") { $groupby = "phaseid.projectid"; }
+          if ($field == "functionlevel") { $groupby = "userid.functionlevel"; }
+          if ($field == "employer_id") { $groupby = "userid.employer_id"; }
+        }
         $query->addGroupBy($groupby);
       }
     }
@@ -40,7 +43,7 @@ class sumAttribute extends atkDurationAttribute
 
   function db2value($rec)
   {
-    $rec["time"] = $rec['SUM(hours.time)'];
+    $rec["time"] = $rec['SUM('.$this->m_ownerInstance->m_table.'.'.$this->fieldName().')'];
     return parent::db2value($rec);
   }
 }
@@ -142,38 +145,34 @@ class hoursurvey extends atkNode
     $this->setTable("hoursbase");
   }
 
-  function getOrderByStatement($orderby, $orderdirection)
+  function getOrderByStatement($columnConfig)
   {
     $orderbystatement = array();
-    if ($orderby)
+    foreach($columnConfig->m_colcfg as $itsOrderby => $property)
     {
-      foreach($orderby as $key => $itsOrderby)
+      if(!empty($property))
       {
-        if ($itsOrderby && $itsOrderby != "-")
+        //We need to add the tablename before the attribute.
+        switch($itsOrderby)
         {
-          //We need to add the tablename before the attribute.
-          switch($itsOrderby)
-          {
-            //functionlevel has another table- AND fieldname
-            case "functionlevel":
-              $itsOrderby = "functionlevelid.name";
-              break;
-              //employer_id has another table- AND fieldname
-            case "employer_id":
-              $itsOrderby = "employer_id.name";
-              break;
-              //projectid has the table phaseid
-            case "projectid":
-              $itsOrderby = "phaseid.".$itsOrderby;
-              break;
-              //Other attributes have the table hours
-            default:
-              $itsOrderby = $this->getTable().".".$itsOrderby;
-              break;
-          }
-
-          $orderbystatement[] = $itsOrderby . " " . $orderdirection[$key];
+          //functionlevel has another table- AND fieldname
+          case "functionlevel":
+            $itsOrderby = "functionlevelid.name";
+            break;
+            //employer_id has another table- AND fieldname
+          case "employer_id":
+            $itsOrderby = "employer_id.name";
+            break;
+            //projectid has the table phaseid
+          case "projectid":
+            $itsOrderby = "phaseid.".$itsOrderby;
+            break;
+            //Other attributes have the table hours
+          default:
+            $itsOrderby = $this->getTable().".".$itsOrderby;
+            break;
         }
+        $orderbystatement[] = $itsOrderby . " " . $property['direction'];
       }
     }
     return $orderbystatement;
@@ -545,7 +544,7 @@ class hoursurvey extends atkNode
         $this->_addOr($data);
       }
 
-      $organizationatt = &$hoursnode->add(new atkManyToOneRelation("organizationid", "organization.organization"));
+      $organizationatt = &$hoursnode->add(new atkManyToOneRelation("organizationid", "organization.organization", AF_HIDE));
 
       if(atkconfig::get("timereg","timereg_contact_link",false))
       {
@@ -609,7 +608,7 @@ class hoursurvey extends atkNode
       $data[] = array('<hr>');
 
       $startdateatt = new atkDateAttribute("startdate","","", 0, date("Ymd"),AF_OBLIGATORY);
-      $enddateatt = new atkDateAttribute("enddate","","", 0, atkConfig("timereg_allowfuture", false) ? 0 : date("Ymd"), AF_OBLIGATORY);
+      $enddateatt = new atkDateAttribute("enddate","","", 0, atkConfig::get("timereg","timereg_allowfuture", false) ? 0 : date("Ymd"), AF_OBLIGATORY);
 
       $timespan='<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td>'.$startdateatt->edit($dummyrec).'</td><td class="table"> &nbsp;'.
       atktext("until").'&nbsp; </td><td align="right">'.$enddateatt->edit($dummyrec).'</td></tr></table>';
@@ -761,7 +760,7 @@ class hoursurvey extends atkNode
 
       $content.=$tbl->render($data);
       $content.='</form><br>';
-      if (atkConfig("report_hide_parameters", false))
+      if (atkConfig::get("reports","report_hide_parameters", false))
         $contentblocks[] = '<div class="displaynone">'.$ui->renderBox(array("title"=>$title, "content"=>$content)).'</div>';
       else
         $contentblocks[] = '<div class="contentblock">'.$ui->renderBox(array("title"=>$title, "content"=>'<div class="content">'.$content.'</div>')).'</div>';
@@ -895,7 +894,7 @@ class hoursurvey extends atkNode
       }
     }
 
-    $orderbystatement = $this->getOrderByStatement($orderby, $orderdirection);
+    $orderbystatement = $this->getOrderByStatement($columnConfig);
 
     //Check if we need to add additional columns because of the selected filter.
     foreach($filterarray as $item)

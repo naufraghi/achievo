@@ -9,9 +9,11 @@
 
     function action_pim(&$handler)
     {
-      if (atkconfig('pim_redirect_to') != "")
+      $url = atkconfig::get('pim','pim_redirect_to');
+      if ($url != "" && is_array($url))
       {
-        header("Location: " . atkconfig('pim_redirect_to'));
+        $param = atkconfig::get('pim','pim_redirect_to');
+        header("Location: " . session_url(dispatch_url($param[0],$param[1])));
         return;
       }
       
@@ -19,7 +21,7 @@
       $userpimitems = &atknew("module.pim.userpimitems");
       $user = getuser();
       $userDbItems = $userpimitems->selectDb("userpimitems.userid='".$user["id"]."'","","",array("id","userid"));
-      $disallowedpimitems = atkConfig("disallowedpimitems", array());
+      $disallowedpimitems = atkconfig::get("pim","disallowedpimitems", array());
       $res = array();
       if(count($userDbItems)==0)
       {
@@ -75,7 +77,7 @@
       $content.= $this->text("usesetuplink") . '<br><br>';
       $content.= '<b>' . $this->text("donations") . '</b><br>';
       $content.= $this->text("becomeasponsor") . '<br><br>';
-      $content.= '<a href="http://www.achievo.org/support/donate" target="_new">';
+      $content.= '<a href="http://www.achievo.org/services/donate/" target="_new">';
       $content.= '<img border="0" src="modules/pim/paypal_donate.gif" alt="' . $this->text("donate") . '">';
       $content.= '</a>';
       $content.= '</div><br>';
