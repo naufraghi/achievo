@@ -6,7 +6,8 @@
   $setup->installNode("scheduler.scheduler_cyclus_not");
   $setup->installNode("scheduler.scheduler");
   $setup->installNode("scheduler.scheduler_holidays");
+  $setup->installNode("scheduler.scheduler_userassistants");
 
-  $setup->setVersion(1);
+  $setup->setVersion(2);
 
 ?>
