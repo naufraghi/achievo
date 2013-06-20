@@ -51,7 +51,9 @@
         $reportnodetype = $g_sessionManager->stackVar("reportnodetype");
       else
         $reportnodetype = "";
-      if ($ATK_VARS["atknodetype"]=="project.project"&& in_array($ATK_VARS["atkaction"],array("admin","add","update","edit","search","view")) || $reportnodetype=="hoursurvey")
+
+      /** @todo: Remove filters from project node constructor */
+      if (in_array($ATK_VARS["atknodetype"], array("project.project", "project.project_personcontact", "project.project_personemployee", "project.phase"))&& in_array($ATK_VARS["atkaction"],array("admin","add","save","update","edit","search", "view")) || $reportnodetype=="hoursurvey")
       {
         $this->add(new atkListAttribute("status",array("active","nonactive","archived"),array(),AF_HIDE_ADD|AF_LIST_NO_NULL_ITEM|AF_HIDE_LIST, 15));
       }
@@ -70,7 +72,7 @@
       }
 
       // Add the organization relation
-      $this->add(new atkManyToOneRelation("customer", "organization.organization", AF_HIDE_LIST|AF_RELATION_AUTOLINK|AF_HIDE_ADD|AF_SEARCHABLE), "", 500);
+      $this->add(new atkManyToOneRelation("customer", "organization.organization", AF_HIDE_LIST|AF_RELATION_AUTOLINK|AF_HIDE_ADD|AF_SEARCHABLE|AF_FORCE_LOAD), "", 500);
 
       $this->add(new atkOneToManyRelation("contacts","project.project_personcontact", "projectid", AF_HIDE_LIST|AF_CASCADE_DELETE|AF_HIDE_ADD|$flags));
 
@@ -117,45 +119,11 @@
       {
         $this->add(new atkListAttribute("contact_restrict",array("restrict_project","restrict_eligible"),array(1,2),AF_HIDE_LIST|AF_FORCE_LOAD|AF_OBLIGATORY));
       }
-          
+
       $this->setTable("project","project");
 
       $this->setOrder("project.abbreviation, project.name");
       $this->setIndex("name");
-    }
-
-    function name_display($record, $mode)
-    {
-      // Do not return a html link in plain or csv mode or select screen
-      if (($mode=="plain") || ($mode=="csv"))
-        return $record["name"];
-
-      // Special select handling
-      if (atkArrayNvl($this->m_postvars,"atkaction")=="select")
-      {
-        // Decode the given target url
-        $url = atkArrayNvl($this->m_postvars, "atktarget");
-        $url = atkurldecode($url);
-        $url = str_replace("%5B", "[", $url);
-        $url = str_replace("%5D", "]", $url);
-        $url = str_replace("_15B", "[", $url);
-        $url = str_replace("_15D", "]", $url);
-
-        // Parse it using the record
-        atkimport("atk.utils.atkstringparser");
-        $parser = new atkStringParser($url);
-        $url = $parser->parse($record, true);
-
-        // Return a link
-        return href($url, $record["name"], SESSION_NESTED);
-      }
-      else
-      {
-        // Make all project links clickable
-        $defaultaction = $this->allowed("edit") ? "edit" : "view";
-        $url = dispatch_url("project.project", $defaultaction, array("atkselector"=>"project.id='{$record["id"]}'"));
-        return href($url, $record["name"], SESSION_NESTED);
-      }
     }
 
     function graph_topprojects($params)
@@ -664,7 +632,7 @@
     function storeMembers($rec, $members)
     {
       $role_id = $this->fetchRoleId();
-     
+
       for ($i=0, $_i=count($members); $i<$_i; $i++)
       {
         $this->_addMemberRecord($rec["id"], $members[$i]["id"], $role_id);
@@ -682,7 +650,7 @@
       {
         return $role_id["id"];
       }
-      else 
+      else
       {
         return 0;
       }

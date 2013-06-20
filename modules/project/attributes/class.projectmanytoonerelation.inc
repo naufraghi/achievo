@@ -140,22 +140,27 @@
       $query = $db->createQuery();
 
       $query->addTable("hours");
-      $query->addField("id","","project");
-      $query->addJoin("phase","","hours.phaseid=phase.id",true);
-      $query->addJoin("project","","phase.projectid=project.id",true);
+
+      // Magic Peter Code (tm) to get around a mysql3 limitation 
+      // that doesn't allow us to use subqueries, which would normally
+      // be needed to solve this particular set of distinct/order by 
+      // requirements.
+      $query->addField("project.id");
+      $query->addJoin("phase","","hours.phaseid=phase.id",false);
+      $query->addJoin("project","","phase.projectid=project.id",false);
       $query->addCondition("hours.userid='{$this->m_userid}'");
-      $query->addCondition("project.status='active'");
+      $query->addCondition("project.status='active'");     
 
       if (!$g_securityManager->allowed("timereg.hours", "any_project"))
       {
         $query->addJoin("project_person","","project_person.projectid = project.id",true);
         $query->addCondition("(project_person.personid = ".$this->m_userid." OR project.timereg_limit = ".PRJ_TIMEREG_ALL_USERS.")");
       }
+      
+      $query->addOrderBy("hours.activitydate DESC");
 
-      $query->addGroupBy("hours.phaseid");
-
-      $arr = $db->getrows($query->buildSelect(true),'0',$GLOBALS["config_numberofrecentprojects"]);
-
+      $arr = $db->getrows($query->buildSelect(false),'0',atkconfig("numberofrecentprojects")+100);
+      
       $newsel = $this->getHtmlId("");
       $newarr = array();
 
@@ -170,11 +175,13 @@
         $newarr[] = $value;
       }
 
-
-      //some dbs do not support the limit in a query ?
-      for ($i=0,$_i=count($arr);($i<$_i)&&$j<$GLOBALS["config_numberofrecentprojects"];$i++)
+      // remove dupes because we can't distinct/group by and order by recency in mysql3
+      for ($i=0,$_i=count($arr);($i<$_i)&&count($newarr)<atkconfig("numberofrecentprojects");$i++)
       {
-        $newarr[] = (int) $arr[$i]['id'];
+      	if (!in_array($arr[$i]["id"], $newarr))
+      	{ 
+      		$newarr[] = (int) $arr[$i]['id'];
+      	}
       }
 
       return $newarr;

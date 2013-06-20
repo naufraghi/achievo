@@ -232,7 +232,7 @@ class hours extends atkNode
 
     //phaseid must be added before the project id to make sure the join works
     //we need the projectid to sort on
-    $phase = &new atkManyToOneRelation("phaseid","project.phase",AF_OBLIGATORY|AF_FORCE_LOAD);
+    $phase = &new atkManyToOneRelation("phaseid","project.phaseselector",AF_OBLIGATORY|AF_FORCE_LOAD);
     $phase->setDestinationFilter("phase.projectid='[projectid.id]'");
     $oneActivity = (projectutils::getActivityCount() == 1);
     if(!$oneActivity)
@@ -527,10 +527,7 @@ class hours extends atkNode
    */
   function updatesessionrecordviewdate()
   {
-    //we override the atkformadata value of activity date to make sure it keeps using our own m_viewdate
-    // attribute.
-    if (isset($this->m_postvars["atkformdata"]["activitydate"]))
-      $this->m_postvars["atkformdata"]["activitydate"] = $this->getInitialDate();
+    $this->m_postvars["activitydate"] = $this->getInitialDate();
   }
 
   // override the admin action, because we have the weekview/dayview switch..

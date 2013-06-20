@@ -8,7 +8,7 @@
     {
       registerNode("scheduler.scheduler", array("admin", "add", "edit", "delete"));
       registerNode("scheduler.scheduler_category", array("admin", "add", "edit", "delete"));
-      registerNode("scheduler.scheduler_holidays", array("admin", "add", "edit", "delete","import","export","view_holidays"));
+      registerNode("scheduler.scheduler_holidays", array("admin", "add", "edit", "delete" /*,"import","export","view_holidays"*/));
       registerNode("scheduler.scheduler_email_template", array("admin", "edit"));
     }
 
@@ -16,9 +16,9 @@
     {
       $this->menuitem("scheduler", dispatch_url("scheduler.scheduler","admin"),"main",true,300);
       $this->menuitem("-","","main",true,320);
-      $this->menuitem("scheduler_category", dispatch_url("scheduler.scheduler_category","admin"),"setup");
-      $this->menuitem("scheduler_holidays", dispatch_url("scheduler.scheduler_holidays","admin"),"setup");
-      $this->menuitem("scheduler_email_templates", dispatch_url("scheduler.scheduler_email_template","admin"),"setup");
+      $this->menuitem("scheduler_category", dispatch_url("scheduler.scheduler_category","admin"),"setup",array("scheduler.scheduler_category","admin"));
+      $this->menuitem("scheduler_holidays", dispatch_url("scheduler.scheduler_holidays","admin"),"setup",array("scheduler.scheduler_holidays","admin"));
+      $this->menuitem("scheduler_email_templates", dispatch_url("scheduler.scheduler_email_template","admin"),"setup", array("scheduler.scheduler_email_template","admin"));
 
     }
 
@@ -48,7 +48,8 @@
     {
       $db = &atkGetDb();
       $res = array();
-      $sql = "SELECT scheduler_scheduler.*,scheduler_dates.startdate as realstartdate,scheduler_dates.enddate as realenddate FROM scheduler_scheduler,scheduler_dates WHERE scheduler_scheduler.id=scheduler_dates.scheduler_id AND title LIKE '%$expression%' OR description LIKE '%$expression%' ORDER BY realstartdate";
+      $expression = $db->escapeSQL($expression);
+      $sql = "SELECT scheduler_scheduler.*,scheduler_dates.startdate as realstartdate,scheduler_dates.enddate as realenddate FROM scheduler_scheduler,scheduler_dates WHERE scheduler_scheduler.id=scheduler_dates.scheduler_id AND (title LIKE '%$expression%' OR description LIKE '%$expression%') ORDER BY realstartdate";
       $nrows = $db->getrows($sql);
       $res["scheduler"] = $this->recLinks($nrows, "scheduler.scheduler");
       return $res;
