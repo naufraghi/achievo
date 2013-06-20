@@ -10,8 +10,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: newwindow.js,v 5.2 2007/05/10 12:27:18 wim Exp $
+   * @version $Revision: 4915 $
+   * $Id: newwindow.js 6354 2009-04-15 02:41:21Z mvdam $
    */
     
 function NewWindow(mypage, myname, w, h, scroll, resize, statusbar, menubar, toolbar, personalbar, titlebar) {

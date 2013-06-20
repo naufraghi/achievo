@@ -13,8 +13,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.16 $
-   * $Id: class.layout.inc,v 5.16 2007/08/29 07:45:52 ivo Exp $
+   * @version $Revision: 5841 $
+   * $Id: class.layout.inc 5841 2008-04-01 13:25:05Z boy $
    */
 
   /**
@@ -140,7 +140,7 @@
         }
         else
         {
-          $page->register_style((file_exists(atkconfig("atkroot")."./style.css") ? "." : atkconfig("atkroot")."atk").'/style.css');
+          $page->register_style((file_exists(atkconfig("application_dir")."./style.css") ? "." : atkconfig("atkroot")."atk").'/style.css');
         }
       }
     }

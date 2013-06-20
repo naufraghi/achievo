@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: class.auth_interface.inc,v 5.3 2007/03/06 14:17:29 peter Exp $
+   * @version $Revision: 6289 $
+   * $Id: class.auth_interface.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
    
   /**
@@ -88,7 +88,7 @@
      * Specific implementations of the method may add more information if
      * necessary.
      *
-     * @param String The login of the user to retrieve.
+     * @param String $user The login of the user to retrieve.
      * @return array Information about a user.
      */
     function getUser($user)
@@ -250,7 +250,7 @@
     
     /**
      * This function returns the list of users that may login. This can be
-     * used to display a dropdown of user from which to choose.
+     * used to display a dropdown of users from which to choose.
      *
      * Implementations that do not support retrieval of a list of users, 
      * should either not implement this method, or return an empty array.

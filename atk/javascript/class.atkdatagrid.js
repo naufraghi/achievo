@@ -9,7 +9,14 @@ ATK.DataGrid = {
    * Registers a data grid.
    */
   register: function(name, baseUrl, embedded) {
-    this.grids[name] = { name: name, baseUrl: baseUrl, embedded: embedded, locked: false };
+    this.grids[name] = { name: name, baseUrl: baseUrl, embedded: embedded, locked: false, updateCompletedListeners: [] };
+  },
+  
+  /**
+   * Add update completed listener.
+   */
+  addUpdateCompletedListener: function(name, listener) {
+    this.get(name).updateCompletedListeners.push(listener);
   },
   
   /**
@@ -92,14 +99,19 @@ ATK.DataGrid = {
 
     var params = queryComponents.join('&');   
     var options = { parameters: params, evalScripts: true, onComplete: this.updateCompleted.bind(this, name) };
-    new Ajax.Updater(name + '_container', grid.baseUrl, options);
+    new Ajax.Updater(this.getContainer(name), grid.baseUrl, options);
   },
   
   /**
    * After update of the grid has successfully completed.
    */
-  updateCompleted: function(name) {
+  updateCompleted: function(name) {   
     this.getContainer(name).setOpacity(1.0);
+    
+    this.get(name).updateCompletedListeners.each(function(listener) {
+      listener.defer(name);
+    });   
+    
     this.get(name).locked = false;    
   },
   
@@ -123,7 +135,6 @@ ATK.DataGrid = {
       }
     });
     
-    console.debug(overrides);
     return overrides;  
   },  
   
@@ -141,5 +152,26 @@ ATK.DataGrid = {
    */  
   extractExtendedSortOverrides: function(name) {
     return ATK.DataGrid.extractOverrides(name, 'atkcolcmd');
+  },
+  
+  /**
+   * Save a datagrid which is in edit mode.
+   */
+  save: function(name, url) {
+    var prefix ='atkdatagriddata_AE_';
+    var elements = ATK.DataGrid.getElements(name);
+    var queryComponents = [];
+    for (var i = 0; i < elements.length; i++) {
+      if (elements[i].name && elements[i].name.substring(0, prefix.length) == prefix) {
+        var queryComponent = Form.Element.serialize(elements[i]);
+        if (queryComponent)
+          queryComponents.push(queryComponent);
+      }
+    }
+    
+    var params = queryComponents.join('&');
+    var success = function() { ATK.DataGrid.update(name, { atkgridedit: 0 }, {}, null); };
+
+    new Ajax.Request(url, { parameters: params, onSuccess: success });
   }
 }

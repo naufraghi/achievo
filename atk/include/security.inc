@@ -11,9 +11,16 @@
    * @copyright (c)2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.13 $
-   * $Id: security.inc,v 1.13 2007/12/11 09:53:33 boy Exp $
+   * @version $Revision: 5473 $
+   * $Id: security.inc 6428 2009-07-13 13:56:11Z boy $
    */
+
+  /**
+   * Filter the atkselector REQUEST variable for blacklisted SQL (like UNIONs)
+   */
+  require_once $config_atkroot.'atk/security/db/class.sql_whereclause_blacklist_checker.inc';
+  filter_request_where_clause('atkselector');
+  filter_request_where_clause('atkfilter');
 
   // initialise g_ array.
   $g_user = array();

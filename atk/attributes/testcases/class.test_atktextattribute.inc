@@ -13,8 +13,8 @@
      * @copyright (c)2005 Ivo Jansch
      * @license http://www.achievo.org/atk/licensing ATK Open Source License
      *
-     * @version $Revision: 1.5 $
-     * $Id: class.test_atktextattribute.inc,v 1.5 2007/06/04 11:35:35 titus Exp $
+     * @version $Revision: 5798 $
+     * $Id: class.test_atktextattribute.inc 6354 2009-04-15 02:41:21Z mvdam $
      */
   
     /**

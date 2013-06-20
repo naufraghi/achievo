@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.17 $
-   * $Id: class.atkmenu.inc,v 5.17 2007/08/29 07:45:53 ivo Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkmenu.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -45,11 +45,16 @@
    */
   class atkMenu
   {
-
+    /**
+     * Convert the layout name to a classname
+     *
+     * @param string $layout The layout name
+     * @return string The classname
+     */
     function layoutToClass($layout)
     {
       // Check if the menu config is one of the default atk menus (deprecated)
-      if (in_array($layout, array("plain","frames","outlook","dhtml","modern","cook")))
+      if (in_array($layout, array("plain","frames","outlook","dhtml","modern","cook","dropdown")))
       {
         $classname = "atk.menu.atk".$layout."menu";
       }
@@ -68,6 +73,11 @@
       return $classname;
     }
 
+    /**
+     * Get the menu class
+     *
+     * @return string The menu classname
+     */
     function getMenuClass()
     {
       // Get the configured layout class

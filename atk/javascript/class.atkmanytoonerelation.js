@@ -10,8 +10,8 @@
  * @copyright (c)2000-2004 Ibuildings.nl BV
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  *
- * @version $Revision: 5.10 $
- * $Id: class.atkmanytoonerelation.js,v 5.10 2007/07/10 14:38:31 dennis Exp $
+ * @version $Revision: 6264 $
+ * $Id: class.atkmanytoonerelation.js 6354 2009-04-15 02:41:21Z mvdam $
  */
 
 function mto_parse(link, value)
@@ -100,7 +100,7 @@ Object.extend(Object.extend(ATK.ManyToOneRelation.Autocompleter.prototype, Ajax.
   },
 
   onComplete: function(request) {
-    this.updateChoices(request.responseText);
+    this.updateChoices(request.responseText.stripScripts());
     request.responseText.evalScripts();
   }
 });
@@ -170,7 +170,7 @@ Object.extend(Object.extend(ATK.ManyToOneRelation.AdvancedAutocompleter.prototyp
     var label = labelEl != null ? labelEl.innerHTML : '';
 
     this.valueElement.value = value;
-    this.element.value = label;
+    this.element.value = label.unescapeHTML();
     this.element.focus();
     this.element.select();
 

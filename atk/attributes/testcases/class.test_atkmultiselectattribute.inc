@@ -13,8 +13,8 @@
      * @copyright (c)2008 Sandy Pleyte
      * @license http://www.achievo.org/atk/licensing ATK Open Source License
      *
-     * @version $Revision: 1.2 $
-     * $Id: class.test_atkmultiselectattribute.inc,v 1.2 2008/01/19 14:29:51 sandy Exp $
+     * @version $Revision: 5798 $
+     * $Id: class.test_atkmultiselectattribute.inc 6354 2009-04-15 02:41:21Z mvdam $
      */
   
     /**

@@ -12,8 +12,8 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.6 $
-   * $Id: class.atkmessagequeue.inc,v 1.6 2007/12/14 15:46:50 peter Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkmessagequeue.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -66,6 +66,7 @@
      *
      * @static
      * @param string $txt
+     * @param int $type 
      * @return boolean Success
      */
     function addMessage($txt, $type=AMQ_GENERAL)
@@ -78,6 +79,12 @@
       return false;
     }
 
+    /**
+     * Get the name of the message type
+     *
+     * @param int $type The message type
+     * @return string The name of the message type
+     */
     function _getTypeName($type)
     {
       if ($type == AMQ_SUCCESS) return 'success';
@@ -154,6 +161,11 @@
       return $queue_copy;
     }
 
+    /**
+     * Get the queue
+     *
+     * @return array The message queue
+     */
     function &getQueue()
     {
       $sessionmgr = &atkGetSessionManager();

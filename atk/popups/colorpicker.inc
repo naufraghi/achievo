@@ -15,8 +15,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.7 $
-   * $Id: colorpicker.inc,v 5.7 2006/11/30 16:06:24 lineke Exp $
+   * @version $Revision: 4362 $
+   * $Id: colorpicker.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

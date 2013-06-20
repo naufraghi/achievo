@@ -13,9 +13,9 @@
    * @copyright (c)2006 Ibuildings
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * $Id: class.test_atklistattribute.inc,v 1.2 2007/10/01 19:55:41 yury Exp $
+   * $Id: class.test_atklistattribute.inc 6354 2009-04-15 02:41:21Z mvdam $
    * @author Yury Golovnya  <yury@achievo.org>
-   * @version $Revision: 1.2 $
+   * @version $Revision: 5315 $
    */
 
 

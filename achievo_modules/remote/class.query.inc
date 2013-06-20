@@ -16,13 +16,11 @@ function isTime($time)
     if (is_null($h) or !ctype_digit($h))
         return false;
 
-    if (is_null($m) or !ctype_digit($m))
-        return false;
-    
-    if ($h < 0)
-        return false;
+    if (!is_null($m) and ctype_digit($m))
+	if ($m < 0 or $m >= 60)   
+	    return false;
 
-    if ($m < 0 || $m >= 60)
+    if ($h < 0)
         return false;
 
     return true;
@@ -35,7 +33,10 @@ function smartLike($field, $s)
     $s = strtolower($s);
 
     //fixme: this array is not exhaustive
-    $separators = array('', '%\_', '% ');
+    //fixme: it would be interesting to have also '% ' in this list but this would
+    //       generate ambiguous response to the client. See bug for "billable" and
+    //       "not billable" phases.
+    $separators = array('', '%\_');
     foreach ($separators as $sep)
     {
         $like .= "$field LIKE '$sep$s%'";
@@ -66,7 +67,7 @@ class query extends atkNode
 
     function action_search()
     {
-        atkdebug("Action search");
+        //atkdebug("Action search");
         /*
          * The input string must be in the following form:
          * project [phase [activity [hours [comment]]]]

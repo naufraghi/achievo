@@ -15,8 +15,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.11 $
-   * $Id: class.atkemailattribute.inc,v 5.11 2007/03/08 07:32:30 ivo Exp $
+   * @version $Revision: 6309 $
+   * $Id: class.atkemailattribute.inc 6478 2009-08-22 03:49:07Z marc $
    */
 
   /**
@@ -59,13 +59,18 @@
     /**
      * Returns a displayable string for this value.
      * @param array $record The record to display
+     * @param String $mode The display mode ("view" for viewpages, or "list"
+     *                     for displaying in recordlists, "edit" for
+     *                     displaying in editscreens, "add" for displaying in
+     *                     add screens. "csv" for csv files. Applications can
+     *                     use additional modes.
      * @return String
      */
     function display($record, $mode="")
     {
       if ($mode == "csv")
         return parent::display($record, $mode);
-      
+
       if ($record[$this->fieldName()]!="")
       {
         return '<a href="mailto:'.$record[$this->fieldName()].'">'.$record[$this->fieldName()].'</a>';
@@ -86,14 +91,14 @@
       //first check complete string
       if (!atkEmailAttribute::validateAddressSyntax($email))
       {
-        triggerError($record, $this->fieldName(), 'error_invalid_email');
+        atkTriggerError($record, $this, 'error_invalid_email');
       }
       else
       {
         if ($this->m_dnsSearch)
         {
           //now check if domain exists, searches DNS for MX records
-          list($username, $domain) = split('@',$email,2);
+          list($username, $domain) = explode('@',$email,2);
           if ( !(atkEmailAttribute::validateAddressDomain( $domain, false)) )
           {
             triggerError($record, $this->fieldName(), 'error_unkown_domain', text('error_unkown_domain')." ".$domain);
@@ -101,35 +106,35 @@
         }
       }
     }
-    
+
     /**
      * Checks e-mail address syntax against a regular expression.
-     * 
-     * @param string email e-mail address.
+     *
+     * @param string $email e-mail address.
      * @return boolean e-mailaddress syntactically valid or not.
-     * @static 
+     * @static
      */
     function validateAddressSyntax($email)
     {
-      if ((eregi("^[_a-z0-9-]+(\.[_a-z0-9-]+)*@([0-9a-z][0-9a-z-]*[0-9a-z]\.)+[a-z]{2,4}$", $email, $check)))
+      if (eregi("^[-_a-z0-9+]+(\.[-_a-z0-9+]+)*@([0-9a-z][0-9a-z-]*[0-9a-z]\.)+[a-z]{2,4}$", $email))
       {
         return true;
-      }      
+      }
       else
       {
         return false;
       }
     }
-    
+
     /**
      * Check if the domain is valid and exists.
      *
      * The strict parameter decides if the MX record gets checked.
-     * 
-     * @param unknown_type $domain
+     *
+     * @param string $domain
      * @param boolean $strict
-     * @return boolean $result 
-     * @static 
+     * @return boolean $result
+     * @static
      */
     function validateAddressDomain($domain, $strict=false)
     {

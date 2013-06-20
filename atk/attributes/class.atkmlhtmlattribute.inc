@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.1 $
-   * $Id: class.atkmlhtmlattribute.inc,v 5.1 2004/05/31 22:11:10 ivo Exp $
+   * @version $Revision: 1684 $
+   * $Id: class.atkmlhtmlattribute.inc 6355 2009-04-21 15:20:09Z lineke $
    */
    
   /**
@@ -37,9 +37,9 @@
 
     /**
      * Constructor
-     * @param $name name of the attribute
-     * @param $flags flags of the attribute
-     * @param $nl2br nl2br boolean
+     * @param string $name name of the attribute
+     * @param int $flags flags of the attribute
+     * @param bool $nl2br nl2br boolean
      */
     function atkMlHtmlAttribute($name, $flags=0, $nl2br = false)
     {
@@ -49,7 +49,7 @@
 
     /**
      * Returns a displayable string for this value.
-     * @param $record Array wit fields
+     * @param array $record Array wit fields
      * @return Formatted string
      */
     function display($record)

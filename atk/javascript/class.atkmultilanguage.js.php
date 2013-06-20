@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: class.atkmultilanguage.js.php,v 5.3 2006/10/10 12:41:56 peter Exp $
+   * @version $Revision: 4173 $
+   * $Id: class.atkmultilanguage.js.php 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -54,9 +54,9 @@
    *
    * @author Peter Verhage <peter@ibuildings.nl>
    * @author Ivo Jansch <ivo@ibuildings.nl>
-   * @version $Revision: 5.3 $
+   * @version $Revision: 4173 $
    *
-   * $Id: class.atkmultilanguage.js.php,v 5.3 2006/10/10 12:41:56 peter Exp $
+   * $Id: class.atkmultilanguage.js.php 6354 2009-04-15 02:41:21Z mvdam $
    */
 ?>
 

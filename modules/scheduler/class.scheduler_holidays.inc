@@ -250,4 +250,3 @@ class scheduler_holidays extends atkNode
   }
 }
 ?>
-

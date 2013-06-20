@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.7 $
-   * $Id: class.atkcopyhandler.inc,v 5.7 2007/02/13 14:11:35 peter Exp $
+   * @version $Revision: 6310 $
+   * $Id: class.atkcopyhandler.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
    
   /**
@@ -29,6 +29,8 @@
   {
     /**
      * The action handler.
+     * 
+     * @param Bool $redirect
      */
     function action_copy($redirect=true)
     {

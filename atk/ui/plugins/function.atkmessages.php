@@ -12,8 +12,8 @@
    * @copyright (c)2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.6 $
-   * $Id: function.atkmessages.php,v 1.6 2007/11/29 09:35:31 patrick Exp $
+   * @version $Revision: 5442 $
+   * $Id: function.atkmessages.php 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   atkimport("atk.utils.atkmessagequeue");

@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.1 $
-   * $Id: class.atkfilter.inc,v 5.1 2004/05/31 22:11:10 ivo Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkfilter.inc 6354 2009-04-15 02:41:21Z mvdam $
    */     
 
   /**
@@ -27,23 +27,36 @@
    */
   class atkFilter extends atkAttribute
   {	
+    /**
+     * Constructor
+     *
+     * @param string $name The name of the filter
+     * @param int $flags The flags of the filter
+     * @return atkFilter
+     */
     function atkFilter($name, $flags=0)
     {	
       $this->atkAttribute($name, $flags|AF_HIDE|AF_FORCE_LOAD);
     }
 
     /**
-     * Add's fields to query
-     * @param $query The SQL query
-     * @param $tablename Tablename
-     * @param $fieldaliasprefix Field alias prefix
-     * @param $level ?
-     * @param $mode Indicates what kind of query is being processing:
-     *              This can be any action performed on a node (edit, add, etc)
-     *              Mind you that "add" and "update" are the actions that store
-     *              something in the database, whereas the rest are probably
-     *              select queries.
-     * @return New SQL Query
+     * Adds this attribute to database queries.
+     *
+     * @param atkQuery $query The SQL query object
+     * @param String $tablename The name of the table of this attribute
+     * @param String $fieldaliasprefix Prefix to use in front of the alias
+     *                                 in the query.
+     * @param Array $rec The record that contains the value of this attribute.
+     * @param int $level Recursion level if relations point to eachother, an
+     *                   endless loop could occur if they keep loading
+     *                   eachothers data. The $level is used to detect this
+     *                   loop. If overriden in a derived class, any subcall to
+     *                   an addToQuery method should pass the $level+1.
+     * @param String $mode Indicates what kind of query is being processing:
+     *                     This can be any action performed on a node (edit,
+     *                     add, etc) Mind you that "add" and "update" are the
+     *                     actions that store something in the database,
+     *                     whereas the rest are probably select queries.
      */
     function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec="", $level, $mode)
     {

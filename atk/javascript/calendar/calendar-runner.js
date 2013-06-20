@@ -36,7 +36,9 @@ function showCalendar(id, bindname, format, dateattr)
   {
     // get current value from dateattribute widgets
     var val = ATK.DateAttribute.getValue(id);
-    calendar.parseDate(val.year + '-' + val.month + '-' + val.day);
+	var year = val.year;
+	if(year=='') year = new Date().getFullYear();
+    calendar.parseDate(year + '-' + val.month + '-' + val.day);
   }
   else
   {
@@ -59,6 +61,19 @@ function changeWidget(cal, date)
 function changeTextField(cal, date)
 {
   cal.sel.value = date; // just update the date in the input field.
+
+  // trigger on change event  
+  if (document.createEventObject){
+    // dispatch for IE
+    var evt = document.createEventObject();
+    cal.sel.fireEvent('onchange',evt)
+  }
+  else{
+    // dispatch for firefox + others
+    var evt = document.createEvent("HTMLEvents");
+    evt.initEvent('change', true, true ); // event type,bubbling,cancelable
+    cal.sel.dispatchEvent(evt);
+  }  
 }
 
 // And this gets called when the end-user clicks on the _selected_ date,

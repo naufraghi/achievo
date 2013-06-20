@@ -440,7 +440,7 @@
       $filter="activitydate>='".$startdate."' AND activitydate<='".$enddate."'";
       if(!empty($activity_id)&&$activity_id!="") $filter.=" AND hours.activityid=".$activity_id;
       if(!empty($phaseid)&&$phaseid!="") $filter.=" AND hours.phaseid=".$phaseid;
-      if(!empty($projectid)&&$projectid!="") $filter.=" AND A.projectid=".$projectid;
+      if(!empty($projectid)&&$projectid!="") $filter.=" AND phaseid.projectid=".$projectid;
       if(!empty($remark)&&$remark!="") $filter.=" AND hours.remark LIKE '%$remark%'";
       //if(!empty($customerid)&&$customerid!="") $filter.= " AND B.customer=".$customerid;
       if($department_name && $department_name != "all") $filter.=" AND userid.department='".escapeSQL($department_name)."'";
@@ -452,7 +452,7 @@
         $projectsnode = &atkGetNode("project.project");
         $projectsnode->m_postvars = $this->m_postvars; // Share postvars.
         $pids = implode(",", $projectsnode->get_user_projects());
-        $filter.= " AND A.projectid IN (".$pids.")";
+        $filter.= " AND phaseid.projectid IN (".$pids.")";
       }
 /*naufraghi: 2006-11-07 ******************************************************/
 
@@ -498,7 +498,7 @@
           if ($itsOrderby && $itsOrderby != "-")
           {
 						//hack we need to add the tablename before the attribute. all attributes except for functionlevel has the table name hours
-						$itsOrderby = ($itsOrderby == "functionlevel") ? "person.".$itsOrderby : "hours.".$itsOrderby;
+						$itsOrderby = ($itsOrderby == "functionlevel") ? "person.".$itsOrderby : "phaseid.".$itsOrderby;
 
             $orderbystatement[] = $itsOrderby . " " . $orderdirection[$key];
           }

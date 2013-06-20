@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.2 $
-   * $Id: themedef.inc,v 1.2 2007/05/04 13:46:18 ivo Exp $
+   * @version $Revision: 6021 $
+   * $Id: themedef.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -24,4 +24,6 @@
   $theme['modern_menu_compat'] = true;
   $theme['frame_top_height']=149;
   $theme['frame_menu_width']=210;
+  $theme['dialog_theme_name'] = 'atkdialog';
+  $theme['dialog_theme_load'] = false;
 ?>

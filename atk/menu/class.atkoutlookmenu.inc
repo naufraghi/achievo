@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.7 $
-   * $Id: class.atkoutlookmenu.inc,v 5.7 2006/10/22 21:08:23 boy Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkoutlookmenu.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -26,10 +26,20 @@
    */
   class atkOutlookMenu extends atkmenuinterface
   {
+    /**
+     * Constructor
+     *
+     * @return atkOutlookMenu
+     */
     function atkOutlookMenu()
     {
     }
 
+    /**
+     * Render the menu
+     *
+     * @return string The rendered menu
+     */
     function render()
     {
       global $g_menu,$ATK_VARS,$g_modules;
@@ -188,16 +198,31 @@
 
     }
 
+    /**
+     * Get the position of this menu
+     *
+     * @return int Left position
+     */
     function getPosition()
     {
       return MENU_LEFT;
     }
 
+    /**
+     * Is this menu scrollable?
+     *
+     * @return int Menu is not scrollable
+     */
     function getScrollable()
     {
       return MENU_UNSCROLLABLE;
     }
 
+    /**
+     * Is this menu multilevel?
+     *
+     * @return int Menu is not multilevel
+     */
 		function getMultilevel()
 		{
 			return MENU_NOMULTILEVEL;

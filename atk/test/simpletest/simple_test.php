@@ -3,7 +3,7 @@
      *	Base include file for SimpleTest
      *	@package	SimpleTest
      *	@subpackage	UnitTester
-     *	@version	$Id: simple_test.php,v 1.2 2007/03/23 13:10:12 guido Exp $
+     *	@version	$Id: simple_test.php 6354 2009-04-15 02:41:21Z mvdam $
      */
 
     /**#@+

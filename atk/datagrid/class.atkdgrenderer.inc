@@ -36,7 +36,7 @@ class atkDGRenderer extends atkDGComponent
     if (!$this->getGrid()->isUpdate())
     {
       $result = 
-        '<div id="'.$this->getGrid()->getName().'_container">'.
+        '<div id="'.$this->getGrid()->getName().'_container" class="atkdatagrid-container">'.
           $result.
         '</div>';
     }
@@ -53,7 +53,7 @@ class atkDGRenderer extends atkDGComponent
    */
   protected function renderForm($result)
   {
-    if (!$this->getGrid()->isEmbedded()) 
+    if (!$this->getGrid()->isUpdate() && !$this->getGrid()->isEmbedded()) 
     {
       $result = 
         '<form id="'.$this->getGrid()->getFormName().'" name="'.$this->getGrid()->getFormName().'" method="post" action="'.atkSelf().'">'.
@@ -74,9 +74,10 @@ class atkDGRenderer extends atkDGComponent
   {
     $vars = array();
     
-    foreach ($this->getGrid()->getComponents() as $name => $info)
+    // $this->getGrid() is an atkdatagrid instance
+    foreach ($this->getGrid()->getComponentInstances() as $name => $comp)
     {
-      $vars[$name] = atknew($info['class'], $this->getGrid(), $info['options'])->render();
+      $vars[$name] = $comp->render(); // when $name == "list", $comp->render() results in a call to atkDGList::render()
     }
 
     return $this->getUi()->render($this->getGrid()->getTemplate(), $vars);
@@ -87,6 +88,8 @@ class atkDGRenderer extends atkDGComponent
    */
   protected function registerScript() 
   {
+    if ($this->getGrid()->isUpdate()) return;
+    
     atkimport('atk.utils.atkjson');
     
     $name = atkJSON::encode($this->getGrid()->getName());

@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.25 $
-   * $Id: class.atknodevalidator.inc,v 5.25 2007/05/23 15:21:51 peter Exp $
+   * @version $Revision: 6323 $
+   * $Id: class.atknodevalidator.inc 6323 2009-03-18 17:16:32Z lineke $
    */
 
   /**
@@ -176,8 +176,8 @@
     /**
      * Validate attribute value.
      * 
-     * @param $p_attrib pointer to the attribute
-     * @param $record   record
+     * @param atkAttribute $p_attrib pointer to the attribute
+     * @param array        $record   record
      */
     function validateAttributeValue(&$p_attrib, &$record)
     {
@@ -196,7 +196,9 @@
     }
     
     /**
-     * @deprecated 
+     * @deprecated
+     * 
+     * @param array $record 
      */
     function validateAttributes(&$record)
     {

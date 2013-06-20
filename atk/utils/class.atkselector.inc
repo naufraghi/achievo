@@ -12,8 +12,8 @@
    * @copyright (c)2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.5 $
-   * $Id: class.atkselector.inc,v 1.5 2007/08/30 00:01:40 ivo Exp $
+   * @version $Revision: 5995 $
+   * $Id: class.atkselector.inc 6483 2009-08-25 09:31:49Z peter $
    */
 
   /**
@@ -40,6 +40,7 @@
     protected $m_offset = 0;
     protected $m_excludes = '';
     protected $m_includes = '';
+    protected $m_ignoreDefaultFilters = false;
 
     protected $m_rows = null;
     protected $m_rowCount = null;
@@ -66,6 +67,18 @@
     {
       $this->m_selector = $selector;
       return $this;
+    }
+    
+    /**
+     * Ignore default node filters.
+     * 
+     * @param boolean $ignore ignore default node filterS?
+     * @return atkSelector
+     */
+    public function ignoreDefaultFilters($ignore=true)
+    {
+    	$this->m_ignoreDefaultFilters = $ignore;
+    	return $this;
     }
 
     /**
@@ -126,6 +139,8 @@
      */
     public function includes($includes)
     {
+      if (!is_array($includes))
+        $includes = func_get_args();      
       $this->m_includes = $includes;
       return $this;
     }
@@ -139,6 +154,8 @@
      */
     public function excludes($excludes)
     {
+      if (!is_array($excludes))
+        $excludes = func_get_args();
       $this->m_excludes = $excludes;
       return $this;
     }
@@ -163,7 +180,7 @@
     {
       if ($this->m_rows === null)
       {
-        $this->m_rows = $this->m_node->selectDb($this->m_selector, $this->m_order, array('limit' => $this->m_limit, 'offset' => $this->m_offset), $this->m_excludes, $this->m_includes, $this->m_mode, $this->m_distinct);
+        $this->m_rows = $this->m_node->selectDb($this->m_selector, $this->m_order, array('limit' => $this->m_limit, 'offset' => $this->m_offset), $this->m_excludes, $this->m_includes, $this->m_mode, $this->m_distinct, $this->m_ignoreDefaultFilters);
       }
 
       return $this->m_rows;
@@ -178,7 +195,7 @@
     {
       if ($this->m_rowCount === null)
       {
-        $this->m_rowCount = (int)$this->m_node->countDb($this->m_selector, $this->m_excludes, $this->m_includes, $this->m_mode, $this->m_distinct);
+        $this->m_rowCount = (int)$this->m_node->countDb($this->m_selector, $this->m_excludes, $this->m_includes, $this->m_mode, $this->m_distinct, $this->m_ignoreDefaultFilters);
       }
 
       return $this->m_rowCount;

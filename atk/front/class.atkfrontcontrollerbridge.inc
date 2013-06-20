@@ -11,8 +11,8 @@
    * @copyright (c)2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.5 $
-   * $Id: class.atkfrontcontrollerbridge.inc,v 1.5 2008/01/18 12:07:17 harrie Exp $
+   * @version $Revision: 6323 $
+   * $Id: class.atkfrontcontrollerbridge.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -35,13 +35,11 @@
     /**
      * Build url using the given URI and variables.
      *
-     * @param string $uri The controller URI.
      * @param array $vars Request vars.
      * @return string url
      */
-    public function buildUrl($uri, $vars)
+    public function buildUrl($vars)
     {
-      $vars['uri'] = $uri;
       $url = atkSelf().'?'.http_build_query($vars);
       return $url;
     }
@@ -97,8 +95,13 @@
       atkinstance('atk.ui.atkpage')->register_scriptcode($code);
     }
 
+    /**
+     * Get the application root
+     *
+     * @return string The path to the application root
+     */
     public function getApplicationRoot()
     {
-      return atkconfig('atkroot');
+      return atkconfig('application_dir');
     }
   }

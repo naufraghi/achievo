@@ -13,8 +13,8 @@
    * @copyright (c)2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.9 $
-   * $Id: class.test_atkdb.inc,v 1.9 2007/06/27 05:06:49 guido Exp $
+   * @version $Revision: 5804 $
+   * $Id: class.test_atkdb.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -55,13 +55,13 @@
       $this->m_org_config_db_cluster = $config_db_cluster;
 
       $clone = NULL;
-      if (isset($config_db_cluster['test']))
+      if (isset($config_db_cluster['test']) && (atkGetDb($config_db_cluster['test'][0])->getDbStatus() == DB_SUCCESS))
         $clone = $config_db_cluster['test'][0];
-      else if (isset($config_db['test']))
+      else if (isset($config_db['test']) && (atkGetDb('test')->getDbStatus() == DB_SUCCESS))
         $clone = 'test';
-      else if (isset($config_db_cluster['default']))
+      else if (isset($config_db_cluster['default']) && (atkGetDb($config_db_cluster['default'][0])->getDbStatus() == DB_SUCCESS))
         $clone = $config_db_cluster['default'][0];
-      else if (isset($config_db['default']))
+      else if (isset($config_db['default']) && (atkGetDb('default')->getDbStatus() == DB_SUCCESS))
         $clone = 'default';
       else
       {

@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: function.stacktrace.php,v 5.2 2004/05/31 22:11:12 ivo Exp $
+   * @version $Revision: 1684 $
+   * $Id: function.stacktrace.php 6354 2009-04-15 02:41:21Z mvdam $
    */
    
   /**

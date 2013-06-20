@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: class.atkaddorcopyhandler.inc,v 5.3 2007/07/20 13:15:11 edgar Exp $
+   * @version $Revision: 6310 $
+   * $Id: class.atkaddorcopyhandler.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -186,6 +186,7 @@
       if ($this->m_node->hasFlag(NF_ADD_DIALOG))
       {
         $dialog = new atkDialog($this->m_node->atkNodeType(), 'add', 'dialog');
+        $dialog->setSessionStatus(SESSION_PARTIAL);
         $script .= $dialog->getCall(true, false);
       }
       else
@@ -368,6 +369,7 @@
     /**
      * Creates a drop-down with copyable records.
      *
+     * @param Array $records Array with records
      * @return string copyable records drop-down
      */
     function getCopyDropDown($records)
@@ -386,6 +388,10 @@
     /**
      * Returns a HTML fragment which allows the user to select nested
      * one-to-many relations he/she wants to include in the copy.
+     * 
+     * @param atkNode $node The node to get the onetomany relations from
+     * @param String $prefix The field prefix
+     * @param Integer $level The level of the includes
      */
     function getCopyIncludes($node, $prefix='', $level=0)
     {

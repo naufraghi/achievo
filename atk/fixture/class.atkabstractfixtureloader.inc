@@ -12,8 +12,8 @@
    * @copyright (c)2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.2 $
-   * $Id: class.atkabstractfixtureloader.inc,v 1.2 2007/08/30 00:01:39 ivo Exp $
+   * @version $Revision: 5798 $
+   * $Id: class.atkabstractfixtureloader.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

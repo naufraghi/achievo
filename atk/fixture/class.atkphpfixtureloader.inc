@@ -12,8 +12,8 @@
    * @copyright (c)2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.3 $
-   * $Id: class.atkphpfixtureloader.inc,v 1.3 2007/08/30 08:08:04 ivo Exp $
+   * @version $Revision: 5798 $
+   * $Id: class.atkphpfixtureloader.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

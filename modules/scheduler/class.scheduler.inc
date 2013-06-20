@@ -1109,7 +1109,6 @@
      */
     function updateSchedulerDates($rec)
     {
-      atk_var_dump($rec,"UPDATE SCHEDULER DATES WITH REC");
       $id = $rec["id"];
       atkimport("module.scheduler.utils.schedulertools");
       $startdate = date("Y-m-d",mktime(12,0,0,$rec["startdate"]["month"],$rec["startdate"]["day"],$rec["startdate"]["year"]));

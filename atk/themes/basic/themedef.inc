@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.2 $
-   * $Id: themedef.inc,v 1.2 2006/11/30 16:06:25 lineke Exp $
+   * @version $Revision: 4362 $
+   * $Id: themedef.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   $theme["tabtype"] = "dhtml";

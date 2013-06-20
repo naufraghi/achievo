@@ -22,8 +22,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.32 $
-   * $Id: config.inc.php,v 5.32 2007/07/05 07:37:08 jvansluijs Exp $
+   * @version $Revision: 6161 $
+   * $Id: config.inc.php 6474 2009-08-21 19:08:50Z peter $
    */
 
   /**
@@ -36,8 +36,7 @@
 
   // Currently supported drivers are:
   // "mysql"   - All MySQL versions since 3.23
-  // "mysql41" - MySQL 4.1+. On top of the "mysql" driver, this one
-  //             has transaction support. (requires PHP5, mysqli extension)
+  // "mysqli"  - MySQL 4.1+. This one has transaction support. 
   // "oci805"  - Oracle 8.0.5
   // "oci8"    - All Oracle 8i versions
   // "oci9"    - Oracle9i+ (also works for 10G)
@@ -48,6 +47,18 @@
   $config_db["default"]["db"]       = "";
   $config_db["default"]["user"]     = "";
   $config_db["default"]["password"] = "";
+  
+  /**
+   * Cache table meta data and compiled meta node code.
+   *
+   * On development environments this option should be set to false, but 
+   * on production environments you should really enable it. If you enable
+   * this option and your table structure changes you should manually clear
+   * the cache in the atktmp directory!
+   * 
+   * @var bool
+   */
+  $config_meta_caching = false;
 
   // In admin pages, atk shows you a number of records with previous and
   // next buttons. You can specify the number of records to show on a page.
@@ -85,7 +96,7 @@
 
   // The theme defines the layout of your application. You can see which
   // themes there are in the directory atk/themes.
-  $config_defaulttheme = "steelblue";
+  $config_defaulttheme = "stillblue";
 
   // The language of the application. You can use any language for which
   // a language file is present in the atk/languages directory.
@@ -298,5 +309,15 @@
 
   $config_supported_languages = array("EN","NL","DE");
   $config_defaultlanguage="EN";
+  
+  // ----------- CACHING CONFIGURATION ------------
+  // For the configuration of atkCache
+  // See: http://www.achievo.org/wiki/ATK_Cache
+  
+  // Cache method
+  $config_cache_method = 'var';  
+  // Cache namespace, change this when you are hosting your application on a 
+  // shared hosting.
+  $config_cache_namespace = 'default';
 
 ?>

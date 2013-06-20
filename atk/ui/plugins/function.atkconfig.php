@@ -12,8 +12,8 @@
  * @copyright (c)2004 Ivo Jansch
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  *
- * @version $Revision: 1.1 $
- * $Id: function.atkconfig.php,v 1.1 2007/02/02 09:35:48 lineke Exp $
+ * @version $Revision: 4599 $
+ * $Id: function.atkconfig.php 6354 2009-04-15 02:41:21Z mvdam $
  */
 
 /**

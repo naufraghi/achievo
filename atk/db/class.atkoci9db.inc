@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.12 $
-   * $Id: class.atkoci9db.inc,v 5.12 2007/08/06 12:06:38 patrick Exp $
+   * @version $Revision: 6311 $
+   * $Id: class.atkoci9db.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /** @internal Include base class */
@@ -67,7 +67,23 @@
         {
           $db = $this->m_database; // tnsnames based connect
         }
-        $this->m_link_id = $connectfunc($this->m_user, $this->m_password, $db);
+        
+        if (empty($this->m_charset)) 
+        {    
+          $this->m_charset = null;
+        }    
+        
+        if( $this->m_charset != "" )
+        {
+          // Use the specified charset.
+          $this->m_link_id = $connectfunc($this->m_user, $this->m_password, $db, $this->m_charset);
+        }
+        else
+        {
+          // Don't specify the charset.
+          $this->m_link_id = $connectfunc($this->m_user, $this->m_password, $db);
+        }
+        
         if (!$this->m_link_id)
         {
           $err = OCIError();
@@ -102,9 +118,11 @@
 
     /**
      * Performs a query
-     * @param $query the query
-     * @param $offset offset in record list
-     * @param $limit maximum number of records
+     * @param String $query the query
+     * @param Integer $offset offset in record list
+     * @param Integer $limit maximum number of records
+     * @param Array $bindLobs
+     * @param Array $bindVars
      */
     function query($query, $offset=-1, $limit=-1, $bindLobs=array(), $bindVars=array())
     {

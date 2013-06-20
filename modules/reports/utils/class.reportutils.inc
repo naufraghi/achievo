@@ -11,16 +11,16 @@
  */
 class reportutils
 {
-  public function get_employees($user_id, $allemployees = false)
+  public function get_employees($user_id, $allemployees=false)
   {
     $user = getUser();
 
     if (is_array($user))
     {
       if ($allemployees)
-        $records = $this->getEmployeesArray();
+        $records = $this->getEmployeesArray($managerid='', $allemployees=true);
       else
-        $records = $this->getEmployeesArray($user['id']);
+        $records = $this->getEmployeesArray($managerid=$user['id']);
 
       $employee_code = $this->getEmployeeCode($records, $user_id, $user);
 
@@ -34,13 +34,19 @@ class reportutils
    * @param integer $managerid Optional manager id
    * @return array List of employees
    */
-  public function getEmployeesArray($managerid = '')
+  public function getEmployeesArray($managerid='', $allemployees=false)
   {
-    // If no supervisor parameter is given, return just all active employees
+    if ($allemployees)
+    {
+      return $this->getEmployeesFromDb();
+    }
+    // If no supervisor parameter is given, return just all co-worker employees
     if (empty($managerid))
+    {
       return $this->getEmployeesFromDb(atkGetUserId());
       // without atkGetUserId() an user can see ALL the other users, this way
-      // he can see only the coworkers
+      // one can see only the co-workers
+    }
 
     // Otherwise, get the employees indexed by id and filter out all that are supervised by the given manager
     $employees = $this->getEmployeesById();
@@ -93,9 +99,10 @@ class reportutils
    *
    * @return array All active employees
    */
-  private function getEmployeesFromDb($userid="")
+  private function getEmployeesFromDb($userid='')
   {
-    if ($userid) { // if userid is provided, list only coworkers
+    atkDebug("getEmployeesFromDb($userid)");
+    if (!empty($userid)) { // if userid is provided, list only coworkers
       $filter = "AND person.id IN (SELECT p2.personid
                                    FROM project_person AS p1,
                                         project_person AS p2

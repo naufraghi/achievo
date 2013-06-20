@@ -11,8 +11,8 @@
    * @copyright (c)2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.5 $
-   * $Id: class.atkjson.inc,v 1.5 2007/08/30 00:01:40 ivo Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkjson.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -47,6 +47,7 @@
      * Get JSON service object. This method should never
      * be called directly!
      *
+     * @param bool $assoc return as associative array (instead of objects)
      * @return Services_JSON JSON service object
      *
      * @static

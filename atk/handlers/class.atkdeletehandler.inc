@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.9 $
-   * $Id: class.atkdeletehandler.inc,v 5.9 2007/05/22 10:22:10 guido Exp $
+   * @version $Revision: 6263 $
+   * $Id: class.atkdeletehandler.inc 7031 2010-09-26 20:17:11Z sandy $
    */
 
   /**
@@ -37,6 +37,14 @@
       if (!$this->_checkAllowed())
       {
         $this->renderAccessDeniedPage();
+        return;
+      }
+
+      if ((!empty($this->m_postvars['confirm']) || !empty($this->m_postvars['cancel'])) &&
+          !$this->isValidCSRFToken($this->m_postvars['atkcsrftoken']))
+      {
+        $this->renderAccessDeniedPage();
+        return;
       }
 
       if (!empty($this->m_postvars['confirm'])) $this->_doDelete();
@@ -47,10 +55,14 @@
         if ($this->_checkLocked()) return;
 
         if (!$this->checkAttributes()) return;
+
+        // Clear the atkfilter postvar, if we don't it will hold filters from previous actions and it will break stuff.
+        unset($this->m_postvars['atkfilter']);
+
         // If we got here, then the node is not locked and we haven't displayed the
         // confirmation page yet, so we display it
         $page = &$this->getPage();
-        $page->addContent($this->m_node->renderActionPage("delete", $this->m_node->confirmAction($this->m_postvars['atkselector'], "delete", false, TRUE)) );
+        $page->addContent($this->m_node->renderActionPage("delete", $this->m_node->confirmAction($this->m_postvars['atkselector'], "delete", false, TRUE, true, $this->getCSRFToken())) );
       }
       else
       {
@@ -85,26 +97,57 @@
     }
 
     /**
-     * We have a confirmed delete, so we proceed to delete
+     * Given an confirmed delete, determine where the record
+     * needs to be deleted (session or dabase), delete it
+     * and redirect to the feedback url.
      */
     function _doDelete()
     {
-      $db = &$this->m_node->getDb();
+      $atkstoretype = "";
+      $sessionmanager = atkGetSessionManager();
+      if ($sessionmanager) $atkstoretype = $sessionmanager->stackVar('atkstore');
+      switch ($atkstoretype)
+      {
+        case 'session': $result = $this->_doDeleteSession(); break;
+        default:        $result = $this->_doDeleteDb(); break;
+      }
 
-      if($this->m_node->deleteDb($this->m_postvars['atkselector']))
+      if ($result===true) $location = $this->m_node->feedbackUrl("delete", ACTION_SUCCESS);
+      else                $location = $this->m_node->feedbackUrl("delete", ACTION_FAILED, null, $result);
+
+      $this->m_node->redirect($location);
+    }
+
+    /**
+     * Delete the record in the database
+     *
+     * @return mixed Results, true or string with errormessage
+     */
+    private function _doDeleteDb()
+    {
+      $db = &$this->m_node->getDb();
+      if ($this->m_node->deleteDb($this->m_postvars['atkselector']))
       {
         $db->commit();
         $this->clearCache();
-        $location = $this->m_node->feedbackUrl("delete", ACTION_SUCCESS);
-        $this->m_node->redirect($location);
+        return true;
       }
-      // Something is wrong here, the deleteDb failed
-      else
+      else // Something is wrong here, the deleteDb failed
       {
         $db->rollback();
-        $location = $this->m_node->feedbackUrl("delete",ACTION_FAILED,$db->getErrorMsg());
-        $this->m_node->redirect($location);
+        return $db->getErrorMsg();
       }
+    }
+
+    /**
+     * Delete the database in the session
+     *
+     * @return bool Results, true or false
+     */
+    private function _doDeleteSession()
+    {
+      $selector = atkArrayNvl($this->m_postvars, 'atkselector','');
+      return atkinstance('atk.session.atksessionstore')->deleteDataRowForSelector($selector);
     }
 
     /**
@@ -123,9 +166,9 @@
         if (is_array($this->m_postvars['atkselector']))
         {
           foreach ($this->m_postvars['atkselector'] as $selector)
-           if (!$this->m_node->m_lock->lock($selector, $this->m_node->m_table)) $locked = FALSE;
+           if (!$this->m_node->m_lock->lock($selector, $this->m_node->m_table, $this->m_node->getLockMode())) $locked = FALSE;
         }
-        elseif (!$this->m_node->m_lock->lock($this->m_postvars['atkselector'], $this->m_node->m_table)) $locked = FALSE;
+        elseif (!$this->m_node->m_lock->lock($this->m_postvars['atkselector'], $this->m_node->m_table, $this->m_node->getLockMode())) $locked = FALSE;
 
         // If the node is locked, we proceed to display the 'locked' page
         if (!$locked)

@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.15 $
-   * $Id: class.atkradioattribute.inc,v 5.15 2007/12/31 13:12:20 sandy Exp $
+   * @version $Revision: 6289 $
+   * $Id: class.atkradioattribute.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -121,12 +121,14 @@
      * Returns a piece of html code that can be used in a form to edit this
      * attribute's value.
      * @param array $record Array with fields
+     * @param String $fieldprefix The fieldprefix to put in front of the name
+     *                            of any html form element for this attribute.
+     * @param String $mode The mode we're in ('add' or 'edit')
      * @return String piece of html code with radioboxes
      */
-    function edit($record="", $fieldprefix="")
+    function edit($record="", $fieldprefix="", $mode="")
     {
       $values = $this->getValues($record);
-      atk_var_dump($record,'EDIT RECORD');
       
       $total_items = count($values);
       if($this->m_cols && !$this->hasFlag(AF_DISPLAY_VERT))
@@ -154,7 +156,7 @@
       
       for ($i=0;$i<$total_items;$i++)
       {
-        if ($values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!="")
+        if ($values[$i] == $record[$this->fieldName()] && $record[$this->fieldName()]!=="")
         {
           $sel = "checked";
         }

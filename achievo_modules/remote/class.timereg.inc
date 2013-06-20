@@ -7,13 +7,12 @@
  * Author: Matteo Bertini <naufraghi@develer.com>
  */
 
-include_once (moduleDir("timestats")."class.hours.inc");
-
 //XML stuff da http://www.xml.com/pub/a/2003/03/19/dive-into-xml.html
-if (stristr($_SERVER[HTTP_ACCEPT], "application/xhtml+xml"))
+if (stristr($_SERVER[HTTP_ACCEPT], "application/xhtml+xml")) {
     header("Content-Type: application/xhtml+xml");
-else
+} else {
     header("Content-Type: text/html");
+}
 
 function is_valid_date($date)
 {
@@ -38,17 +37,18 @@ function make_xml($node, $msg, $results, $bodykey="")
         $res .= "<record";
         foreach ($r as $key=>$value)
         {
-            if ($key != $bodykey)
+            if ($key != $bodykey) {
                 $res .= ' '.xml_encode($key).'="'.xml_encode($value).'"';
+            }
         }
         if (array_key_exists($bodykey, $r))
         {
             $res .= ">";
             $res .= xml_encode($r[$bodykey]);
             $res .= "</record>\n";
-        }
-        else
+        } else {
             $res .= " />\n";
+        }
 
     }
     $res .= '</response>';
@@ -64,7 +64,7 @@ class timereg extends atkNode
 
     function action_save()
     {
-        atkdebug("timereg Action save");
+        //atkdebug("timereg Action save");
         $hoursnode = &atkGetNode("timereg.hours");
         $hoursnode->m_postvars = $this->m_postvars; // Share postvars.
         $record = $hoursnode->updateRecord();
@@ -73,15 +73,14 @@ class timereg extends atkNode
         $hoursnode->validate($record, "add");
 
         $error = count($record['atkerror']) > 0;
-        foreach (array_keys($record) as $key)
+        foreach (array_keys($record) as $key) {
             $error = $error || (is_array($record[$key]) && count($record[$key]['atkerror']) > 0);
+        }
 
         if ($error)
         {
             echo make_xml("timereg", "Err", array(array("Err"=>print_r($record, True))));
-        }
-        else
-        {
+        } else {
             $hoursnode->addDb($record, true, "add");
             echo make_xml("timereg", "OK", array(array("action"=>"save")));
         }
@@ -90,7 +89,7 @@ class timereg extends atkNode
 
     function action_edit()
     {
-        atkdebug("timereg Action edit");
+        //atkdebug("timereg Action edit");
         $hoursnode = &atkGetNode("timereg.hours");
         $hoursnode->m_postvars = $this->m_postvars; // Share postvars.
         $record = $hoursnode->updateRecord();
@@ -98,17 +97,14 @@ class timereg extends atkNode
         $hoursnode->preUpdate($record);
         $hoursnode->validate($record, "update");
 
-        $error = count($record['atkerror']) > 0;
-        foreach (array_keys($record) as $key)
+        $error = (count($record['atkerror']) > 0);
+        foreach (array_keys($record) as $key) {
             $error = $error || (is_array($record[$key]) && count($record[$key]['atkerror']) > 0);
-
+        }
         if ($error)
         {
-            echo make_xml("timereg", "Err",
-                          array(array("Err"=>print_r($record, True))), $bodykey="Err");
-        }
-        else
-        {
+            echo make_xml("timereg", "Err", array(array("Err"=>print_r($record, True))), $bodykey="Err");
+        } else {
             $hoursnode->updateDb($record);
             echo make_xml("timereg", "OK", array(array("action"=>"edit")));
         }
@@ -117,7 +113,7 @@ class timereg extends atkNode
 
     function action_delete()
     {
-        atkdebug("timereg Action delete");
+        //atkdebug("timereg Action delete");
         $hoursnode = &atkGetNode("timereg.hours");
         $hoursnode->m_postvars = $this->m_postvars; // Share postvars.
         //TODO: callHandler semplifica la delegazione, ma la gestione degli errori?

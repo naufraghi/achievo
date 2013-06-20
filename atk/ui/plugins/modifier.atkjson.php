@@ -11,8 +11,8 @@
  * @copyright (c) 2004 Ivo Jansch
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  *
- * @version $Revision: 1.2 $
- * $Id: modifier.atkjson.php,v 1.2 2006/10/30 21:15:54 almer Exp $
+ * @version $Revision: 4271 $
+ * $Id: modifier.atkjson.php 6354 2009-04-15 02:41:21Z mvdam $
  */
 
 /**

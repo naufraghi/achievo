@@ -14,8 +14,8 @@
    * @copyright (c) 2006 Ibuildings.nl BV
    * @license see doc/LICENSE
    *
-   * @version $Revision: 1.3 $
-   * $Id: class.atkwizardactionloader.inc,v 1.3 2007/08/30 08:08:05 ivo Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkwizardactionloader.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -28,6 +28,12 @@
    */
   class AtkWizardActionLoader
   {
+    /**
+     * Get the wizard action
+     *
+     * @param array|string $wizardAction The wizard action
+     * @return String the wizard action
+     */
     function getWizardAction($wizardAction)
     {
       if(is_array($wizardAction))

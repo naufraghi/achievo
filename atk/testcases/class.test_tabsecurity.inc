@@ -12,8 +12,8 @@
    * @copyright (c)2005 Ibuildings
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.2 $
-   * $Id: class.test_tabsecurity.inc,v 1.2 2007/08/29 22:41:32 ivo Exp $
+   * @version $Revision: 5227 $
+   * $Id: class.test_tabsecurity.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
 

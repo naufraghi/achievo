@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.17 $
-   * $Id: class.atkplainmenu.inc,v 5.17 2007/10/23 09:56:41 peter Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkplainmenu.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
@@ -27,11 +27,20 @@
   {
     var $m_height;
 
+    /**
+     * Constructor
+     *
+     * @return atkPlainMenu
+     */
     function atkPlainMenu()
     {
       $this->m_height = "50";
     }
 
+    /**
+	   * Render the menu
+	   * @return String HTML fragment containing the menu.
+	   */
     function render()
     {
       $page = &atkinstance("atk.ui.atkpage");
@@ -41,6 +50,11 @@
       return $page->render("Menu", true);
     }
 
+    /**
+     * Get the menu
+     *
+     * @return string The menu
+     */
     function getMenu()
     {
        global $ATK_VARS, $g_menu, $g_menu_parent;
@@ -110,18 +124,34 @@
                                                "menuitems"=>$menuitems),"menu");
     }
 
+    /**
+     * Compare two menuitems
+     *
+     * @param array $a
+     * @param array $b
+     * @return int
+     */
     function menu_cmp($a,$b)
     {
       if ($a["order"] == $b["order"]) return 0;
       return ($a["order"] < $b["order"]) ? -1 : 1;
     }
 
-
+    /**
+     * Get the height for this menu
+     *
+     * @return int The height of the menu
+     */
     function getHeight()
     {
       return $this->m_height;
     }
 
+    /**
+     * Get the menu position
+     *
+     * @return int The menu position (MENU_RIGHT, MENU_TOP, MENU_BOTTOM or MENU_LEFT)
+     */
     function getPosition()
     {
       switch(atkconfig("menu_pos", "left"))
@@ -133,11 +163,21 @@
       return MENU_LEFT;
     }
 
+    /**
+     * Is this menu scrollable?
+     *
+     * @return int MENU_SCROLLABLE or MENU_UNSCROLLABLE 
+     */
     function getScrollable()
     {
       return MENU_SCROLLABLE;
     }
 
+    /**
+     * Is this menu multilevel?
+     *
+     * @return int MENU_MULTILEVEL or MENU_NOMULTILEVEL
+     */
     function getMultilevel()
     {
       return MENU_MULTILEVEL;

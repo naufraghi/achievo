@@ -48,7 +48,7 @@
                    onclick="selectrow(this, '{$listid}', {$row.rownum})">
                {section name=colloop loop=$row.cols}
                <{if $row.type == "subtotal"}th{else}td{/if}
-                    {if $smarty.section.colloop.index===0}class="recordListTdFirst"{else}class="recordListTd"{/if}
+                    class="{if $smarty.section.colloop.index===0}recordListTdFirst{else}recordListTd{/if}{if $row.cols[colloop].type == "data"} clickable{/if}"
                     valign="{$vorientation}"  {if isset($row.cols[colloop].htmlattributes)}{$row.cols[colloop].htmlattributes}{/if}
                     {if $row.cols[colloop].type == "data"} onclick="rl_try('{$listid}', event, {$row.rownum}, ['select', 'edit', 'view'], false);"{/if}>
                   {if $row.cols[colloop].content != ""}{$row.cols[colloop].content}{else}&nbsp;{/if}
@@ -56,6 +56,7 @@
               {/section}
             </tr>
             {/foreach}
+            {$listend}
 
             {if count($total)}
             <!-- totals row -->
@@ -73,15 +74,19 @@
   {if $mra!=""}
   <!-- multirecord actions -->
    <tr>
-     <td>
-       <table border="0" cellspacing="0" cellpadding="0">
-         <tr>
-           <td valign="top"><img src="{$atkroot}atk/images/arrow.gif" border="0"></td>
-           <td>
-             {$mra} {$listend}
-           </td>
-         </tr>
-       </table>
+     <td valign="top">
+       {if $editing}
+         {$mra}
+       {else}
+         <table border="0" cellspacing="0" cellpadding="0">
+           <tr>
+             <td valign="top"><img src="{$atkroot}atk/images/arrow.gif" border="0"></td>
+             <td>
+               {$mra}
+             </td>
+           </tr>
+         </table>
+       {/if}
      </td>
    </tr>
   {/if}

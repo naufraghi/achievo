@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.1 $
-   * $Id: class.atkgroupbyfilter.inc,v 5.1 2004/05/31 22:11:11 ivo Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkgroupbyfilter.inc 6354 2009-04-15 02:41:21Z mvdam $
    */  
 
   /** @internal include baseclass */
@@ -44,9 +44,9 @@
     /**
     * constructor
     *
-    * @param string name
-    * @param string groupbystmt
-    * @param int flags
+    * @param string $name
+    * @param string $groupbystmt
+    * @param int $flags
     */
     function atkGroupByFilter($name, $groupbystmt, $flags=0)
     {	
@@ -57,6 +57,7 @@
     /**
     * add the group by statement to the query
     *
+    * @param atkQuery $query The SQL query object
     * @return void
     */
     function addToQuery(&$query)

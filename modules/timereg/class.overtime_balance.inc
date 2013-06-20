@@ -229,7 +229,11 @@
     function addOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"addOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
-      if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
+      /*
+      Questa clausola e' stata rimossa perche' incompatibile con il nostro
+      modello di gestione degli straordinari.
+      */
+      // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
       $newid = $db->nextid("overtime_balance");
       $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
@@ -239,7 +243,11 @@ $this->debuglog(array("function"=>"addOvertimeBalance","userid"=>$userid, "day"=
     function saveOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
-      if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
+      /*
+      Questa clausola e' stata rimossa perche' incompatibile con il nostro
+      modello di gestione degli straordinari.
+      */
+      // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
       $sql = "UPDATE overtime_balance SET balance = $balance WHERE userid = '$userid' AND day = '$day'";
       $db->query($sql);
@@ -253,7 +261,11 @@ $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"
     function updateOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
-      if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
+      /*
+      Questa clausola e' stata rimossa perche' incompatibile con il nostro
+      modello di gestione degli straordinari.
+      */
+      // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
       $recs = $db->getrows("SELECT id FROM overtime_balance WHERE userid = '$userid' AND day = '$day'");
       if (!count($recs))
@@ -295,7 +307,10 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
     function getUserHours($begin, $end, $userid)
     {
       $db = &atkGetDb();
-      $sql = "SELECT * FROM hours WHERE userid = '$userid' AND activitydate >= '$begin' AND activitydate <= '$end'";
+      // Modificata query per escludere dalla banca ore le ore di ferie.
+      //$sql = "SELECT * FROM hours WHERE userid = '$userid' AND activitydate >= '$begin' AND activitydate <= '$end'";
+      $sql = "select hours.* from hours join activity a on activityid = a.id join phase ph on phaseid = ph.id join project p on ph.projectid = p.id where not (p.name = '__dipendenti' and ph.name = 'ferie') and userid = '$userid' and activitydate >= '$begin' and activitydate <= '$end'";
+      
       return $db->getRows($sql);
     }
 
@@ -344,8 +359,8 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       $sql = "SELECT uc_hours, startdate, enddate, WorkingDays
               FROM usercontract
               WHERE userid = '$userid'
-              AND startdate <= '$end'
-              AND (enddate >= '$begin' OR enddate IS NULL)
+	      AND startdate <= '$end'
+	      AND (enddate >= '$begin' OR enddate IS NULL)
               ORDER BY startdate"; /* FIXME: this order is required by enumWorkingDays
                                              to manage overlapping contracts: the latest wins */
       return $db->getRows($sql);
@@ -360,7 +375,18 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
      */
     function getContractHours($begin, $end, $userid)
     {
+      return array_sum($this->enumWorkingDays($begin, $end, $userid));
+    }
+
+    function getNumDays($begin, $end)
+    {
+      return count($this->enumWorkDays($begin, $end));
+    }
+
+    function enumWorkingDays($begin, $end, $userid, $format='Ymd')
+    {
       static $user_contracts = array();
+
       // Convert the given begindate and enddate to "yyyymmdd" format so we can run calculations on them
       // in order to determine if a given date is earlier than, equal to or later than another date
       $begindate = dateutil::str2str($begin);
@@ -370,15 +396,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       // includes the amount of hours, the start- and enddate and the list of workdays for each contract.
       if(!array_key_exists($userid,$user_contracts))
       {
-        $db = &atkGetDb();
-        $sql = "SELECT uc_hours, startdate, enddate, WorkingDays
-                FROM usercontract
-                WHERE userid = '$userid'";
-                /*
-                AND startdate <= '$end'
-                AND (enddate >= '$begin' OR enddate IS NULL)";
-                */
-        $contracts = $db->getRows($sql);
+        $contracts = $this->_getContracts($begin, $end, $userid);
         $user_contracts[$userid]=$contracts;
       }
       else
@@ -386,32 +404,23 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
         $contracts = $user_contracts[$userid];
       }
       
-      // Start with an empty total
-      $total = 0;
-
       $workday_array = array();
       foreach ($contracts as $contract)
       {
-         if($contracts[$i]['startdate']>=$end || ($contracts[$i]['enddate']<=$begin && $contracts[$i]['enddate']!='')) continue;
-         
-         // Get an array of working days that are specified with this contract
-         $workdays = $this->getWorkDays($contracts[$i]["WorkingDays"]);
+        if($contract['startdate']>=$end || ($contract['enddate']<=$begin && $contract['enddate']!='')) continue;
 
-         // Convert the contract start and enddate to "yyyymmdd" format so we can use it in calculations
-         $contractstartdate = dateutil::str2str($contracts[$i]["startdate"]);
-         if ( is_null($contracts[$i]["enddate"]) ) {
+	// Get an array of working days that are specified with this contract
+        $workdays = $this->getWorkDays($contract["WorkingDays"]);
+        // If no workingdays are specified, assume the working hours are spread evenly over 7 days
+        $numworkdays = (count($workdays) > 0) ? count($workdays) : 7;
+
+        // Convert the contract start and enddate to "yyyymmdd" format so we can use it in calculations
+        $contractstartdate = dateutil::str2str($contract["startdate"]);
+        if ( is_null($contracts[$i]["enddate"]) ) {
           $contractenddate = $enddate;
-         } else {
-          $contractenddate = dateutil::str2str($contracts[$i]["enddate"]);
-         }
-
-         // If no workingdays are specified, assume the working hours are spread evenly over 7 days
-         $numworkdays = (count($workdays) > 0) ? count($workdays) : 7;
-
-         // The contractend should be changed to the end of the period if it spans over it and the
-         // contractstart should be changed to the start of the period if it starts before the periodstart
-         if ($contractenddate > $enddate) $contractenddate = $enddate;
-         if ($contractstartdate < $begindate) $contractstartdate = $begindate;
+        } else {
+          $contractenddate = dateutil::str2str($contract["enddate"]);
+        }
 
         // The contractend should be changed to the end of the period if it spans over it and the
         // contractstart should be changed to the start of the period if it starts before the periodstart
@@ -424,23 +433,17 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
           }
         }
       }
-      // If no contracts are found, we just return 0
-      return $total;
+      return $workday_array;
     }
 
     function _isWorkday($date, $workdays)
     {
-      $has_workdays = (count($workdays)>0);
+      $dayofweek = dateutil::str2str($date, "w");
+      $workday = (count($workdays)==0) || in_array($dayofweek, $workdays);
+      $holiday = $this->scheduler_holidays->isHoliday($date);
 
-      $total = 0;
-
-      foreach (dateutil::daysBetween($begin, $end) as $currentday => $date)
-      {
-        $dayofweek = dateUtil::str2str($currentday, "w");
-
-        if (!$has_workdays || in_array($dayofweek, $workdays)) {
-          $total++;
-        }
+      if ( $workday && !$holiday ) {
+        return true;
       }
       return false;
     }

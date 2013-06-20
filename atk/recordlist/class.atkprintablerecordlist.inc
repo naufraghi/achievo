@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: class.atkprintablerecordlist.inc,v 5.3 2007/01/11 22:55:27 ivo Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkprintablerecordlist.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /** @internal include base class */
@@ -38,6 +38,16 @@
      * Creates printableRecordlist
      * @param $suppresslist
      * obsolete by specialRecordList
+     */
+    /**
+     * Creates printableRecordlist
+     * obsolete by specialRecordList
+     *
+     * @param atkNode $node         the node
+     * @param Array   $recordset    the list of records
+     * @param Array   $suppressList fields we don't display
+     * @param int  		$flags  			The prefix for embeded fields
+     * @return String The rendered recordlist
      */
     function render(&$node, $recordset, $suppressList="", $flags=0)
     {

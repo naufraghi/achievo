@@ -12,8 +12,8 @@
    * @copyright (c)2007 Ibuildings.nl
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.2 $
-   * $Id: resource.theme.php,v 1.2 2007/08/30 08:08:05 ivo Exp $
+   * @version $Revision: 5230 $
+   * $Id: resource.theme.php 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**

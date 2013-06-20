@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.23 $
-   * $Id: dhtml_tabs.js.php,v 5.23 2007/05/09 10:45:10 marc Exp $
+   * @version $Revision: 6315 $
+   * $Id: dhtml_tabs.js.php 6541 2009-10-28 09:58:14Z peter $
    */
 ?>
 
@@ -40,7 +40,7 @@ function handleSectionToggle(element, expand, url)
     expand = closedSections.indexOf(element.id) >= 0;
   }
 
-  $A(document.getElementsByTagName('TR')).select(function(tr) {
+  $$('tr', 'div.atkSection').select(function(tr) {
     return $(tr).hasClassName(element.id);
   }).each(function(tr) {
     if (expand) {
@@ -55,13 +55,13 @@ function handleSectionToggle(element, expand, url)
       closedSections.push(element.id);
     }
   });
-  
+
   if(expand)
    var param = 'opened'
   else
    var param = 'closed'
-   
-  new Ajax.Request(url, { method: 'get', parameters: 'atksectionstate='+param });        
+
+  new Ajax.Request(url, { method: 'get', parameters: 'atksectionstate='+param });
 }
 
 function isAttributeTr(tr) {
@@ -94,7 +94,7 @@ function showTab(tab)
 
   var tabSectionName = 'section_' + tab;
 
-  $A(document.getElementsByTagName('TR')).select(isAttributeTr).each(function(tr) {
+  $$('tr', 'div.atkSection').select(isAttributeTr).each(function(tr) {
     var visible =
       $(tr).classNames().find(function(sectionName) {
           return sectionName.substring(0, tabSectionName.length) == tabSectionName &&
@@ -125,8 +125,6 @@ function showTab(tab)
 	 }
 	}
 
-	makeFCKEditable();
-
 	// make tabs visible (to avoid reload quirks, they load invisible from the html
 	wrapper = document.getElementById('tabtable');
 	if (wrapper)
@@ -135,24 +133,6 @@ function showTab(tab)
 	}
 }
 
-
-/**
- * Because the FCK editor does not always agree with
- * tabbing and no longer becomes editable if you switch
- */
-function makeFCKEditable()
-{
-  iframes = document.getElementsByTagName("iframe");
-	for (i = 0; i < iframes.length; i++)
-	{
-	  obj = frames[iframes[i].id];
-	  if (obj && obj.FCK && obj.FCK.MakeEditable) 
-	  {
-	    obj.FCK.StartEditor();
-	    obj.FCK.MakeEditable();
-	  }
-	}
-}
 
 function getCurrentTab()
 {
@@ -185,7 +165,6 @@ function setCurrentTab(value)
       input.setAttribute('value', value);
       input.defaultValue = value;
       form.appendChild(input);
-      form.atktab = input;
     }
   }
 }

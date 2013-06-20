@@ -12,13 +12,13 @@
    * @copyright (c)2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.3 $
-   * $Id: class.atkdataholder.inc,v 1.3 2007/08/30 00:01:40 ivo Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkdataholder.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /**
-   * The atkBoolAttribute class represents an attribute of a node
-   * that can either be true or false.
+   * The atkDataHolder class represents a class
+   * that contains a key-value array .
    *
    * @author Peter Verhage <peter@ibuildings.nl>
    * @package atk
@@ -91,7 +91,7 @@
      * of the original array. If $copy is set to false
      * will return a reference to the internal array.
      *
-     * @param return a copy or the original array?
+     * @param bool $copy return a copy or the original array?
      *
      * @return array array
      */

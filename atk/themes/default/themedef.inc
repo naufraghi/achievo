@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.11 $
-   * $Id: themedef.inc,v 5.11 2007/06/27 09:12:48 peter Exp $
+   * @version $Revision: 5024 $
+   * $Id: themedef.inc 6354 2009-04-15 02:41:21Z mvdam $
    */
 
   /** Theme definition */

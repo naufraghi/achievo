@@ -12,8 +12,8 @@
    * @copyright (c)2007 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.1 $
-   * $Id: class.atkdistinctfilter.inc,v 1.1 2007/02/07 07:35:50 ivo Exp $
+   * @version $Revision: 6320 $
+   * $Id: class.atkdistinctfilter.inc 6354 2009-04-15 02:41:21Z mvdam $
    */  
 
   /** @internal include baseclass */
@@ -41,8 +41,9 @@
     }
 
     /**
-    * add the group by statement to the query
+    * add the distinct statement to the query
     *
+    * @param atkQuery $query The SQL query object
     * @return void
     */
     function addToQuery(&$query)
