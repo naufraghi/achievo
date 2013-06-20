@@ -31,6 +31,7 @@ class surveyhours extends hours
 
   function recordActions($record, &$actions, &$mraactions)
   {
+    parent::recordActions($record, $actions, $mraactions);
     foreach($actions as $key=>$url)
     {
       $actions[$key] = str_replace("reports.surveyhours", "timereg.hours", $url);
@@ -60,5 +61,46 @@ class surveyhours extends hours
   {
     return $handler->action_edit();
   }
+  
+  function phaseid_selection($record, $mode="")
+  {
+    $p_attr = &$this->getAttribute('phaseid');
+    if(atkArrayNvl($this->m_postvars, "subproject", 0) == 0)
+    {
+      return $p_attr->getSelectableRecords($record, $mode);
+    }
+    else 
+    {
+      $ids = $this->_getProjectAndSubProjectId($record['projectid']['id']);
+      
+      $p_attr->createDestination();
+
+      $selector = "phase.projectid IN(".implode(",",$ids).")";
+      $result = $p_attr->m_destInstance->selectDb($selector,"","","",atk_array_merge($p_attr->m_destInstance->descriptorFields(),$p_attr->m_destInstance->m_primaryKey),$mode);
+      return $result;
+    }
+  }
+  
+  /**
+   * Get IDs from project and his subprojects
+   *
+   * @param integer $projectid - master project id
+   * @return array with project and his subprojects
+   */
+  function _getProjectAndSubProjectId($projectid)
+  {
+    $node = &atkGetNode("project.project");
+    $rows = $node->selectDb("project.master_project='$projectid'","","","",array("id"));
+    
+    $id = array();
+    $id[] = $projectid;
+    
+    foreach ($rows as $row)
+    {
+      $id[] = $row['id'];
+    }
+    return $id;
+  }
+
 }
 ?>

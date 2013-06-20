@@ -19,6 +19,7 @@
   "abbreviation" => "Projectcode",
   "activate_contract" => "Activeer contract & project(en)",
   "active" => "Actief",
+  "activeprojects" => "Actieve projecten",
   "active_projects" => "Actieve projecten",
   "activity" => "Activiteit",
   "activitydate" => "Datum",
@@ -676,6 +677,11 @@
   "yearly" => "Jaar",
   "youareinthearchive" => "Je bent in het archief.",
   "zipcode" => "Postcode",
+  "subproject" => "also calculate subprojects",
+  "master_project" => "Master project",
+  "menu_project_categories"=>"Categories of project",
+  "project_category"=>"Category",
+  "projectlist"=>"Projectlist",
 );
 
 ?>

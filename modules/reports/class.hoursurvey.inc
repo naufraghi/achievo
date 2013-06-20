@@ -203,6 +203,10 @@ class hoursurvey extends atkNode
     $activity_id =        stripQuotes($activitypair[1]);
     $projectpair =        explode("=",$g_sessionManager->pageVar("projectid"));
     $projectid =          stripQuotes($projectpair[1]);
+    $categorypair =       explode("=",$g_sessionManager->pageVar("project_category"));
+    $category =           stripQuotes($categorypair[1]);
+    if(!isset($category)) $category = "";
+    
     if (moduleExists("billing"))
     {
       $billing_projecttypepair = $g_sessionManager->pageVar("billing_projecttypeid");
@@ -255,6 +259,7 @@ class hoursurvey extends atkNode
     $functionlevelswitch =$g_sessionManager->pageVar("functionlevelswitch");
     $creditor_id =        $g_sessionManager->pageVar("creditor_id");
     $outputType =         atkArrayNvl($this->m_postvars, "outputType", "");
+    $subProject =         atkArrayNvl($this->m_postvars, "subproject", 0);
 
     $externalHourSurveyColumns = atkHarvestModules("getHourSurveyColumns", "", true);
 
@@ -291,7 +296,6 @@ class hoursurvey extends atkNode
     $hoursnode->add(new creditorViewAttribute("creditor_id", AF_FORCE_LOAD));
 
     $columnConfig = &$hoursnode->getColumnConfig();
-
 
     if (is_array($orderby))
     {
@@ -411,13 +415,29 @@ class hoursurvey extends atkNode
 
       $this->_addHiddenFields($content);
 
+      if(isset($this->m_postvars['add_project']))
+      {
+        //add_project button has been pressed
+        $list = $this->_addHiddenProjects($content,array($projectid, $phaseid));
+        //clear current project/phase selection and remove it from stack
+        $projectid = $phaseid = "";
+        $g_sessionManager->pageVar("projectid"," ");
+        $g_sessionManager->pageVar("phaseid"," ");
+      }
+      else 
+      {
+        $list = $this->_addHiddenProjects($content,array(),atkArrayNvl($this->m_postvars,"delete_project"));
+      }
+      
       $tbl = &atknew("atk.utils.atktablerenderer");
       $data[] = array("<b>".atkText("sethoursfilter","project")."</b>");
       $data[] = array('<hr>'.atktext('searchbyprojectorphase','project').':');
-
+      
       // we have to pass a 'dummy' record to the attributes to set their default value.
       $dummyrec = array(
       "projectid"     =>array("id"=>$projectid),
+      "project_category" => array("id"=>$category),
+      "subproject"   =>$subProject,
       "organizationid"=>array("id"=>$organizationid), // manytoonerelation needs subarray
       "phaseid"       =>array("id"=>$phaseid),
       "activityid"    =>array("id"=>$activity_id),
@@ -470,8 +490,30 @@ class hoursurvey extends atkNode
         $dummyrec["orderdirection[$i]"]=$columnConfig->getDirectionByOrder($i+1);
         $dummyrec["subtotal[$i]"]=($columnConfig->hasSubTotalByOrder($i+1)?1:0);
       }
-      $data[] = array(atktext('project','project').':',$projectatt->edit($dummyrec));
+      
+      $text = atktext("add_project");
+      $link = atkHref(dispatch_url("reports.hoursurvey", "report",array("add_project"=>1)), $text,SESSION_DEFAULT,true);
 
+      $data[] = array(atktext('project','project').':',$projectatt->edit($dummyrec)." ".$link);
+
+      if(count($list)>0)
+      {
+        $data[] = array('<hr>'.atktext('projectlist','project').':');
+        $data[] = array("",$this->_drowProjectsList($list));
+        $data[] = array('<hr>');
+      }
+      
+      $p_attr = new atkBoolAttribute("subproject");
+      $p_attr->addDependee("phaseid");
+      $p_attr->m_ownerInstance = &$hoursnode;
+      $p_attr->_registerDependees();
+
+      $data[] = array(atktext('subproject','project').':',$p_attr->edit($dummyrec));
+      
+      $p_attr = new atkManyToOneRelation("project_category","project.project_category");
+      $p_attr->m_ownerInstance = &$hoursnode;
+
+      $data[] = array(atktext('project_category','project').':',$p_attr->edit($dummyrec));
 
       $this->_addOr($data);
 
@@ -730,13 +772,42 @@ class hoursurvey extends atkNode
     if(!empty($activity_id)&&$activity_id!="")
       $filterarray[] = $this->_addFilterArrayItem("activityid","='$activity_id'","hours");
 
-    if(!empty($phaseid)&&$phaseid!="")
-      $filterarray[] = $this->_addFilterArrayItem("phaseid","='$phaseid'","hours");
-
-    if(!empty($projectid)&&$projectid!="")
-      $filterarray[] = $this->_addFilterArrayItem("projectid","='$projectid'","phaseid");
-
-
+    //If we use multi project, we don't take into account project/phase,
+    //selected in other controls
+    if(!empty($list))
+    {
+      $tmp = array();
+      foreach ($list as $l)
+      {
+        $line = "(phaseid.projectid='".$l[0]."'";
+        if(!empty($l[1])&&$l[1]!="") $line .= " AND hours.phaseid='".$l[1]."'";
+        $line .= ")";
+        $tmp[] = $line;
+      }
+      $all = "(".implode(" OR ",$tmp).")";
+      $filterarray[] = $this->_addFilterArrayItem($all,'');
+    }
+    else 
+    {
+      if(!empty($phaseid)&&$phaseid!="")
+        $filterarray[] = $this->_addFilterArrayItem("phaseid","='$phaseid'","hours");
+  
+      if(!empty($projectid)&&$projectid!="")
+      {
+        if($subProject)
+        {
+          $id = $hoursnode->_getProjectAndSubProjectId($projectid);
+          $condition = "IN(".implode(",",$id).")";
+          $filterarray[] = $this->_addFilterArrayItem("projectid",$condition,"phaseid");
+        }
+        else
+          $filterarray[] = $this->_addFilterArrayItem("projectid","='$projectid'","phaseid");
+      }
+    }
+        
+    if($category)
+      $filterarray[] = $this->_addFilterArrayItem("project_category","='$category'","projectid");
+        
     if(moduleExists("billing") && !empty($billing_projecttypeid) && ($billing_projecttypeid!=""))
       $filterarray[] = $this->_addFilterArrayItem("billing_type","='$billing_projecttypeid'","projectid");
 
@@ -876,7 +947,7 @@ class hoursurvey extends atkNode
     }
 
     $data = $this->getHourRecords($nameswitch, $userid, $filter, $orderbystatement, $col);
-
+    
     if ($outputType=="0")
     {
       $title = atktext("title_hoursurvey_hours")." ".atktext("report_intimespan")." ".$startdate." t/m ".$enddate;
@@ -1109,6 +1180,74 @@ class hoursurvey extends atkNode
     $content.='<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
     $content.='<input type="hidden" name="atkaction" value="report">';
   }
+  
+  function _addHiddenProjects(&$content,$item=array(),$id=null)
+  {
+    $res = array();
+    $current = atkArrayNvl($this->m_postvars,'projects');
+    
+    if(isset($id))
+    {
+      $res = unserialize($current);
+      unset($res[$id]);
+      $this->_hiddenProjects($content,serialize($res));
+    }
+    elseif( $current )
+    {
+      if(count($item) > 0)
+      {
+        $res = unserialize($current);
+        $res[] = $item;
+        $this->_hiddenProjects($content,serialize($res));
+      }
+      else
+      {
+        $this->_hiddenProjects($content,$current);
+        $res = unserialize($current);
+      }
+      
+    }
+    elseif(count($item)> 0) 
+    {
+      $res[] = $item;
+      $this->_hiddenProjects($content,serialize($res));
+    }
+    return $res;
+  }
 
+  function _hiddenProjects(&$content,$value='')
+  {
+    if($value)
+    {
+      $content .= '<input type="hidden" name="projects" '.'value="'.htmlspecialchars($value, ENT_QUOTES).'">';
+    }
+  }
+  
+  function _drowProjectsList($res)
+  {
+    $content = '';
+    if(atk_value_in_array($res))
+    {
+      $data = array();
+      $data[] = array("",atktext("project"),atktext("phase"));
+      $prj = &atkGetNode("project.project");
+      $phs = &atkGetNode("project.phase");
+      foreach ($res as $key=>$value)
+      {
+        $link = atkHref(dispatch_url("reports.hoursurvey", "report",array("delete_project"=>$key)), "X",SESSION_DEFAULT,true);
+        $data[] = array($link,$this->_getDescriptor($prj,"project.id='".$value[0]."'"), $this->_getDescriptor($phs,"phase.id='".$value[1]."'"));
+      }
+      
+      $tr = atknew("atk.utils.atktablerenderer");
+      $content = $tr->render($data, TBL_HEADER|TBL_ALTERNATE, "recordlist");    
+    }
+    return $content;
+  }
+
+  function _getDescriptor(&$node,$selector)
+  {
+    list($record) = $node->selectDb($selector,"","","",$node->descriptorFields());
+    return $node->descriptor($record);
+  }
 }
 ?>
