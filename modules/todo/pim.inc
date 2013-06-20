@@ -16,11 +16,11 @@
     $actions["edit"] = "dispatch.php?atknodetype=todo.todo&atkaction=edit&atkselector=[pk]";
     $actions["complete"] = "dispatch.php?atknodetype=todo.todo&atkaction=completed&atkselector=[pk]";
 
-    $recs = $todonode->selectDb("assigned_to='".$userid."' AND assigned_to <> 0  AND ((private=0) OR (private is null) OR (private=1 and owner=".$userid."))");
+    $recs = $todonode->selectDb("todo.assigned_to='$userid' AND todo.assigned_to <> 0  AND ((todo.private=0) OR (todo.private is null) OR (todo.private=1 and todo.owner='$userid'))");
     $todo_assignedtome = atktext("pim_assignedtoyou").":<br>";
     if (count($recs)>0)
     {
-      $todo_assignedtome.= $rl->render($todonode,$recs,$actions,RL_NO_EXTENDED_SEARCH|RL_NO_SEARCH|RL_NO_SORT, array('assigned_to','entrydate'),"todoassignedtoyou",array(),"todoassignedtoyou");
+      $todo_assignedtome.= $rl->render($todonode,$recs,$actions,RL_MRA|RL_NO_EXTENDED_SEARCH|RL_NO_SEARCH|RL_NO_SORT, array('assigned_to','entrydate'),"todoassignedtoyou",array(),"todoassignedtoyou");
     }
     else
     {
@@ -32,7 +32,7 @@
     $recs = $todonode->selectDb("todo.owner='$userid' AND assigned_to<>'$userid'");
     if (count($recs)>0)
     {
-      $todo_assignedbyme.= $rl->render($todonode,$recs,$actions,RL_NO_EXTENDED_SEARCH|RL_NO_SEARCH|RL_NO_SORT, array('entrydate'),"todoassignedbyyou",array(),"todoassignedbyyou");
+      $todo_assignedbyme.= $rl->render($todonode,$recs,$actions,RL_MRA|RL_NO_EXTENDED_SEARCH|RL_NO_SEARCH|RL_NO_SORT, array('entrydate'),"todoassignedbyyou",array(),"todoassignedbyyou");
     }
     else
     {

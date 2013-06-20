@@ -71,7 +71,7 @@
   $title = atktext("app_title")." ".$achievo_version;
   ($achievo_state!=="stable")?$title.=" ($achievo_state)":"";
 
-  $top = $ui->renderTop(array("content"=> $content,
+  $top = $ui->renderBox(array("content"=> $content,
                   "logintext" => atktext("logged_in_as"),
                               "logouttext" => ucfirst(atktext("logout")),
                               "logoutlink" => "index.php?atklogout=1",
@@ -80,7 +80,7 @@
                               'centerpiece_links'=>$centerpiecelinks,
                               "searchpiece"=>$searchpiece,
                               "title" => $title,
-                  "user"   => $g_user["name"]));
+                  "user"   => $g_user["name"]), "top");
 
   $page->addContent($top);
 
