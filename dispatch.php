@@ -19,8 +19,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision$
-   * $Id$
+   * @version $Revision: 4.14 $
+   * $Id: dispatch.php,v 4.14 2006/04/17 20:50:16 sandy Exp $
    */
 
   /**

@@ -6,9 +6,9 @@
  *
  * This class makes it possible to schedule a appointment.
  *
- * $Id$
+ * $Id: class.schedule.inc,v 1.38 2006/04/17 20:50:17 sandy Exp $
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision$
+ * @version $Revision: 1.38 $
  *
  */
 

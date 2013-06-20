@@ -7,9 +7,9 @@
    *
    * Rewriten to be an extension of todo class by Ivo.
    *
-   * @version $Revision$
+   * @version $Revision: 1.4 $
    *
-   * $Id$
+   * $Id: class.todo_history.inc,v 1.4 2003/04/17 21:27:14 ivo Exp $
    *
    */
 

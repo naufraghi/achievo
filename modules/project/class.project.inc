@@ -43,16 +43,15 @@
         $reportnodetype = $g_sessionManager->stackVar("reportnodetype");
       else
         $reportnodetype = "";
-      if ($ATK_VARS["atknodetype"]=="project.project"&& in_array($ATK_VARS["atkaction"],array("admin","add","update","edit","search", "view")) || $reportnodetype=="hoursurvey")
+      if ($ATK_VARS["atknodetype"]=="project.project"&& in_array($ATK_VARS["atkaction"],array("admin","add","update","edit","search","view")) || $reportnodetype=="hoursurvey")
       {
         $this->add(new atkListAttribute("status",array("active","nonactive","archived"),array(),AF_HIDE_ADD|AF_LIST_NO_NULL_ITEM|AF_HIDE_LIST, 15));
       }
       else
       {
-        $this->add(new atkListAttribute("status",array("active","nonactive","archived"),array(),AF_HIDE|AF_LIST_NO_NULL_ITEM, 15));
+      	$this->add(new atkListAttribute("status",array("active","nonactive","archived"),array(),AF_HIDE|AF_LIST_NO_NULL_ITEM, 15));
         $this->addFilter("project.status='active'");
       }
-
       if (($ATK_VARS['atkaction'] == "edit" || $ATK_VARS['atkaction'] == "update") && atkconfig("project_contact_obligatory"))
       {
         $flags = AF_OBLIGATORY;
@@ -103,7 +102,7 @@
       // Do not return a html link in plain or csv mode or select screen
       if (($mode=="plain") || ($mode=="csv") || (isset($this->m_postvars["atkaction"]) && $this->m_postvars["atkaction"]=="select"))
         return $record["name"];
-
+      
       // Make all project links clickable
       $defaultaction = $this->allowed("edit") ? "edit" : "view";
       return href(dispatch_url("project.project", $defaultaction, array("atkselector"=>"project.id='{$record["id"]}'")), $record["name"], SESSION_NESTED);
@@ -534,6 +533,35 @@
       return $view;
     }
 
+/*naufraghi: 2006-11-07 ******************************************************/
+    function action_select(&$handler)
+    {
+    	if (!$this->allowed("any_project"))
+        {
+			$pids = implode(",", $this->get_user_projects());
+			$this->addFilter("project.id IN ($pids)");
+        }
+        return $handler->action_select();
+    }
+    function get_user_projects()
+    {
+      global $g_user;
+      $db = &atkGetDb();
+      $sql = "SELECT DISTINCT projectid
+	               FROM project_person
+	               WHERE personid = '".$g_user["id"]."'";
+	  $records = $db->getrows($sql);
+	  $id_array = array();
+	  foreach($records as $row)
+	  {
+	    array_push($id_array, $row["projectid"]);
+	  }
+	  array_push($id_array, 0); //hack per mantenere stabile la sintassi SQL
+	  return $id_array;
+    }
+/*naufraghi: 2006-11-07 ******************************************************/
+    
+    
     function action_admin(&$handler)
     {
       $view = $this->getView();

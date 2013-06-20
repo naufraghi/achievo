@@ -21,10 +21,10 @@
   // the database to use and the user/password.
   //
   $config_db["default"]["host"] = "localhost";
+
   $config_db["default"]["db"] = "achievo_1_2";
   $config_db["default"]["user"] = "demo";
   $config_db["default"]["password"] = "demo";
-
 
   // -------------------------------------------
   //           LAYOUT CONFIGURATION
@@ -180,6 +180,8 @@
   // it can be found as the second parameter.
   //
   // module("somemodule","../achievo_modules/somemodule/");
+  
+  module("customer_stats","achievo_modules/customer_stats/");
 
 
   // -------------------------------------------

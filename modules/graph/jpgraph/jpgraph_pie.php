@@ -4,7 +4,7 @@
 // Description:	Pie plot extension for JpGraph
 // Created: 	2001-02-14
 // Author:	Johan Persson (johanp@aditus.nu)
-// Ver:		$Id$
+// Ver:		$Id: jpgraph_pie.php,v 1.2 2006/03/12 14:51:54 sandy Exp $
 //
 // Copyright (c) Aditus Consulting. All rights reserved.
 //========================================================================

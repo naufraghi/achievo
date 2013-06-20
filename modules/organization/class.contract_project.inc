@@ -4,9 +4,9 @@
    * Project extension with a custom action to remove the project from a contract.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   * @version $Revision$
+   * @version $Revision: 1.8 $
    *
-   * $Id$
+   * $Id: class.contract_project.inc,v 1.8 2006/04/17 20:50:20 sandy Exp $
    */
 
   include_once(moduleDir("project")."class.project.inc"); // include original baseclass.

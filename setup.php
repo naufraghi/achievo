@@ -62,9 +62,9 @@
    * an existing database.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   * @version $Revision$
+   * @version $Revision: 1.17 $
    *
-   * $Id$
+   * $Id: setup.php,v 1.17 2006/04/17 20:50:16 sandy Exp $
    *
    */
 
