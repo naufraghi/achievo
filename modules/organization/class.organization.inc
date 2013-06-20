@@ -28,6 +28,7 @@ class organization extends atkNode
     $this->atkNode("organization", NF_EDITAFTERADD|NF_EXPORT);
 
     $this->add(new atkNumberAttribute("id" ,AF_AUTOKEY));
+    $this->add(new atkAttribute("organizationcode", AF_SEARCHABLE|AF_OBLIGATORY));
     $this->add(new atkAttribute("name",AF_SEARCHABLE|AF_OBLIGATORY, 100));
     $this->add(new atkListAttribute("type", array("customer", "supplier"), "", AF_HIDE_LIST));
     $this->add(new atkDummyAttribute("visitheader", "<b>".atktext("organization_visitaddress", "organization")."</b>", AF_HIDE_LIST|AF_HIDE_ADD|AF_NO_LABEL));
@@ -198,10 +199,8 @@ class organization extends atkNode
   function showProjects($record, $mode,$status="active")
   {
     $projectnode = &atkGetNode("project.project");
-    useattrib("project.filterprojectbyorganizationattrib");
-    $projectnode->add(new filterProjectByOrganizationAttrib($record["id"]));
     $projectnode->m_fuzzyFilters=array("project.status='$status'");
-    $recs = $projectnode->selectDb("", "", "", $projectnode->m_listExcludes);
+    $recs = $projectnode->selectDb("customer = ".$record["id"], "", "", $projectnode->m_listExcludes);
     if (count($recs)>0)
     {
       $rl = &atknew("atk.recordlist.atkrecordlist");

@@ -70,7 +70,8 @@
     {
       atkimport("module.project.hourslistener");
       $node->addListener(new hoursListener(array("save", "update")));
-    }
+    }   
+  
   }
 
 ?>
