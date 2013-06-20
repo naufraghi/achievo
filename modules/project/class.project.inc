@@ -53,7 +53,7 @@
         $reportnodetype = "";
 
       /** @todo: Remove filters from project node constructor */
-      if (in_array($ATK_VARS["atknodetype"], array("project.project", "project.project_personcontact", "project.project_personemployee", "project.phase"))&& in_array($ATK_VARS["atkaction"],array("admin","add","save","update","edit","search", "view")) || $reportnodetype=="hoursurvey")
+      if (in_array($ATK_VARS["atknodetype"], array("project.project", "project.project_personcontact", "project.project_personemployee", "project.phase", "search.search"))&& in_array($ATK_VARS["atkaction"],array("admin","add","save","update","edit","search", "view")) || $reportnodetype=="hoursurvey")
       {
         $this->add(new atkListAttribute("status",array("active","nonactive","archived"),array(),AF_HIDE_ADD|AF_LIST_NO_NULL_ITEM|AF_HIDE_LIST, 15));
       }
@@ -694,7 +694,10 @@
     	if (!$this->allowed("any_project"))
       {
 		  	$pids = implode(",", $this->get_user_projects());
-	  		$this->addFilter("project.id IN ($pids)");
+        if(!empty($pids))
+          $this->addFilter("project.id IN ($pids) OR project.timereg_limit = ".PRJ_TIMEREG_ALL_USERS);
+        else
+          $this->addFilter("project.timereg_limit = ".PRJ_TIMEREG_ALL_USERS);
       }
       return $handler->action_select();
     }
@@ -738,9 +741,9 @@
       {
         $user = atkGetUser();
         $pids = implode(",", $this->get_user_projects());
-	  		
+
         $this->addFilter("project.id IN ($pids) OR project.coordinator=".$user["id"]);
-        
+
         // we can hide the coordinator column from the list in this case.
         //$attr = &$this->getAttribute("coordinator");
         //$attr->addFlag(AF_HIDE_LIST);

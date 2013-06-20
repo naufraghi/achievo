@@ -4,8 +4,28 @@
 Bug numbers are references to bugs in http://www.achievo.org/bugzilla
 [names] are references to people in the AUTHORS file.
 
+Changes in Achievo 1.3RC2
+-------------------------
++ Added missing dirs for docmanager module. [Sandy]
++ Added missing documents tab for quotations. [Sandy]
++ Added executeSQL function to setup module, this makes it possible
+  to execute SQL queries for creating tables etc. This makes it
+  possible to use the atkMetaNode. [Sandy]
+* Fixed ATK Bug with strange chars in the AJAX dropdowns. [Yury]
+* Fixed bug with obligatory fields in person table. [Sandy]
+* Removed some menu items when a user doens't have the rights
+  for it. [Sandy]
+* Removed contacts search from scheduler if the user doesn't
+  have the rights for it. [Sandy]
+* Fixed default userview database field size. [Sandy]
+* Fixed password restrictions in the userpreferences. [Sandy]
+ 
+
+
+
 Changes in Achievo 1.3RC1
 -------------------------
++ Add personal Fax field to VCARD. (bug #848) [Yury]
 + Added 'activate'/'archive' button to the contract edit page. Pressing to
   this button the status of contract and projects change accordingly - from
   active to archive, and from archive to active to both contract and all
@@ -98,6 +118,8 @@ Changes in Achievo 1.3RC1
   'timereg_contact_link' timeregistration configuration option
   to true. [Yury,Boy]
 + Added security rights for the planning and financial tabs. [Guido]
+* Fix dependee between attributes in base report and fix permission error
+  on the xmlhttprequest - edit must be equal to report action.(bug #838) [Yury]
 * Bug fixed week report nameswitch wasn't working correctly [dennisjan]
 * When you have the right to see the hours of everyone, you will see now
   all the hours from the persons wich you are allowed to see. [dennisjan]
@@ -344,7 +366,17 @@ Changes in Achievo 1.3RC1
   management. [Sandy] (bug #855)
 * Fixed Editing time registrations from hoursurvey [Sandy] (bug #852)
 * Fixed register time on other users [Sandy] (bug #850)
-
+* Fixed contract/project activate/deactivate button to work with the
+  ibscontracts module. [Guido]
+* Fixed ticket 876: pim & user preferences links broken. [Ivo, Guido]
+* Fixed project selection in time registration when you don't have the
+  any_project right for projects that have timeregistration set to allowed
+  for anyone. [Guido]
+* Fixed copying the project name and customer when creating a project from
+  a customer contract. [Guido]
+* Projects now have the default status (active) when created from a
+  customer contract. [Guido]
+* Fixed global search function not returning inactive projects. [Guido]
 
 Changes in Achievo 1.2.1
 ------------------------
