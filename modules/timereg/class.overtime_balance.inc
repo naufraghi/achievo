@@ -32,9 +32,9 @@
    */
   class overtime_balance extends atkNode
   {
-  	/**
-  	 * Constructor
-  	 */
+    /**
+     * Constructor
+     */
     function overtime_balance()
     {
       $this->atkNode("overtime_balance");
@@ -309,8 +309,13 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       $db = &atkGetDb();
       // Modificata query per escludere dalla banca ore le ore di ferie.
       //$sql = "SELECT * FROM hours WHERE userid = '$userid' AND activitydate >= '$begin' AND activitydate <= '$end'";
-      $sql = "select hours.* from hours join activity a on activityid = a.id join phase ph on phaseid = ph.id join project p on ph.projectid = p.id where not (p.name = '__dipendenti' and ph.name = 'ferie') and userid = '$userid' and activitydate >= '$begin' and activitydate <= '$end'";
-      
+      $sql = "SELECT hours.* FROM hours JOIN activity a ON activityid = a.id
+                                        JOIN phase ph ON phaseid = ph.id
+                                        JOIN project p on ph.projectid = p.id
+            WHERE NOT (p.name = '__dipendenti' AND ph.name = 'ferie')
+                  AND userid = '$userid'
+                  AND activitydate >= '$begin' AND activitydate <= '$end'";
+
       return $db->getRows($sql);
     }
 
@@ -359,8 +364,8 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       $sql = "SELECT uc_hours, startdate, enddate, WorkingDays
               FROM usercontract
               WHERE userid = '$userid'
-	      AND startdate <= '$end'
-	      AND (enddate >= '$begin' OR enddate IS NULL)
+              AND startdate <= '$end'
+              AND (enddate >= '$begin' OR enddate IS NULL)
               ORDER BY startdate"; /* FIXME: this order is required by enumWorkingDays
                                              to manage overlapping contracts: the latest wins */
       return $db->getRows($sql);
@@ -409,7 +414,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       {
         if($contract['startdate']>=$end || ($contract['enddate']<=$begin && $contract['enddate']!='')) continue;
 
-	// Get an array of working days that are specified with this contract
+        // Get an array of working days that are specified with this contract
         $workdays = $this->getWorkDays($contract["WorkingDays"]);
         // If no workingdays are specified, assume the working hours are spread evenly over 7 days
         $numworkdays = (count($workdays) > 0) ? count($workdays) : 7;
