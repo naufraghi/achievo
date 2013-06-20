@@ -74,13 +74,14 @@
 
       // We don't want the db class to display error messages, because
       // we handle the error ourselves.
+      $curhaltval = $db->m_haltonerror;
       $db->m_haltonerror = false;
 
       $res = $db->connect();
 
       $dbconfig = atkconfig("db");
 
-      if ($res==DB_SUCCESS && $dbconfig["default"]["driver"] == "mysql")
+      if ($res==DB_SUCCESS && in_array($dbconfig["default"]["driver"], array("mysql", "mysql41")))
       {
         // This can't be trusted. Mysql returns DB_SUCCESS even
         // if the user doesn't have access to the database. We only get an
@@ -88,6 +89,8 @@
         $db->table_names();  // this triggers a query
         $res = $db->_translateError($db->m_errno);
       }
+
+      $db->m_haltonerror = $curhaltval;
 
       return $res;
     }
@@ -337,14 +340,7 @@
 
     function action_installdb(&$handler)
     {
-      global $g_modules, $g_modifiers;
-
-      // We must clear the modifiers. Modifiers will cause extra fields to be
-      // installed, but this should be done by the extension modules
-      // themselves. Not clearing the modifiers will lead to 'column already
-      // exists' errors.
-      $old_modifiers = $g_modifiers;
-      $g_modifiers = array();
+      global $g_modules;
 
       // We loop through the modules to install them.
       // The setup module contains essential table needed for the installation process,
@@ -380,9 +376,6 @@
       {
         $ok = false;
       }
-
-      // Restore modifiers.
-      $g_modifiers = $old_modifiers;
 
       if ($ok)
       {

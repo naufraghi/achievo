@@ -166,6 +166,16 @@
   // script searches for incomplete time registrations.
   //
   $config_timereg_checkweeks = 5; 
+  
+  // The next value indicates if a fake startingpoint should be used by 
+  // the overtime_balance node if no balance-records can be found to 
+  // determine a new balance record. Possible values:
+  // String date: a date in the format YYYY-MM-DD.  
+  // boolean true: the date is set to the 31st of dec of the former year.
+  // boolean false: no startingpoint is used.  
+  //
+  $config_timereg_overtime_balance_use_startingpoint = false;
+  
 
   // -------------------------------------------
   //             PROJECT MODULE
@@ -174,15 +184,17 @@
   // obligatory
   $config_project_contact_obligatory = true;
   // Fill this config with a path relative to the achievo directory.
-  // When you add a project the skell will be copied to the destionation directory
-  // also a path relative to the achievo directory. And sends a mail when the skell
+  // When you add a project the skel will be copied to the destionation directory
+  // also a path relative to the achievo directory. And sends a mail when the skel
   // is copied.
+  // To disable this feature leave the dir_skel and dir_destination configs empty.
   // See also atk/utils/class.atkfileutils.inc function atkCopyDirRec
-  $config_project_dir_skell = '';  
+  $config_project_dir_skel = '';  
   $config_project_dir_destination = '';
+  // You can specify which field of the project node you want to use for the 
+  // directoryname.
+  $config_project_dir_name_template = '[abbreviation]';
   $config_project_formatmail = 'html';
-  $config_project_from = 'adres@domein.nl';
-  $config_project_from_name = 'Naam';
   $config_project_sendto = 'sendto@domein.nl';
 
   // -------------------------------------------
