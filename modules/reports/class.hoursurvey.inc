@@ -55,8 +55,6 @@ class functionLevelAttribute extends atkAttribute
   {
     return NOSTORE;
   }
-}
-
 
   function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec="", $level, $mode)
   {
@@ -1208,27 +1206,6 @@ class hoursurvey extends atkNode
       $this->_hiddenProjects($content,$current);
     }
     return $current;
-  }
-  
-  function _drowProjectsList($res)
-  {
-    $content = '';
-    if(atk_value_in_array($res))
-    {
-      $data = array();
-      $data[] = array("",atktext("project"),atktext("phase"));
-      $prj = &atkGetNode("project.project");
-      $phs = &atkGetNode("project.phase");
-      foreach ($res as $key=>$value)
-      {
-        $link = atkHref(dispatch_url("reports.hoursurvey", "report",array("delete_project"=>$key)), "X",SESSION_DEFAULT,true);
-        $data[] = array($link,$this->_getDescriptor($prj,"project.id='".$value[0]."'"), $this->_getDescriptor($phs,"phase.id='".$value[1]."'"));
-      }
-      
-      $tr = atknew("atk.utils.atktablerenderer");
-      $content = $tr->render($data, TBL_HEADER|TBL_ALTERNATE, "recordlist");    
-    }
-    return $content;
   }
 
   function _hiddenProjects(&$content,$value='')

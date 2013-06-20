@@ -17,9 +17,9 @@
    *
    * @author Ivo Jansch <ivo@achievo.org>
    *
-   * @version $Revision: 1.11 $
+   * @version $Revision$
    *
-   * $Id: class.datagraphattribute.inc,v 1.11 2007/02/06 14:46:32 ivo Exp $
+   * $Id$
    *
    * This file is part of Achievo.
    *

@@ -5,9 +5,9 @@
    *
    * @author Ivo Jansch <ivo@achievo.org>
    *
-   * @version $Revision: 1.1 $
+   * @version $Revision$
    *
-   * $Id: class.versioninfo.inc,v 1.1 2003/01/30 22:49:27 ivo Exp $
+   * $Id$
    */
   class versioninfo extends atkNode
   {

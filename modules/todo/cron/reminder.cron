@@ -1,7 +1,7 @@
 <?php
 
  /*
-  * @version $Revision: 1.4 $
+  * @version $Revision$
   * @Author Ivo Jansch <ivo@achievo.org>
   *
   * Sends an email reminder if there are any todo's that have a
@@ -12,7 +12,7 @@
   * This script should be run daily, preferably in the morning, so
   * people are notified of the todo's that should be fixed today.
   *
-  * $Id: reminder.cron,v 1.4 2007/04/10 20:52:04 sandy Exp $
+  * $Id$
   *
   */  
  	 	

@@ -7,9 +7,9 @@
  * This class is a generalisation of employee and contact and is used for schedule_attendees
  * and for the general attribute of employee and contact.
  *
- * $Id: class.person.inc,v 1.23 2007/09/15 18:53:32 yury Exp $
+ * $Id$
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision: 1.23 $
+ * @version $Revision$
  *
  */
 

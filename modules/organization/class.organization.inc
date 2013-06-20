@@ -6,9 +6,9 @@
  *
  * This class makes it possible to add, edit and delete organizations.
  *
- * $Id: class.organization.inc,v 1.39 2008/01/04 10:54:13 dennis Exp $
+ * $Id$
  * @author L. Willems  <lineke@ibuildings.nl>
- * @version $Revision: 1.39 $
+ * @version $Revision$
  *
  */
 

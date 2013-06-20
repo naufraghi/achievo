@@ -10,9 +10,9 @@
    *
    * @author Ivo Jansch <ivo@achievo.org>
    *
-   * @version $Revision: 1.5 $
+   * @version $Revision$
    *
-   * $Id: graph.php,v 1.5 2006/04/05 15:26:23 guido Exp $
+   * $Id$
    *
    * This file is part of Achievo.
    *

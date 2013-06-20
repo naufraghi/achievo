@@ -8,9 +8,9 @@
    * specially for some Achievo functions.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   * @version $Revision: 1.8 $
+   * @version $Revision$
    *
-   * $Id: class.achievomodule.inc,v 1.8 2006/10/11 18:35:20 guido Exp $
+   * $Id$
    */
   class achievoModule extends atkModule
   {

@@ -14,8 +14,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision: 1.5 $
-   * $Id: class.hourslistener.inc,v 1.5 2007/08/16 15:29:03 ivo Exp $
+   * @version $Revision$
+   * $Id$
    */
 
   /**

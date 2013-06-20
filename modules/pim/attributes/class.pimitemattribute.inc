@@ -9,8 +9,8 @@
    * @copyright (c) 2006 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision: 1.4 $
-   * $Id: class.pimitemattribute.inc,v 1.4 2006/07/26 20:01:04 guido Exp $
+   * @version $Revision$
+   * $Id$
    */
 
   /**

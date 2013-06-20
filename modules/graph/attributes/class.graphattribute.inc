@@ -15,9 +15,9 @@
    *
    * @author Ivo Jansch <ivo@achievo.org>
    *
-   * @version $Revision: 1.9 $
+   * @version $Revision$
    *
-   * $Id: class.graphattribute.inc,v 1.9 2007/02/06 14:46:32 ivo Exp $
+   * $Id$
    *
    * This file is part of Achievo.
    *

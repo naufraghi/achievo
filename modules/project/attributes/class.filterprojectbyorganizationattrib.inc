@@ -18,9 +18,9 @@
     *    (all projects where 'Graphic International' acted as 'Designer')    
     *
     * @author Ivo Jansch <ivo@ibuildings.nl>
-    * @version $Revision: 1.3 $
+    * @version $Revision$
     *
-    * $Id: class.filterprojectbyorganizationattrib.inc,v 1.3 2007/02/06 14:46:35 ivo Exp $
+    * $Id$
     */
     
    useattrib("atkdummyattribute");    
