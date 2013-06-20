@@ -60,7 +60,7 @@
   foreach($templates as $record)
     $et->addDb($record);
 
-  $setup->setVersion(6);
+  $setup->setVersion(8);
   set_time_limit(0);
 
   // Check if there exists a module calendar in the versioninfo
@@ -181,10 +181,10 @@
       for($i=0,$_i=count($notes);$i<$_i;$i++)
       {
         $next_id = $db->nextid("scheduler_notes");
-        $sql = "INSERT INTO scheduler_notes (id,owner,schedule_id,entrydate,title,description)
+        $sql = "INSERT INTO scheduler_notes (id,owner,scheduler_id,entrydate,title,description)
                 VALUES ($next_id,
                         '".$db->escapeSQL($notes[$i]["owner"])."',
-                        '".$db->escapeSQL($scheduler_lookup[$notes[$i]["schedule_id"]])."',
+                        '".$db->escapeSQL($scheduler_lookup[$notes[$i]["scheduler_id"]])."',
                         '".$db->escapeSQL($notes[$i]["entrydate"])."',
                         '".$db->escapeSQL($notes[$i]["title"])."',
                         '".$db->escapeSQL($notes[$i]["description"])."')";
@@ -199,9 +199,10 @@
       while($db->next_record())
       {
         $attendee = $db->m_record;
-        $sql = "INSERT INTO scheduler_attendees (schedule_id,person_id)
+        $sql = "INSERT INTO scheduler_attendees (scheduler_id,person_id,status)
                 VALUES ('".$db2->escapeSQL($scheduler_lookup[$attendee["schedule_id"]])."',
-                        '".$db2->escapeSQL($attendee["person_id"])."')";
+                        '".$db2->escapeSQL($attendee["person_id"])."',
+                        'accepted')";
         $db2->query($sql);
       }
     

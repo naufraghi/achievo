@@ -250,7 +250,7 @@ class hoursurvey extends atkNode
       $contact_id =         stripQuotes($contact_pair[1]);
       if(!isset($contact_id)) $contact_id = "";
     }
-    
+
     $department_name =    $g_sessionManager->pageVar("departmentid");
     $functionlevelswitch =$g_sessionManager->pageVar("functionlevelswitch");
     $creditor_id =        $g_sessionManager->pageVar("creditor_id");
@@ -453,12 +453,12 @@ class hoursurvey extends atkNode
 
       $projectatt = &$hoursnode->m_attribList["projectid"];
       $projectatt->addDependee("phaseid");
-      
+
       if(atkconfig::get("timereg","timereg_contact_link",false))
       {
         $projectatt->addDependee("contact_id");
       }
-      
+
       $projectatt->m_ownerInstance = &$hoursnode;
       $projectatt->_registerDependees();
 
@@ -477,7 +477,7 @@ class hoursurvey extends atkNode
 
       if (moduleExists("billing"))
       {
-        $billingRateNode = &atkGetNode("billing.rate");
+        $billingRateNode = &atkGetNode("billing.billing_rate");
         $projecttypeatt = &new atkManyToOneRelation('billing_projecttypeid', "billing.projecttype");
         $projecttypeatt->m_ownerInstance = &$billingRateNode;
         $projecttypeatt->removeFlag(AF_RELATION_AUTOCOMPLETE);
@@ -573,7 +573,7 @@ class hoursurvey extends atkNode
       $page->register_script(atkconfig("atkroot")."javascript/timereg.js");
 
       $lookbackperiod = '<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="33%">';
-      $lookbackperiod .= '<select name="startperiod" onchange="setStartEndDates(\'enddate\', \'startperiod\', '.date("Ymd").'); document.entryform.endperiod.value = 0; setStartEndDates(\'startdate\', \'endperiod\', '.date("Ymd").');">
+      $lookbackperiod .= '<select name="startperiod" onchange="Achievo.Timereg.setStartEndDates(\'startdate\', \'enddate\', document.entryform.startperiod.value, -1); document.entryform.startperiod.value = 0;">
                         <option value="0" selected>---</option>
                         <option value="1">1 '.strtolower(atktext("week")).'</option>
                         <option value="2">2 '.strtolower(atktext("weeks")).'</option>
@@ -586,7 +586,7 @@ class hoursurvey extends atkNode
                        </select></td>';
 
       $lookbackperiod .= '<td width="34%" align="center">&nbsp;</td>';
-      $lookbackperiod .= '<td width="33%" align="right"><select name="endperiod" onchange="setStartEndDates(\'startdate\', \'endperiod\', '.date("Ymd").'); document.entryform.startperiod.value = 0; setStartEndDates(\'enddate\', \'startperiod\', '.date("Ymd").');">
+      $lookbackperiod .= '<td width="33%" align="right"><select name="endperiod" onchange="Achievo.Timereg.setStartEndDates(\'startdate\', \'enddate\', document.entryform.endperiod.value, 1); document.entryform.endperiod.value = 0;">
                         <option value="0" selected>---</option>
                         <option value="1">1 '.strtolower(atktext("week")).'</option>
                         <option value="2">2 '.strtolower(atktext("weeks")).'</option>
@@ -820,7 +820,7 @@ class hoursurvey extends atkNode
         $filterarray[] = $this->_addFilterArrayItem("contact_id","='$contact_id'","hours");
       }
     }
-    
+
     $orderbystatement = $this->getOrderByStatement($orderby, $orderdirection);
 
     //Check if we need to add additional columns because of the selected filter.
