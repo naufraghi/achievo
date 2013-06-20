@@ -65,7 +65,7 @@ function change_recur(recur)
 		  // For once, we need:
 		  // - startdate, enddate
 		  // - starttime, endtime, allday
-      disable_cyclus_startdate(true);
+      //disable_cyclus_startdate(true);
       disable_cyclus_enddate(true);
       disable_every(true);
       disable_month_time(true);
@@ -84,7 +84,7 @@ function change_recur(recur)
       // - starttime, endtime, allday
       // - cyclus_startdate, cyclus_enddate
       // - every
-      disable_cyclus_startdate(false);
+      //disable_cyclus_startdate(false);
       disable_cyclus_enddate(false);
       disable_every(false);
       disable_month_time(true);
@@ -105,7 +105,7 @@ function change_recur(recur)
       // - cyclus_startdate, cyclus_enddate
       // - every
       // - weekday
-      disable_cyclus_startdate(false);
+      //disable_cyclus_startdate(false);
       disable_cyclus_enddate(false);
       disable_every(false);
       disable_month_time(true);
@@ -125,7 +125,7 @@ function change_recur(recur)
       // - starttime, endtime, allday
       // - cyclus_startdate, cyclus_enddate
       // - every
-      disable_cyclus_startdate(false);
+      //disable_cyclus_startdate(false);
       disable_cyclus_enddate(false);
       disable_every(false);
       disable_month_time(true);
@@ -145,7 +145,7 @@ function change_recur(recur)
       // - cyclus_startdate, cyclus_enddate
       // - every
       // - month_time,weekday
-      disable_cyclus_startdate(false);
+      //disable_cyclus_startdate(false);
       disable_cyclus_enddate(false);
       disable_every(false);
       disable_month_time(false);
@@ -166,7 +166,7 @@ function change_recur(recur)
       // - starttime, endtime, allday
       // - cyclus_startdate, cyclus_enddate
       // - every
-      disable_cyclus_startdate(false);
+      //disable_cyclus_startdate(false);
       disable_cyclus_enddate(false);
       disable_every(true);
       disable_month_time(true);
@@ -186,7 +186,7 @@ function change_recur(recur)
       // - cyclus_startdate, cyclus_enddate
       // - every
       // - weekday, month
-      disable_cyclus_startdate(false);
+      //disable_cyclus_startdate(false);
       disable_cyclus_enddate(false);
       disable_every(false);
       disable_month_time(false);
@@ -208,11 +208,11 @@ function disable_cyclus_startdate(disable)
 {
   if(disable)
   {
-    get_object('ar_cyclus_startdate').className='';
+    get_object('ar_cyclus_AE_cyclus_startdate').className='';
   }
   else
   {
-    get_object('ar_cyclus_startdate').className='cyclus';
+    get_object('ar_cyclus_AE_cyclus_startdate').className='cyclus';
   }
 }
 
@@ -220,11 +220,11 @@ function disable_cyclus_enddate(disable)
 {
   if(disable)
   {
-    get_object('ar_cyclus_enddate').className='';
+    get_object('ar_cyclus_AE_cyclus_enddate').className='';
   }
   else
   {
-    get_object('ar_cyclus_enddate').className='cyclus';
+    get_object('ar_cyclus_AE_cyclus_enddate').className='cyclus';
   }
 }
 
@@ -232,11 +232,11 @@ function disable_startday(disable)
 {
   if(disable)
   {
-    get_object('ar_startday').className='';
+    get_object('ar_cyclus_AE_startday').className='';
   }
   else
   {
-    get_object('ar_startday').className='cyclus';
+    get_object('ar_cyclus_AE_startday').className='cyclus';
   }
 }
 
@@ -244,11 +244,11 @@ function disable_endday(disable)
 {
   if(disable)
   {
-    get_object('ar_endday').className='';
+    get_object('ar_cyclus_AE_endday').className='';
   }
   else
   {
-    get_object('ar_endday').className='cyclus';
+    get_object('ar_cyclus_AE_endday').className='cyclus';
   }
 }
 
@@ -256,11 +256,11 @@ function disable_startmonth(disable)
 {
   if(disable)
   {
-    get_object('ar_startmonth').className='';
+    get_object('ar_cyclus_AE_startmonth').className='';
   }
   else
   {
-    get_object('ar_startmonth').className='cyclus';
+    get_object('ar_cyclus_AE_startmonth').className='cyclus';
   }
 }
 
@@ -268,11 +268,11 @@ function disable_endmonth(disable)
 {
   if(disable)
   {
-    get_object('ar_endmonth').className='';
+    get_object('ar_cyclus_AE_endmonth').className='';
   }
   else
   {
-    get_object('ar_endmonth').className='cyclus';
+    get_object('ar_cyclus_AE_endmonth').className='cyclus';
   }
 }
 
@@ -280,11 +280,11 @@ function disable_every(disable)
 {
   if(disable)
   {
-    get_object('ar_every').className='';
+    get_object('ar_cyclus_AE_every').className='';
   }
   else
   {
-    get_object('ar_every').className='cyclus';
+    get_object('ar_cyclus_AE_every').className='cyclus';
   }
 }
 
@@ -292,11 +292,11 @@ function disable_month_time(disable)
 {
   if(disable)
   {
-    get_object('ar_month_time').className='';
+    get_object('ar_cyclus_AE_month_time').className='';
   }
   else
   {
-    get_object('ar_month_time').className='cyclus';
+    get_object('ar_cyclus_AE_month_time').className='cyclus';
   }
 }
 
@@ -304,11 +304,11 @@ function disable_weekday(disable)
 {
   if(disable)
   {
-    get_object('ar_weekday').className='';
+    get_object('ar_cyclus_AE_weekday').className='';
   }
   else
   {
-    get_object('ar_weekday').className='cyclus';
+    get_object('ar_cyclus_AE_weekday').className='cyclus';
   }
 }
 
