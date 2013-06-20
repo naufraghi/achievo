@@ -485,8 +485,8 @@
         {
           if ($itsOrderby && $itsOrderby != "-")
           {
-						//hack we need to add the tablename before the attribute. all attributes except for functionlevel has the table name hours
-						$itsOrderby = ($itsOrderby == "functionlevel") ? "person.".$itsOrderby : "hours.".$itsOrderby;
+            //hack we need to add the tablename before the attribute. all attributes except for functionlevel has the table name hours
+            $itsOrderby = ($itsOrderby == "functionlevel") ? "person.".$itsOrderby : "hours.".$itsOrderby;
 
             $orderbystatement[] = $itsOrderby . " " . $orderdirection[$key];
           }
