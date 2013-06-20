@@ -241,6 +241,7 @@ class hours extends atkNode
 
     $project = &new projectManyToOneRelation("projectid","project.projectselector",AF_OBLIGATORY|AF_FORCE_LOAD);
     $project->addDependee("phaseid");
+    $project->setUserId($this->m_user);
 
     if(atkconfig::get("timereg","timereg_contact_link",false))
     {
@@ -574,7 +575,7 @@ class hours extends atkNode
 
       $ui = &$this->getUi();
       $tplvars = array( 'yesterdayurl'=>session_url(dispatch_url($this->atknodetype(),$this->m_action,array("viewuser"=>$this->m_user,"viewdate"=>$yesterday))),
-                        'weekviewurl'=>session_url(dispatch_url($this->atknodetype(),$this->m_action,array("viewuser"=>$this->m_user,"viewdate"=>$yesterday,"weekview"=>1))),
+                        'weekviewurl'=>session_url(dispatch_url($this->atknodetype(),$this->m_action,array("viewuser"=>$this->m_user,"viewdate"=>date('Y-m-d',$viewdatestamp),"weekview"=>1))),
                         'sessionform'=>session_form(),
                         'userselect'=>$this->getUserSelect(),
                         'datejumper'=>$this->getDateJumper(),
@@ -817,6 +818,7 @@ class hours extends atkNode
                       'curuser'=>$record["userid"],
                       'curdate'=>weeknumber::getWeeknumber($viewtime,atkconfig("startday",1),atkconfig("firstweekcontains",4)).", ".date("Y",$viewtime),
                       'lockicon'=>Locking::getLockIcon($locks),
+                      'dispatch'=>getDispatchFile(),
                       'locktext'=>($locks > 0 && $locks < 7) ? atktext("locked_partially") : null
                      );
     if ($weekdates[8]['date'] <= date("Y-m-d"))
@@ -945,7 +947,7 @@ class hours extends atkNode
   {
     $period = Locking::getPeriod($this->m_viewdate);
 
-    if (atkconfig("lock_period_approval_required"))
+    if (atkconfig::get("timereg","lock_period_approval_required",false))
     {
       Locking::lockPeriod($period);
     } else {

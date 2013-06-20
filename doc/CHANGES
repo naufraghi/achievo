@@ -327,6 +327,10 @@ Changes in Achievo 1.3
   the project coordinator by default. [Ivo]
 * Moved achievo_modern theme to new location. This should go unnoticed but
   you may need to clear the achievotmp/themes dir when upgrading. [Ivo]
+* Preserved customer field when upgrading from 0.9.1. (bug #765) [Yuri]
+* Fixed bug in weekreport with locks (bug #790) [Sandy]
+
+
 
 Changes in Achievo 1.2.1
 ------------------------
@@ -346,6 +350,7 @@ Changes in Achievo 1.2.1
 * When adding a phase it will check if the enddate isn't before
   the startdate. (bug #439) [Sandy]
 * Fixed department criteria in Time Survey Report. (bug #656) [Sandy]
+* Fixed refresh of Master Gantt. (bug #836, #837) [Ivo]
 
 Changes in Achievo 1.2
 ----------------------

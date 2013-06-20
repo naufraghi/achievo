@@ -603,7 +603,7 @@
           $periodname = ($this->m_lockmode == "month") ? atktext($monthlist[ltrim($periodnumber, "0")]) : $periodnumber;
 
 	        // Add a periodnumberlink to the periods string
-	        $periods.=href(dispatch_ulr($this->atknodetype(),$this->m_action,array("viewuser"=>$user["id"],"viewdate"=>date("Y-m-d",$this->getdatefromperiod($year.$prefix.$periodnumber)),"periodid"=>$perioddata["id"])),
+	        $periods.=href(dispatch_url($this->atknodetype(),$this->m_action,array("viewuser"=>$user["id"],"viewdate"=>date("Y-m-d",$this->getdatefromperiod($year.$prefix.$periodnumber)),"periodid"=>$perioddata["id"])),
 	                      $periodname, SESSION_DEFAULT, false, 'style="color: '.$color.';"')."&nbsp;";
 
 	      }
@@ -710,6 +710,7 @@
       $g_sessionManager->pageVar("atkdodisapprove");
 
       $page = &$this->getPage();
+      $theme = &atkTheme::getInstance();
       $page->register_style($theme->stylePath("style.css"));
       atkimport("atk.ui.atktheme");
       $theme = &atkTheme::getInstance();
