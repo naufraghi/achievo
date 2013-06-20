@@ -38,7 +38,7 @@
       $this->add(new atkAttribute("name",AF_UNIQUE|AF_OBLIGATORY|AF_SEARCHABLE, 50));
 
       $attr = &$this->add(new atkManyToOneRelation("coordinator","employee.employee",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));
-      $attr->setDestinationFilter("status='active'");
+      $attr->setDestinationFilter("person.status='active'");
 
       $this->add(new atkManyToOneRelation("contract_id","organization.contracts",AF_HIDE_ADD|AF_HIDE_LIST));
       $this->add(new atkTextAttribute("description",TEXT_LARGE, AF_HIDE_LIST|AF_HIDE_ADD));
@@ -113,6 +113,11 @@
       $this->add(new dataGraphAttribute("emptimedistribution", "emptime", array("projectid"=>"[id]"), "auto", AF_HIDE_ADD|AF_HIDE_LIST|AF_HIDE_EDIT), "stats");
       $this->add(new dataGraphAttribute("activitytimedistribution", "activitytime", array("projectid"=>"[id]"), "auto", AF_HIDE_ADD|AF_HIDE_LIST|AF_HIDE_EDIT), "stats");
 
+      if(atkconfig::get("timereg","timereg_contact_link",false))
+      {
+        $this->add(new atkListAttribute("contact_restrict",array("restrict_project","restrict_eligible"),array(1,2),AF_HIDE_LIST|AF_FORCE_LOAD|AF_OBLIGATORY));
+      }
+          
       $this->setTable("project","project");
 
       $this->setOrder("project.abbreviation, project.name");
@@ -214,7 +219,7 @@
       else
         return sprintf("%s: %s", $record["abbreviation"], $record["name"]);
     }
-    
+
     function postDelete($record)
     {
       $eventlog = &atkGetNode("crm.eventlog");
@@ -283,7 +288,7 @@
 
       // Put the projectname and coordinator in a html layout
       $projectinfo = '<table border="0">';
-      $projectinfo.= '<tr><td align="right"><b>'.atktext("name").': </b></td><td>'.$record['name'].'</td></tr>';
+      $projectinfo.= '<tr><td align="right"><b>'.atktext("name").': </b></td><td>'.$record["abbreviation"].': '.$record['name'].'</td></tr>';
       $projectinfo.= '<tr><td align="right"><b>'.atktext("coordinator").': </b></td><td>'.$record['coordinator']['lastname'].', '.$record['coordinator']['firstname'].'</td></tr>';
       $projectinfo.= '</table>';
 
@@ -702,35 +707,44 @@
       return $view;
     }
 
-/*naufraghi: 2006-11-07 ******************************************************/
+    /**
+     * Action select, add filter if user doens't have
+     * the any project right.
+     *
+     * @param object $handler Handler object
+     * @return string Select page
+     */
     function action_select(&$handler)
     {
     	if (!$this->allowed("any_project"))
-        {
-			$pids = implode(",", $this->get_user_projects());
-			$this->addFilter("project.id IN ($pids)");
-        }
-        return $handler->action_select();
+      {
+		  	$pids = implode(",", $this->get_user_projects());
+	  		$this->addFilter("project.id IN ($pids)");
+      }
+      return $handler->action_select();
     }
+
+    /**
+     * Get user project id's
+     *
+     * @return array Array with project id's
+     */
     function get_user_projects()
     {
-      global $g_user;
       $db = &atkGetDb();
       $sql = "SELECT DISTINCT projectid
 	               FROM project_person
-	               WHERE personid = '".$g_user["id"]."'";
-	  $records = $db->getrows($sql);
-	  $id_array = array();
-	  foreach($records as $row)
-	  {
-	    array_push($id_array, $row["projectid"]);
-	  }
-	  array_push($id_array, 0); //hack per mantenere stabile la sintassi SQL
-	  return $id_array;
+	               WHERE personid = '".atkGetUserId()."'";
+  	  $records = $db->getrows($sql);
+  	  $id_array = array();
+  	  foreach($records as $row)
+  	  {
+  	    array_push($id_array, $row["projectid"]);
+  	  }
+  	  array_push($id_array, 0);
+  	  return $id_array;
     }
-/*naufraghi: 2006-11-07 ******************************************************/
-    
-    
+
     function action_admin(&$handler, $record=null)
     {
       $view = $this->getView();
@@ -786,7 +800,7 @@
       }
       else
       {
-        return atktext("youareinthearchive")." ".href(dispatch_url($this->atknodetype(),$this->m_action,array("view"=>"active")), 
+        return atktext("youareinthearchive")." ".href(dispatch_url($this->atknodetype(),$this->m_action,array("view"=>"active")),
                                                      atktext('clicktoviewactiverecords', $this->m_module, $this->m_type))."<br>";
       }
     }

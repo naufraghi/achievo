@@ -72,6 +72,7 @@ class employee extends person
     $this->m_securityMap["deactivate"] = "edit"; // If you may edit, you may also deactivate.
 
     $this->setOrder("lastname");
+    $this->setDescriptorTemplate("[lastname], [firstname] ([userid])");
   }
 
   function addPasswordAttribute()
@@ -127,19 +128,14 @@ class employee extends person
 
     if ($view=="active")
     {
-      return atktext("onlyactiverecordsareshown")." ".href(dispatch_url($this->atknodetype(),$this->m_action,array("view"=>"nonactive")), 
+      return atktext("onlyactiverecordsareshown")." ".href(dispatch_url($this->atknodetype(),$this->m_action,array("view"=>"nonactive")),
                                                            atktext('clicktoviewarchive', $this->m_module, $this->m_type))."<br>";
     }
     else
     {
-      return atktext("youareinthearchive")." ".href(dispatch_url($this->atknodetype(),$this->m_action,array("view"=>"active")), 
+      return atktext("youareinthearchive")." ".href(dispatch_url($this->atknodetype(),$this->m_action,array("view"=>"active")),
                                                     atktext('clicktoviewactiverecords', $this->m_module, $this->m_type))."<br>";
     }
-  }
-
-  function descriptor_def()
-  {
-    return "[lastname], [firstname] ([userid])";
   }
 
   function recordActions($rec, &$actions, &$mraactions)
@@ -186,7 +182,7 @@ class employee extends person
   {
     $db = &atkGetDb();
     $data = $db->getrows("SELECT
-                              project.id, project.name, SUM(time) as total
+                              project.id, project.name, project.abbreviation, SUM(time) as total
                             FROM
                               hours, phase, project
                             WHERE
@@ -209,7 +205,8 @@ class employee extends person
     $dataset = array();
     for ($i=0, $_i=count($data); $i<$_i; $i++)
     {
-      $dataset[$data[$i]["name"]] = $data[$i]["total"];
+      $key = $data[$i]["abbreviation"].": ".$data[$i]["name"];
+      $dataset[$key] = $data[$i]["total"];
     }
 
     return array("registeredtimeperproj"=>$dataset);
@@ -350,7 +347,7 @@ class employee extends person
     $file = new atkTmpFile("employee_birthdays.inc");
     if(!$file->exists())
     {
-      $birthday_recs = $this->selectDb("birthdate IS NOT NULL AND status='active'","month(birthdate), day(birthdate)","","",array("firstname","lastname","birthdate"));
+      $birthday_recs = $this->selectDb("birthdate IS NOT NULL AND status='active'","month(birthdate), dayofmonth(birthdate)","","",array("firstname","lastname","birthdate"));
       $items = array();
       foreach($birthday_recs as $birthday)
       {

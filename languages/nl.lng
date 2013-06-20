@@ -18,7 +18,7 @@
   $nl = array(
   "abbreviation" => "Projectcode",
   "active" => "Actief",
-  "active_projects" => "Actieve projecten",  
+  "active_projects" => "Actieve projecten",
   "activity" => "Activiteit",
   "activitydate" => "Datum",
   "activityid" => "Activiteit",
@@ -191,7 +191,7 @@
   "holiday_date" => "Datum",
   "hourlock_userid_explanation" => "Selecteer de medewerker die je wilt blokkeren, of selecteer 'Geen' om alle medewerkers te blokkeren",
   "hourlock_week_explanation" => "Vul 4 cijferig jaar gevolgd door 2 cijferig weeknummer in (bijv. 200548)",
-  "hours_lock_week" => "Uren blokkeren", 
+  "hours_lock_week" => "Uren blokkeren",
   "hours" => "Uren",
   "hoursleft" => "Uren nog beschikbaar",
   "hourspda" => "Uren",
@@ -418,7 +418,7 @@
   "project" => "Project",
   "projectid" => "Project",
   "projects" => "Projecten",
-  "project_body" => "Er is voor het project %s een documentenstructuur aangemaakt op de volgende locatie: %s",
+  "project_body" => "Project is aangemaakt. Er is voor het project %s een documentenstructuur aangemaakt op de volgende locatie: %s",
   "project_members" => "Teamleden",
   "project_member_fuzzyhint" => "Vul een komma-gescheiden lijst van toe te voegen teamleden in, en kies een rol voor de nieuwe leden.",
   "project_notes" => "Project notities",
@@ -426,7 +426,7 @@
   "project_personcontact" => "Contactpersoon",
   "project_select" => "Selecteer een project",
   "project_select_none" => "Geen project geselecteerd",
-  "project_subject" => "Documenten structuur aangemaakt voor project: ",
+  "project_subject" => "Project aangemaakt en directory gemaakt: ",
   "project_tab_default" => "Algemeen",
   "project_tab_notes" => "Notities",
   "project_tab_planning" => "Planning",
@@ -662,6 +662,12 @@
   "closedate"=>"Sluitdatum",
   "private"=>"Priv&eacute;",
   "complete"=>"Afgerond",
+  "debtornumber"=>"Debiteurnummer",
+  "contact_id"=>"Select contact",
+  "eligible"=>"Eligible for time registration field",
+  "contact_restrict"=>"Contact selection for time registration",
+  "restrict_project"=>"Only contacts for the project customer can be selected",
+  "restrict_eligible"=>"All eligible contacts can be selected",
 );
 
 ?>

@@ -84,6 +84,9 @@ development of new features.
   several Ajax enhancements, such as an improved way of selecting projects/
   phases/activities for time registration.
 
+* Bluewind, Italy (http://www.bluewind.it) sponsored the ability to
+  register time on contacts.
+
 To become a sponsor, please read http://www.achievo.org/support/sponsor.
 
 
@@ -225,6 +228,8 @@ Christian Nancy          [ChristianN] <christian@gonetworkconsulting.com>
 Dennis-Jan Broerse       [dennisjan]  <dennisjan@ibuildings.nl>
 Roger Kristiansen                     <rogerk@linpro.no>
 June Henriksen                        <juneih@linpro.no>
+Matteo Bertini           [matteo]     <naufraghi@develer.com>
+
 
 Names between [] are the names they are refered by in the CHANGES file. (If
 different from their first name).
