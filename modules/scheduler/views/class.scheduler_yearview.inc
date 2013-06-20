@@ -1,7 +1,30 @@
 <?php
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage scheduler
+ *
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision$
+ * $Id$
+ */
+
 atkimport("modules.scheduler.views.scheduler_view");
 
-class scheduler_yearview extends scheduler_view
+/**
+ * Scheduler year view
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage scheduler
+ * @since 1.3.0
+ */class scheduler_yearview extends scheduler_view
 {
  /**
   * scheduler yearview constructor
@@ -26,7 +49,7 @@ class scheduler_yearview extends scheduler_view
     $nextTime = date("Y-m-d", mktime(0,0,0,1, 1, $this->m_year+1));
     $nextUrl  = atkSelf()."?view=year&viewdate=$nextTime&dayview=".$this->showGlobal;
 
-    $this->title = "<b>".atktext(strtolower(date("F", mktime(0,0,0,$this->m_month,1,$this->m_year))))." ".$this->m_year."</b>";
+    $this->title = "<b>".atktext(atk_strtolower(date("F", mktime(0,0,0,$this->m_month,1,$this->m_year))))." ".$this->m_year."</b>";
 
     return href($prevUrl, atktext("previous_year"))."&nbsp;".href($thisUrl, atktext("this_year"))."&nbsp;".href($nextUrl, atktext("next_year"));
 

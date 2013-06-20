@@ -35,14 +35,15 @@
       $this->add(new atkNumberAttribute("id",AF_AUTOKEY));
 
       $this->add(new atkAttribute("abbreviation", AF_SEARCHABLE|AF_UNIQUE, 10));
-      $this->add(new atkAttribute("name",AF_UNIQUE|AF_OBLIGATORY|AF_SEARCHABLE, 200));
+      $this->add(new atkAttribute("name",AF_UNIQUE|AF_OBLIGATORY|AF_SEARCHABLE, array(200,75,50)));
 
       $this->add(new atkManyToOneRelation("project_category","project.project_category",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));
 
-      $attr = &$this->add(new atkManyToOneRelation("coordinator","employee.employee",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));
+      $attr = &$this->add(new atkManyToOneRelation("coordinator","employee.employeeselector",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));
       $attr->setDestinationFilter("person.status='active'");
+      $attr->setAutoLinkDestination('employee.employee');
 
-      $p_attr = &$this->add(new atkManyToOneRelation("master_project","project.project",AF_RELATION_AUTOCOMPLETE|AF_HIDE_LIST|AF_HIDE_ADD));
+      $p_attr = &$this->add(new atkManyToOneRelation("master_project","project.projectselector",AF_RELATION_AUTOCOMPLETE|AF_HIDE_LIST|AF_HIDE_ADD));
       $p_attr->addDestinationFilter("project.id<>[id] AND (project.master_project=0 OR project.master_project IS NULL)");
 
       $this->add(new atkManyToOneRelation("contract_id","organization.contracts",AF_HIDE_ADD|AF_HIDE_LIST));
@@ -78,7 +79,8 @@
       }
 
       // Add the organization relation
-      $this->add(new atkManyToOneRelation("customer", "organization.organization", AF_HIDE_LIST|AF_RELATION_AUTOLINK|AF_HIDE_ADD|AF_SEARCHABLE|AF_FORCE_LOAD), "", 500);
+      $this->add(new atkManyToOneRelation("customer", "organization.organizationselector", AF_HIDE_LIST|AF_RELATION_AUTOLINK|AF_HIDE_ADD|AF_SEARCHABLE|AF_FORCE_LOAD), "", 500)
+                 ->setAutoLinkDestination('organization.organization');
 
       $this->add(new atkOneToManyRelation("contacts","project.project_personcontact", "projectid", AF_HIDE_LIST|AF_CASCADE_DELETE|AF_HIDE_ADD|$flags));
 
@@ -131,6 +133,7 @@
 
       $this->setOrder("project.abbreviation, project.name");
       $this->setIndex("name");
+      $this->setDescriptorTemplate('[abbreviation] [name]');
     }
 
     function graph_topprojects($params)
@@ -218,8 +221,8 @@
         $projectcode = $parser->parse($record);
         if (atkConfig::get("project", "projectcode_autonumber", false))
         {
-          $result = $this->getDb()->getrows("SELECT abbreviation FROM project WHERE abbreviation LIKE '$prefix%' ORDER BY abbreviation DESC LIMIT 1");
-          $number = count($result) ? ((int)substr($result[0]["abbreviation"], strlen($prefix)))+1 : 1;
+          $result = $this->getDb()->getrows("SELECT abbreviation FROM project WHERE abbreviation LIKE '$template%' ORDER BY abbreviation DESC LIMIT 1");
+          $number = count($result) ? ((int)atk_substr($result[0]["abbreviation"], atk_strlen($template), atk_strlen($result[0]["abbreviation"])-atk_strlen($template)))+1 : 1;
           $digits = atkConfig::get("project", "projectcode_autonumberdigits", 1);
           $projectcode .= sprintf("%0".$digits."d", $number);
         }
@@ -549,7 +552,7 @@
                                  hours, phase
                                WHERE
                                  hours.phaseid = phase.id
-                                 AND phase.projectid = ".$params["projectid"].
+                                 AND phase.projectid = ".sprintf('%d', (int)$params["projectid"]).
                                 ($params["viewstart"]!=""?" AND hours.activitydate>='".$params["viewstart"]."'":"").
                                 ($params["viewend"]!=""?" AND hours.activitydate<='".$params["viewend"]."'":""));
       $maxdate = array();
@@ -619,8 +622,8 @@
       {
         // output nice monthnames
         $months = array("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct",  "nov", "dec");
-        $shortyear = substr($label, 2, 2);
-        $month = sprintf("%d", substr($label, 4, 2));
+        $shortyear = atk_substr($label, 2, 2);
+        $month = sprintf("%d", atk_substr($label, 4, 2));
         return atktext($months[$month-1])." '".$shortyear;
       }
       else
@@ -705,10 +708,11 @@
     	if (!$this->_checkAnyProjectRight())
       {
 		  	$pids = implode(",", $this->get_user_projects());
-        if(!empty($pids))
-          $this->addFilter("project.id IN ($pids) OR project.timereg_limit = ".PRJ_TIMEREG_ALL_USERS);
+        $filter = "project.coordinator='".atkGetUserId()."' OR project.timereg_limit = ".PRJ_TIMEREG_ALL_USERS;
+		  	if(!empty($pids))
+          $this->addFilter($filter." OR project.id IN ($pids)");
         else
-          $this->addFilter("project.timereg_limit = ".PRJ_TIMEREG_ALL_USERS);
+          $this->addFilter($filter);
       }
       return $handler->action_select();
     }
@@ -937,9 +941,17 @@
       $db->query($query);
     }
 
+    /**
+     * If the current project is a master project, make it impossible to
+     * set a master project for this project by hiding the master_project
+     * field.
+     *
+     * @param Integer $id The project Id
+     */
     function _hideMasterProject($id)
     {
-      $rows = &$this->selectDb("project.master_project='$id'","","","",array('id'));
+      $node = &newNode($this->atkNodeType());
+      $rows = &$node->selectDb("project.master_project='$id'","","","",array('id'));
 
       if(count($rows)>0)
       {
@@ -964,7 +976,8 @@
     {
       $sessionManager = &atkGetSessionManager();
       $session = &atkSessionManager::getSession();
-      $session_prev = $session[$sessionManager->getNameSpace()]["stack"][atkStackID()][atkPrevLevel()];
+      $prevlevel = atkPrevLevel() - ($this->isPartial() ? 1 : 0);
+      $session_prev = $session[$sessionManager->getNameSpace()]["stack"][atkStackID()][$prevlevel];
       $prevnode = atkArrayNvl($session_prev,"atknodetype");
       if(($prevnode == 'timereg.hours') || ($prevnode == 'reports.hoursurvey'))
       {
@@ -1032,6 +1045,8 @@
       {
         $p_attr->setDestinationFilter("");
       }
+      $p_attr->setUseFilterForAddLink(false);
+      $p_attr->setUseFilterForEditLink(false);
       return $p_attr->edit($record, $fieldprefix, $mode);
     }
 

@@ -1,19 +1,30 @@
 <?php
 /**
- * View class that handles all views of the scheduler
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
  *
  * @package achievo
- * @author sandy@achievo.org
- * @version 1.0
+ * @subpackage scheduler
  *
- * TODO:
- * - Year day appointment
- * - Year date appointment
- * - Public function to check if somebody is free
- *   isFree($date,$time,$person,$marge)
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision$
+ * $Id$
  */
+
 atkimport("modules.scheduler.utils.schedulertools");
 
+/**
+ * Abstract view class
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage scheduler
+ * @since 1.3.0
+ */
 class scheduler_view
 {
   var $m_model;
@@ -103,6 +114,7 @@ class scheduler_view
     $this->m_model->setSmallViewDate($request["small_viewdate"]);
     $this->m_model->setViewUser($request["viewusers"]);
     $this->m_model->setView($this->m_view);
+		$this->m_model->setCalendarStartDay(atkconfig('startday',1));
     $this->m_userPrefs = $this->m_model->getUserSchedulerPrefs();
     return $this->_render();
   }

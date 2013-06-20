@@ -139,6 +139,10 @@ class employerViewAttribute extends atkAttribute {
 
 class hoursurvey extends atkNode
 {
+  private $m_criteriaHandler;
+  private $m_criteria;
+  private $m_value;
+
   function hoursurvey()
   {
     $this->atkNode("hoursurvey");
@@ -153,6 +157,7 @@ class hoursurvey extends atkNode
       if(!empty($property))
       {
         //We need to add the tablename before the attribute.
+        atkdebug("SET ORDER FOR: ".$itsOrderby);
         switch($itsOrderby)
         {
           //functionlevel has another table- AND fieldname
@@ -163,9 +168,26 @@ class hoursurvey extends atkNode
           case "employer_id":
             $itsOrderby = "employer_id.name";
             break;
-            //projectid has the table phaseid
+          //phaseid has the table hourbase
+          case "organizationid_AE_organizationid":
+            $itsOrderby = "projectid.customer";
+            break;
+          //phaseid has the table hourbase
+          case "userid_AE_userid":
+            $itsOrderby = $this->getTable().".userid";
+            break;
+          //phaseid has the table hourbase
+          case "activityid_AE_activityid":
+            $itsOrderby = $this->getTable().".activityid";
+            break;
+            //phaseid has the table hourbase
+          case "phaseid_AE_phaseid":
+            $itsOrderby = $this->getTable().".phaseid";
+            break;
+          //projectid has the table phaseid
           case "projectid":
-            $itsOrderby = "phaseid.".$itsOrderby;
+          case "projectid_AE_projectid":
+            $itsOrderby = "phaseid.projectid";
             break;
             //Other attributes have the table hours
           default:
@@ -180,6 +202,7 @@ class hoursurvey extends atkNode
 
   function action_report(&$handler)
   {
+    /*@var $g_sessionManager atkSessionManager*/
     global $g_user, $g_sessionManager;
 
     require_once(moduleDir('report').'utils/class.reportutils.inc');
@@ -194,30 +217,57 @@ class hoursurvey extends atkNode
 
     $contentblocks = array();
 
-    // Manual sort config
-    $orderby =            atkArrayNvl($this->m_postvars, "orderby", "");
-    $orderdirection =     atkArrayNvl($this->m_postvars, "orderdirection", "");
-    $subtotal =           atkArrayNvl($this->m_postvars, "subtotal", "");
+    $name = $this->setUpHandler();
 
-    $activitypair =       explode("=",$g_sessionManager->pageVar("activityid"));
-    $activity_id =        stripQuotes($activitypair[1]);
-    $projectpair =        explode("=",$g_sessionManager->pageVar("projectid"));
-    $projectid =          stripQuotes($projectpair[1]);
-    $categorypair =       explode("=",$g_sessionManager->pageVar("project_category"));
-    $category =           stripQuotes($categorypair[1]);
-    if(!isset($category)) $category = "";
+    $externalHourSurveyColumns = atkHarvestModules("getHourSurveyColumns", "", true);
+
+    if (!empty($name))
+    {
+      $criteria = $this->m_criteriaHandler->loadCriteria($name);
+    }
+    else
+    {
+      $criteria = $this->m_value;
+    }
+
+    $this->handleUser($criteria);
+
+    $orderby = $criteria['orderby'];
+    $orderdirection = $criteria['orderdirection'];
+    $subtotal = $criteria['subtotal'];
+    $activity_id = $criteria['activity_id'];
+    $projectid = $criteria['projectid'];
+    $category = $criteria['category'];
+    $userid = $criteria['userid'];
+    $nameswitch = $criteria['nameswitch'];
+    $roleid = $criteria['roleid'];
+    $remark = $criteria['remark'];
+    $aggregate = $criteria['aggregate'];
+    $startdate = $criteria['startdate'];
+    $enddate = $criteria['enddate'];
+    $col = $criteria['col'];
+    $functionlevelswitch = $criteria['functionlevelswitch'];
+    $employer_id = $criteria['employer_id'];
+    $subProject = $criteria['subProject'];
+    $phaseid = $criteria['phaseid'];
+    $organizationid = $criteria['organizationid'];
+    $department_name = $criteria['department_name'];
+    $outputType = $criteria['outputType'];
 
     if (moduleExists("billing"))
     {
-      $billing_projecttypepair = $g_sessionManager->pageVar("billing_projecttypeid");
-      $billing_projecttypeid = (!empty($billing_projecttypepair)) ? atkArrayNvl(decodeKeyValuePair($billing_projecttypepair), "billing_projecttype.id", "") : "";
+      $billing_projecttypeid = $criteria['billing_projecttypeid'];
     }
 
     if (moduleExists('advancedsecurity'))
-      $lowerlevels = atkArrayNvl($this->m_postvars, "lowerlevels", 'off');
+    {
+      $lowerlevels = $criteria["lowerlevels"];
+    }
 
-    $phasepair =          explode("=",$g_sessionManager->pageVar("phaseid"));
-    $phaseid =            stripQuotes($phasepair[1]);
+    if(atkconfig::get("timereg","timereg_contact_link",false))
+    {
+      $contact_id =         $criteria["contact_id"];
+    }
 
     //if we only have a phaseid, retrieve the projectid.
     if(!empty($phaseid) && empty($projectid))
@@ -233,50 +283,12 @@ class hoursurvey extends atkNode
         $g_sessionManager->pageVar("phaseid","");
         $phaseid = "";
       }
-
     }
-
-    $userid =             $g_sessionManager->pageVar("userid");
-    $nameswitch =         $g_sessionManager->pageVar("nameswitch");
-    $roleid =             $g_sessionManager->pageVar("roleid");
-    $remark =             $g_sessionManager->pageVar("remark");
-    $aggregate =          $g_sessionManager->pageVar("aggregate");
-    $startdate =          $g_sessionManager->pageVar("startdate");
-    $enddate =            $g_sessionManager->pageVar("enddate");
-    $col =                $g_sessionManager->pageVar("col");
-    $organizationpair =   explode("=",$g_sessionManager->pageVar("organizationid"));
-    $organizationid =     stripQuotes($organizationpair[1]);
-    if(!isset($organizationid)) $organizationid = "";
-
-    if(atkconfig::get("timereg","timereg_contact_link",false))
-    {
-      $contact_pair =       explode("=",$g_sessionManager->pageVar("contact_id"));
-      $contact_id =         stripQuotes($contact_pair[1]);
-      if(!isset($contact_id)) $contact_id = "";
-    }
-
-    $department_name =    $g_sessionManager->pageVar("departmentid");
-    $functionlevelswitch =$g_sessionManager->pageVar("functionlevelswitch");
-    $employer_id =        $g_sessionManager->pageVar("employer_id");
-    $outputType =         atkArrayNvl($this->m_postvars, "outputType", "");
-    $subProject =         atkArrayNvl($this->m_postvars, "subproject", 0);
-
-    $externalHourSurveyColumns = atkHarvestModules("getHourSurveyColumns", "", true);
 
     //The orderby postvar is only filled when clicking on the refresh button.
     //Atk uses the postvar atkorderby when a user clicks on a column to sort on it. Powers combined
     if(!isset($orderby) && isset($this->m_postvars["atkorderby"])) $orderby[] = $this->m_postvars["atkorderby"];
 
-    foreach(array_keys($externalHourSurveyColumns) as $module)
-    {
-      $attrlist = $externalHourSurveyColumns[$module];
-      if (is_string($attrlist))
-      $attrlist = array($attrlist);
-      foreach($attrlist as $attr)
-      {
-        eval("\$external$attr = '".$g_sessionManager->pageVar($attr)."';");
-      }
-    }
 
     if (empty($outputType))
     {
@@ -294,6 +306,10 @@ class hoursurvey extends atkNode
       $attbilling_projecttypeid->m_ownerInstance = &$hoursnode;
     }
     $hoursnode->add(new employerViewAttribute("employer_id", AF_FORCE_LOAD));
+
+    //Place entrydate into the end of list
+    $hoursnode->remove("entrydate");
+    $hoursnode->add(new atkDateAttribute("entrydate", AF_FORCE_LOAD));
 
     $columnConfig = &$hoursnode->getColumnConfig();
 
@@ -322,10 +338,13 @@ class hoursurvey extends atkNode
     $suppress = array();
     if (!is_array($col)||count($col)==0)
     {
-      // No collumns selected. Default->select all.
+      // No collumns selected. Default->select all, exept entrydate
       for($i=0,$_i=count($arr_col);$i<$_i;$i++)
       {
-        $col[]=$arr_col[$i];
+        if($arr_col[$i] != 'entrydate')
+        {
+          $col[]=$arr_col[$i];
+        }
       }
     }
     for($i=0,$_i=count($arr_col);$i<$_i;$i++)
@@ -412,6 +431,8 @@ class hoursurvey extends atkNode
 
       $content='<form action="'.getDispatchFile().'" method="get" name="entryform" id="entryform">';
       $content.=session_form();
+
+      $content .= $this->getCriteriaHeader();
 
       $this->_addHiddenFields($content);
 
@@ -537,14 +558,14 @@ class hoursurvey extends atkNode
       if (moduleExists("billing"))
       {
         $billingRateNode = &atkGetNode("billing.billing_rate");
-        $projecttypeatt = &new atkManyToOneRelation('billing_projecttypeid', "billing.projecttype");
+        $projecttypeatt = new atkManyToOneRelation('billing_projecttypeid', "billing.projecttype");
         $projecttypeatt->m_ownerInstance = &$billingRateNode;
         $projecttypeatt->removeFlag(AF_RELATION_AUTOCOMPLETE);
         $data[] = array(atktext('billing_type','billing').':',$projecttypeatt->edit($dummyrec));
         $this->_addOr($data);
       }
 
-      $organizationatt = &$hoursnode->add(new atkManyToOneRelation("organizationid", "organization.organization", AF_HIDE));
+      $organizationatt = &$hoursnode->add(new atkManyToOneRelation("organizationid", "organization.organization", AF_LARGE));
 
       if(atkconfig::get("timereg","timereg_contact_link",false))
       {
@@ -619,27 +640,27 @@ class hoursurvey extends atkNode
       $lookbackperiod = '<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="33%">';
       $lookbackperiod .= '<select name="startperiod" onchange="Achievo.Timereg.setStartEndDates(\'startdate\', \'enddate\', document.entryform.startperiod.value, -1); document.entryform.startperiod.value = 0;">
                         <option value="0" selected>---</option>
-                        <option value="1">1 '.strtolower(atktext("week")).'</option>
-                        <option value="2">2 '.strtolower(atktext("weeks")).'</option>
-                        <option value="3">3 '.strtolower(atktext("weeks")).'</option>
-                        <option value="4">4 '.strtolower(atktext("weeks")).'</option>
-                        <option value="5">1 '.strtolower(atktext("month")).'</option>
-                        <option value="6">2 '.strtolower(atktext("months")).'</option>
-                        <option value="7">3 '.strtolower(atktext("months")).'</option>
-                        <option value="8">6 '.strtolower(atktext("months")).'</option>
+                        <option value="1">1 '.atk_strtolower(atktext("week")).'</option>
+                        <option value="2">2 '.atk_strtolower(atktext("weeks")).'</option>
+                        <option value="3">3 '.atk_strtolower(atktext("weeks")).'</option>
+                        <option value="4">4 '.atk_strtolower(atktext("weeks")).'</option>
+                        <option value="5">1 '.atk_strtolower(atktext("month")).'</option>
+                        <option value="6">2 '.atk_strtolower(atktext("months")).'</option>
+                        <option value="7">3 '.atk_strtolower(atktext("months")).'</option>
+                        <option value="8">6 '.atk_strtolower(atktext("months")).'</option>
                        </select></td>';
 
       $lookbackperiod .= '<td width="34%" align="center">&nbsp;</td>';
       $lookbackperiod .= '<td width="33%" align="right"><select name="endperiod" onchange="Achievo.Timereg.setStartEndDates(\'startdate\', \'enddate\', document.entryform.endperiod.value, 1); document.entryform.endperiod.value = 0;">
                         <option value="0" selected>---</option>
-                        <option value="1">1 '.strtolower(atktext("week")).'</option>
-                        <option value="2">2 '.strtolower(atktext("weeks")).'</option>
-                        <option value="3">3 '.strtolower(atktext("weeks")).'</option>
-                        <option value="4">4 '.strtolower(atktext("weeks")).'</option>
-                        <option value="5">1 '.strtolower(atktext("month")).'</option>
-                        <option value="6">2 '.strtolower(atktext("months")).'</option>
-                        <option value="7">3 '.strtolower(atktext("months")).'</option>
-                        <option value="8">6 '.strtolower(atktext("months")).'</option>
+                        <option value="1">1 '.atk_strtolower(atktext("week")).'</option>
+                        <option value="2">2 '.atk_strtolower(atktext("weeks")).'</option>
+                        <option value="3">3 '.atk_strtolower(atktext("weeks")).'</option>
+                        <option value="4">4 '.atk_strtolower(atktext("weeks")).'</option>
+                        <option value="5">1 '.atk_strtolower(atktext("month")).'</option>
+                        <option value="6">2 '.atk_strtolower(atktext("months")).'</option>
+                        <option value="7">3 '.atk_strtolower(atktext("months")).'</option>
+                        <option value="8">6 '.atk_strtolower(atktext("months")).'</option>
                        </select></td></tr></table>';
       $data[] = array(atktext("lookbackperiod","project"),$lookbackperiod);
       $data[] = array("<hr>");
@@ -749,6 +770,8 @@ class hoursurvey extends atkNode
       $boolattrib = new atkListAttribute("aggregate", array("do_not_aggregate", "aggregate_by_order"), array(0,1), AF_OBLIGATORY|AF_LIST_NO_NULL_ITEM);
       $data[] = array(atktext('aggregate','project').':',$boolattrib->edit($dummyrec));
 
+      $data[] = array($this->getCriteriaFooter());
+
       $buttons = array();
       $buttons[] = '<input type="submit" value="'.atktext("refresh").'">';
       $buttons[] = '<input type="button" name="printbutton" value="'.atkText("print").'" onClick=\'if (window.print) {var frame = parent.frames.main;if (frame) {frame.focus();frame.print();}}return false;\'>';
@@ -759,6 +782,7 @@ class hoursurvey extends atkNode
       $tbl->setColSpan($i,0,2);
 
       $content.=$tbl->render($data);
+
       $content.='</form><br>';
       if (atkConfig::get("reports","report_hide_parameters", false))
         $contentblocks[] = '<div class="displaynone">'.$ui->renderBox(array("title"=>$title, "content"=>$content)).'</div>';
@@ -836,7 +860,7 @@ class hoursurvey extends atkNode
           foreach ($functionlevels as $level)
             $levelStr .= $level['id'].',';
 
-          $levelStr = substr($levelStr,0,-1);
+          $levelStr = atk_substr($levelStr,0,-1);
 
           $filterarray[] = $this->_addFilterArrayItem("functionlevel"," IN ($levelStr)","userid");
         }
@@ -974,8 +998,20 @@ class hoursurvey extends atkNode
     if ($outputType=="2")
     {
       // Custom recordList can export to file
+      /*@var $rl atkCustomRecordList*/
       $rl = &atknew("atk.recordlist.atkcustomrecordlist");
-      $rl->render($hoursnode, $data, "", '"', '";', "\r\n", "1", "",$suppress);
+
+      $mod_filename = atkconfig::get("reports","filename");
+      if($mod_filename)
+      {
+        atkimport($mod_filename."filename");
+        $filename = array("filename"=>filename::getFileName($startdate, $enddate,$organizationid,$projectid,$employer_id,$userid));
+      }
+      else
+      {
+        $filename = '';
+      }
+      $rl->render($hoursnode, $data, "", '"', '";', "\r\n", "1", "",$suppress,$filename,"export");
     }
   }
 
@@ -1242,6 +1278,62 @@ class hoursurvey extends atkNode
   {
     list($record) = $node->selectDb($selector,"","","",$node->descriptorFields());
     return $node->descriptor($record);
+  }
+
+  private function getCriteriaHeader()
+  {
+    $ui = &$this->getUi();
+    return $ui->render('hoursurvey_header.tpl', array('saved_criteria'=>$this->m_criteria));
+  }
+
+  private function getCriteriaFooter()
+  {
+    $ui = &$this->getUi();
+    return $ui->render('hoursurvey_footer.tpl', array('saved_criteria'=>$this->m_criteria));
+  }
+
+  private function setUpHandler()
+  {
+    /*@var $handler hourSurveyHandler*/
+    $handler = &atknew('modules.reports.handlers.hoursurveyhandler');
+
+    $handler->m_postvars = &$this->m_postvars;
+    $handler->m_node = &$this;
+    $handler->m_action = $this->m_action;
+    $handler->m_partial = $this->m_partial;
+
+    $this->m_value = $handler->fetchCriteria();
+
+    /**
+     * If I save for all users, and the user or coordinator is set to myself, instead of saving
+     * me as the user, it would use the user that is logged in if someone else runs it.
+     */
+    if(!empty($this->m_postvars['save_criteria']) && $this->m_value['userid'] == atkGetUserId())
+    {
+      $this->m_value['use_logged_user'] = true;
+    }
+
+    $name = $handler->handleSavedCriteria($this->m_value);
+
+    $this->m_criteria = $handler->getSavedCriteria($name);
+
+    $this->m_criteriaHandler = &$handler;
+
+    return $name;
+  }
+
+  /**
+   * If I save for all users, and the user or coordinator is set to myself, instead of saving
+   * me as the user, it would use the user that is logged in if someone else runs it.
+   *
+   * @param array $record
+   */
+  private function handleUser(&$record)
+  {
+    if($record['all_users'] && $record['use_logged_user'])
+    {
+      $record['userid'] = atkGetUserId();
+    }
   }
 }
 ?>

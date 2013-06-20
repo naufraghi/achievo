@@ -1,6 +1,20 @@
 <?php
-
-// TODO: Timezone
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage scheduler
+ *
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision$
+ * $Id$
+ */
 
   useattrib("atklistattribute");
   useattrib("atktimeattribute");
@@ -16,6 +30,15 @@
   userelation("atkmanyboolrelation");
   userelation("atkshuttlerelation");
 
+  /**
+   * This class for managing the scheduler preferences of a user
+   *
+   * @author Sandy Pleyte <sandy@achievo.org>
+   * @package achievo
+   * @subpackage scheduler
+   * @since 1.3.0
+   * @todo Support for timezones
+   */
   class scheduler_userpreferences extends atkNode
   {
     function scheduler_userpreferences()
@@ -128,32 +151,32 @@
     {
       $userid = atkArrayNvl(atkgetUser(), "id");
       return array("timeschedule"=>30,
-                   "showweeknumbers"=>false,
-                   "showtodo"=>false,
-                   "showemployeebirthdays"=>false,
-                   "showcustomerbirthdays"=>false,
-                   "autorefresh"=>false,
+                   "showweeknumbers"=>0,
+                   "showtodo"=>0,
+                   "showemployeebirthdays"=>0,
+                   "showcustomerbirthdays"=>0,
+                   "autorefresh"=>0,
                    "refresh_interval"=>0,
                    "default_view"=>"day",
                    "default_userview"=>$userid,
                    "default_eventtime"=>array('hours'=>'01','minutes'=>'00','seconds'=>'00'),
                    "scheduler_emptycolor"=>"#DDDDDD",
                    "scheduler_emptyworkhourscolor"=>"#FFFFFF",
-                   "email_reminders"=>false,
-                   "email_addedevents"=>false,
-                   "email_updatedevents"=>false,
-                   "email_removedevents"=>false,
-                   "email_rejectedevents"=>false);
+                   "email_reminders"=>0,
+                   "email_addedevents"=>0,
+                   "email_updatedevents"=>0,
+                   "email_removedevents"=>0,
+                   "email_rejectedevents"=>0);
     }
 
     function getDateStyles()
     {
       $time = time();
       $datestyles = array (
-        "F d, Y"=> atktext(strtolower(date("F",$time))) . date(" d, Y",$time),
-        "d F, Y"=> date("d ",$time) . atktext(strtolower(date("F",$time))) . date(", Y",$time),
-        "d-F-Y"=> date("d-",$time) . atktext(strtolower(date("F",$time))) . date("-Y",$time),
-        "d-F-y"=> date("d-",$time) . atktext(strtolower(date("F",$time))) . date("-y",$time),
+        "F d, Y"=> atktext(atk_strtolower(date("F",$time))) . date(" d, Y",$time),
+        "d F, Y"=> date("d ",$time) . atktext(atk_strtolower(date("F",$time))) . date(", Y",$time),
+        "d-F-Y"=> date("d-",$time) . atktext(atk_strtolower(date("F",$time))) . date("-Y",$time),
+        "d-F-y"=> date("d-",$time) . atktext(atk_strtolower(date("F",$time))) . date("-y",$time),
         "m/d/Y"=> date("m/d/Y",$time),
         "m/d/y"=> date("m/d/y",$time),
         "m-d-Y"=> date("m-d-Y",$time),
@@ -232,7 +255,7 @@
         return $userPreferences[$userid];
       }
     }
-    
+
     function createUserPreferences($userid)
     {
       $rec = $this->initial_values();
@@ -240,7 +263,7 @@
       $rec['userid']=$userid;
       $this->addDb($rec);
     }
-    
+
   }
 
 ?>

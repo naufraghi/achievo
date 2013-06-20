@@ -35,7 +35,6 @@
   include_once("theme.inc");
 
   include_once(moduleDir("graph")."jpgraph/jpgraph.php");
-
   atksession("img", false);
   atksecure();
 

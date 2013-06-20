@@ -151,12 +151,28 @@ Sunday is the first day of week.
        $expected=5;
        $this->assertEqual($weeknumber,$expected,date("d-m-Y",$timestamp).sprintf($msg,$weeknumber,$this->_getStartDay($startday),$weekcontains,$expected));
        
-       $startday=2; // Sunday
-       $weekcontains=4; // 1 januari
+       $startday=2; // Tuesday
+       $weekcontains=4; // 4 januari
        $msg = " is in weeknumber %d (Startday %s, week contains %d jan) (expected %d)";
        $timestamp = mktime(12,0,0,7,19,2007);
        $weeknumber = weeknumber::getWeeknumber($timestamp,$startday,$weekcontains);
        $expected=29;
+       $this->assertEqual($weeknumber,$expected,date("d-m-Y",$timestamp).sprintf($msg,$weeknumber,$this->_getStartDay($startday),$weekcontains,$expected));
+
+       $startday=1; // Monday
+       $weekcontains=4; // 4 januari
+       $msg = " is in weeknumber %d (Startday %s, week contains %d jan) (expected %d)";
+       $timestamp = mktime(12,0,0,1,11,2010);
+       $weeknumber = weeknumber::getWeeknumber($timestamp,$startday,$weekcontains);
+       $expected=2;
+       $this->assertEqual($weeknumber,$expected,date("d-m-Y",$timestamp).sprintf($msg,$weeknumber,$this->_getStartDay($startday),$weekcontains,$expected));
+       
+       $startday=0; // Sunday
+       $weekcontains=4; // 4 januari
+       $msg = " is in weeknumber %d (Startday %s, week contains %d jan) (expected %d)";
+       $timestamp = mktime(12,0,0,1,03,2010);
+       $weeknumber = weeknumber::getWeeknumber($timestamp,$startday,$weekcontains);
+       $expected=53;
        $this->assertEqual($weeknumber,$expected,date("d-m-Y",$timestamp).sprintf($msg,$weeknumber,$this->_getStartDay($startday),$weekcontains,$expected));
 
         

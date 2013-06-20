@@ -1,17 +1,20 @@
 <?php
-  /**
-   * pimItemAttribute class file
-   *
-   * @package achievo
-   *
-   * @author guido <guido@ibuildings.nl>
-   *
-   * @copyright (c) 2006 Ibuildings.nl BV
-   * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
-   *
-   * @version $Revision$
-   * $Id$
-   */
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage pim
+ *
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision$
+ * $Id$
+ */
+
 
   /**
    * @internal Include the parent class file
@@ -24,6 +27,7 @@
    *
    * @author guido <guido@ibuildings.nl>
    * @package achievo
+   * @subpackage  pim
    */
   class pimItemAttribute extends atkListAttribute
   {
@@ -63,7 +67,7 @@
         $pimitems = $userpimitemsnode->selectDb("userpimitems.userid = '".$user["id"]."'");
         foreach($pimitems as $key => $item)
         {
-          if($mode=="add" || ($record["pimitem"]==$item["pimitem"] && $mode="edit"))
+          if($mode=="add" || ($record["pimitem"]!=$item["pimitem"] && $mode="edit"))
             $useritems[] = $item['pimitem'];
         }
       }
@@ -74,21 +78,32 @@
       // Harvest the modules for pim items and populate m_lookup, m_options
       // and m_values
       $pimItems = atkHarvestModules("getPimItems","",true);
+      $pimRights = atkHarvestModules("getPimRights","",true);
       $this->m_lookup = array();
       foreach ($pimItems as $module => $items)
       {
         foreach($items as $itemName => $itemFunc)
         {
-          $item = $module.'_'.$itemName;
-          if(!in_array($item,$useritems))
-            $this->m_lookup[$item] = atkText($module,$module).' - '.atkText(array("pim_$itemName", $itemName),$module);
+          $allowed = true;
+          //Check, if access right is set for this item
+          if(isset($pimRights[$module][$itemName]))
+          {
+            list($nodename,$action) = $pimRights[$module][$itemName];
+            $node = &atkGetNode($nodename);
+            if(!$node->allowed($action))
+            {
+              $allowed = false;
+            }
+          }
+          if($allowed)
+          {
+            $item = $module.'_'.$itemName;
+            if(!in_array($item,$useritems))
+              $this->m_lookup[$item] = atkText($module,$module).' - '.atkText(array("pim_$itemName", $itemName),$module);
+        
+          }
         }
       }
-
-      // Remove items that the user allready has
-      $user = getUser();
-      $userpimitemsnode = &atkGetNode("pim.userpimitems");
-      $pimitems = $userpimitemsnode->selectDb("userpimitems.userid = '".$user["id"]."'");
 
       // Remove disallowed pimitems from the list
       $disallowedpimitems = atkConfig::get("pim","disallowedpimitems", array());

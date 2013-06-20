@@ -24,6 +24,13 @@
       return atkGetSecurityManager()->allowed("timereg.hours", "edit");
     }
 
+    function validate($record, $mode)
+    {
+      // When moving hours we do not want the validation for the remark-required field.
+      $this->handleValidation($record, $mode);
+      return parent::validate($record, $mode);
+    }
+
     function addDb()
     {
       // Determine the other record parameters
@@ -48,7 +55,17 @@
       $idslist = implode(",", $ids);
 
       // Change the time registrations using the chosen phase id and activity id.
-      return $this->getDb()->query("UPDATE hours SET phaseid='$phaseid', activityid='$activityid' WHERE hours.id IN ($idslist)");
+      //@Yury: hoursbase.virtual_time must be equal phase.virtual_time
+      return $this->getDb()->query("
+        UPDATE 
+          hoursbase h, phase f 
+        SET 
+          h.phaseid='$phaseid', 
+          h.activityid='$activityid',
+          h.virtual_time = f.virtual_time
+        WHERE 
+          h.id IN ($idslist) 
+          AND f.id='$phaseid'");
     }
 
     function editArray($mode="add", $record=NULL, $forceList="", $suppressList="", $fieldprefix="")

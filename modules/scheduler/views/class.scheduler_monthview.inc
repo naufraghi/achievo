@@ -1,6 +1,30 @@
 <?php
+/**
+ * This file is part of the Achievo distribution.
+ * Detailed copyright and licensing information can be found
+ * in the doc/COPYRIGHT and doc/LICENSE files which should be
+ * included in the distribution.
+ *
+ * @package achievo
+ * @subpackage scheduler
+ *
+ * @copyright (c)2008 Sandy Pleyte
+ * @copyright (c)2008 Ibuildings B.V.
+ * @license http://www.achievo.org/licensing Achievo Open Source License
+ *
+ * @version $Revision$
+ * $Id$
+ */
+
 atkimport("modules.scheduler.views.scheduler_view");
 
+/**
+ * Scheduler month view
+ * @author Sandy Pleyte <sandy@achievo.org>
+ * @package achievo
+ * @subpackage scheduler
+ * @since 1.3.0
+ */
 class scheduler_monthview extends scheduler_view
 {
    var $m_view = "month";
@@ -24,7 +48,7 @@ class scheduler_monthview extends scheduler_view
     $nextUrl  = atkSelf()."?view=month&viewdate=$nextTime";
     $nextImg  ='<img src="'.$theme->imgPath("arrow_right.gif","scheduler").'" border=0 width=16 height=16 title="'.atktext("next_month","scheduler").'" alt="'.atktext("next_month","scheduler").'">';
 
-    $this->m_viewTitle = "<b>".atktext(strtolower(date("F", mktime(0,0,0,$this->m_model->getMonth(),1,$this->m_model->getYear()))))." ".$this->m_model->getYear()."</b>";
+    $this->m_viewTitle = "<b>".atktext(atk_strtolower(date("F", mktime(0,0,0,$this->m_model->getMonth(),1,$this->m_model->getYear()))))." ".$this->m_model->getYear()."</b>";
     $theme = &atktheme::getInstance();
 
     return href($prevUrl, $prevImg)."&nbsp;".href($nextUrl, $nextImg)."&nbsp;".href($thisUrl, atktext("current_month","scheduler"));
@@ -88,7 +112,8 @@ class scheduler_monthview extends scheduler_view
     if ($cellcount < 0) $cellcount = 7 + $cellcount;
     $bg_color="#FFFFFF";
     $tmp.='<tr style="background-color: '.$bg_color.'; height: 100px;">';
-    $week_number =$this->m_model->getWeekNumber(2,$month,$year);
+		
+    $week_number =$this->m_model->getWeekNumber(1,$month,$year);
 
     $date = $year."-".sprintf("%02d",$month)."-".sprintf("%02d",1);
     $tmp.='<td style="border: 1px solid #000000;"><i>'.href(atkSelf()."?view=week&viewdate=".$date,$week_number,SESSION_DEFAULT,false,'title="'.atktext("weekview","scheduler").'"').'</i>&nbsp;</td>';
@@ -109,7 +134,7 @@ class scheduler_monthview extends scheduler_view
     	{
     	  if($bg_color=="#FFFFFF") { $bg_color="#EEEEEE"; } else { $bg_color="#FFFFFF"; }
     		$tmp.="</tr><tr style=\"background-color: $bg_color; height: 100px;\">\n";
-    		$week_number++;
+        $week_number =$this->m_model->getWeekNumber($i,$month,$year);
     		$tmp.='<td style="border: 1px solid #000000;"><i>'.href(atkSelf()."?view=week&viewdate=".$date,sprintf("%02d",$week_number),SESSION_DEFAULT,false,'title="'.atktext("weekview","scheduler").'"').'</i>&nbsp;</td>';
     		$cellcount=0;
     	}
