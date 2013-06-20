@@ -9,7 +9,11 @@
 
 include_once (moduleDir("timestats")."class.hours.inc");
 
-header('Content-Type: text/xml');
+//XML stuff da http://www.xml.com/pub/a/2003/03/19/dive-into-xml.html
+if (stristr($_SERVER[HTTP_ACCEPT], "application/xhtml+xml"))
+    header("Content-Type: application/xhtml+xml");
+else
+    header("Content-Type: text/html");
 
 function is_valid_date($date)
 {
@@ -22,12 +26,12 @@ function is_valid_date($date)
 function xml_encode($var)
 {
     $var = stripslashes($var);
-    return htmlspecialchars($var, ENT_COMPAT, "iso-8859-1");
+    return htmlspecialchars($var, ENT_COMPAT, "iso-8859-15");
 }
 
 function make_xml($node, $msg, $results, $bodykey="")
 {
-    $res  = '<?xml version="1.0" encoding="iso-8859-1"?>'."\n";
+    $res  = '<?xml version="1.0" encoding="iso-8859-15"?>'."\n";
     $res .= '<response node="'.xml_encode($node).'" msg="'.xml_encode($msg).'" len="'.count($results).'">'."\n";
     foreach ($results as $r)
     {
@@ -100,7 +104,8 @@ class timereg extends atkNode
 
         if ($error)
         {
-            echo make_xml("timereg", "Err", array(array("Err"=>print_r($record, True))));
+            echo make_xml("timereg", "Err",
+                          array(array("Err"=>print_r($record, True))), $bodykey="Err");
         }
         else
         {

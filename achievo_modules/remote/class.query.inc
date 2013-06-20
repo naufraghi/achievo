@@ -13,16 +13,13 @@ function isTime($time)
 {
     list ($h, $m) = split (":", $time);
 
-    if (!$h)
+    if (is_null($h) or !ctype_digit($h))
         return false;
 
-    if (!ctype_digit($h))
+    if (is_null($m) or !ctype_digit($m))
         return false;
-
-    if ($m && !ctype_digit($m))
-        return false;
-
-    if ($h < 0 || $h >= 24)
+    
+    if ($h < 0)
         return false;
 
     if ($m < 0 || $m >= 60)
@@ -31,9 +28,22 @@ function isTime($time)
     return true;
 }
 
+// Returns a peace of SQL that can be used in a WHERE clause to find $s in $field in a smart way.
 function smartLike($field, $s)
 {
-    return "LOWER($field) LIKE LOWER('%$s%')";
+    $field = strtolower($field);
+    $s = strtolower($s);
+
+    //fixme: this array is not exhaustive
+    $separators = array('', '%\_', '% ');
+    foreach ($separators as $sep)
+    {
+        $like .= "$field LIKE '$sep$s%'";
+        if ($sep != end($separators))
+	    $like .= " OR "; 
+    }
+
+    return $like;
 }
 
 function tokenize($s)
@@ -97,11 +107,8 @@ class query extends atkNode
                     $remark = join(" ", array_slice($tokens, $prj_len + $phase_len + $activity_len + 1));
 
                     // Filter out some invalid record to reduce the sql query
-                    if ($hours and !isTime($hours))
-                    {
-                        #echo "$hours not a time\n";
+		    if ($hours and !isTime($hours))
                         continue;
-                    }
 
                     $guesses[] = array (
                         "in_prj"   => $prj,
