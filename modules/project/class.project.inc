@@ -28,7 +28,7 @@
       $this->add(new atkNumberAttribute("id",AF_AUTOKEY));
 
       $this->add(new atkAttribute("name",AF_UNIQUE|AF_OBLIGATORY|AF_SEARCHABLE, 50));
-      $this->add(new atkAttribute("abbreviation", AF_SEARCHABLE|AF_HIDE_LIST, 10));
+      $this->add(new atkAttribute("abbreviation", AF_SEARCHABLE, 10));
 
       $attr = &$this->add(new atkManyToOneRelation("coordinator","employee.employee",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));
       $attr->setDestinationFilter("status='active'");
@@ -71,8 +71,8 @@
 
       $this->add(new atkBoolAttribute("alwaysvisibleintimereg", AF_HIDE_LIST|AF_HIDE_ADD), "planning");
       $this->add(new atkDummyAttribute("separator", "<br><hr><br>", AF_HIDE_LIST|AF_HIDE_ADD), "planning");
-      $this->add(new atkDateAttribute("startdate","F d Y","d F Y",0,0,AF_HIDE_ADD), "planning");
-      $this->add(new atkDateAttribute("enddate","F d Y","d F Y",0,0,AF_HIDE_ADD), "planning");
+      $this->add(new atkDateAttribute("startdate","","",0,0,AF_HIDE_ADD), "planning");
+      $this->add(new atkDateAttribute("enddate","","",0,0,AF_HIDE_ADD), "planning");
 
       $this->add(new atkOneToManyRelation("deliverables", "project.deliverable", "project_id", AF_HIDE_LIST), "planning");
 
@@ -100,12 +100,35 @@
     function name_display($record, $mode)
     {
       // Do not return a html link in plain or csv mode or select screen
-      if (($mode=="plain") || ($mode=="csv") || (isset($this->m_postvars["atkaction"]) && $this->m_postvars["atkaction"]=="select"))
+      if (($mode=="plain") || ($mode=="csv"))
         return $record["name"];
-      
-      // Make all project links clickable
-      $defaultaction = $this->allowed("edit") ? "edit" : "view";
-      return href(dispatch_url("project.project", $defaultaction, array("atkselector"=>"project.id='{$record["id"]}'")), $record["name"], SESSION_NESTED);
+
+      // Special select handling
+      if (atkArrayNvl($this->m_postvars,"atkaction")=="select")
+      {
+        // Decode the given target url
+        $url = atkArrayNvl($this->m_postvars, "atktarget");
+        $url = atkurldecode($url);
+        $url = str_replace("%5B", "[", $url);
+        $url = str_replace("%5D", "]", $url);
+        $url = str_replace("_15B", "[", $url);
+        $url = str_replace("_15D", "]", $url);
+
+        // Parse it using the record
+        atkimport("atk.utils.atkstringparser");
+        $parser = new atkStringParser($url);
+        $url = $parser->parse($record);
+
+        // Return a link
+        return href($url, $record["name"], SESSION_NESTED);
+      }
+      else
+      {
+        // Make all project links clickable
+        $defaultaction = $this->allowed("edit") ? "edit" : "view";
+        $url = dispatch_url("project.project", $defaultaction, array("atkselector"=>"project.id='{$record["id"]}'"));
+        return href($url, $record["name"], SESSION_NESTED);
+      }
     }
 
     function graph_topprojects($params)
@@ -159,12 +182,29 @@
 
     function descriptor_def()
     {
-      return "[name]";
+      return "[abbreviation] [name]";
+    }
+
+    function getInitialProjectcode()
+    {
+      return "";
     }
 
     function initial_values()
     {
-      return array("startdate"=>array("year"=>date("Y"),
+      $projectnumbermodule = atkConfig("projectnumbermodule");
+      if (!empty($projectnumbermodule))
+      {
+        $numberingmodule = &getModule($projectnumbermodule);
+        $initialprojectcode = $numberingmodule->getInitialProjectcode();
+      }
+      else
+      {
+        $initialprojectcode = $this->getInitialProjectcode();
+      }
+
+      return array("abbreviation" => $initialprojectcode,
+                   "startdate"=>array("year"=>date("Y"),
                                       "month"=>date("m"),
                                       "day"=>date("d")),
                    "enddate"=>array("year"=>(date("Y")+1),
@@ -519,7 +559,7 @@
       }
     }
 
-     /**
+    /**
      * Are we in 'active' emps or 'archive' mode?
      */
     function getView()
@@ -586,6 +626,24 @@
       }
 
       return $handler->action_admin();
+    }
+
+    /**
+     * Edit action handler override
+     *
+     * Sets the Abbreviation attribute to readonly if the user doesn't have the changeabbreviation right
+     *
+     * @param atkEditHandler $handler
+     * @return string HTML
+     */
+    function action_edit(&$handler)
+    {
+      if (!$this->allowed("changeabbreviation"))
+      {
+        $abbrattr = &$this->getAttribute("abbreviation");
+        $abbrattr->addFlag(AF_READONLY);
+      }
+      return $handler->action_edit();
     }
 
     function adminFooter()

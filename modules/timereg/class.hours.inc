@@ -105,7 +105,7 @@ class to_date extends atkDateAttribute
 {
   function to_date()
   {
-    $this->atkDateAttribute("todate", "F d Y","d F Y", 0, date("Ymd"), AF_NO_LABEL|AF_HIDE);
+    $this->atkDateAttribute("todate", "","", 0, date("Ymd"), AF_NO_LABEL|AF_HIDE);
   }
 
   function load() { return array();}
@@ -144,10 +144,10 @@ class hours extends atkNode
     global $g_sessionManager,$g_user;
 
     // weekview and viewdate are variables that we need to remember..
-    $this->m_weekview = $g_sessionManager->pageVar("weekview");
+    $this->m_weekview = $this->processGlobalVar("weekview");
+    $this->m_viewdate = $this->processGlobalVar("viewdate");
+    $this->m_user = $this->processGlobalVar("viewuser");
 
-    $this->m_viewdate = $g_sessionManager->pageVar("viewdate");
-    $this->m_user = $g_sessionManager->pageVar("viewuser");
     if (is_array($this->m_viewdate)) // if set by the date jumper, viewdate is an array.
     {
       $this->m_viewdate = sprintf("%04d-%02d-%02d", $this->m_viewdate["year"], $this->m_viewdate["month"],$this->m_viewdate["day"]);
@@ -167,7 +167,7 @@ class hours extends atkNode
 
     $this->add(new atkNumberAttribute("id",AF_AUTOKEY));
 
-    $this->add(new atkDateAttribute("activitydate","F d Y","d F Y", 0, (atkconfig("timereg_allowfuture", false)?0:date("Ymd")), AF_OBLIGATORY|AF_FORCE_LOAD|($this->m_weekview?0:AF_HIDE_LIST)));
+    $this->add(new atkDateAttribute("activitydate","","", 0, (atkconfig("timereg_allowfuture", false)?0:date("Ymd")), AF_OBLIGATORY|AF_FORCE_LOAD|($this->m_weekview?0:AF_HIDE_LIST)));
     $this->add(new to_date());
 
     // force_load flag is set for userid, since several features rely on the
@@ -193,6 +193,16 @@ class hours extends atkNode
     $this->setOrder("hours.id"); // Sort by order of input..
 
     $this->setTable("hours","hours");
+  }
+
+  function processGlobalVar($name, $value="")
+  {
+    global $g_sessionManager;
+    $session = &$g_sessionManager->getSession();
+    $sessionvarid = "timereg_hours_$name";
+    if (empty($value) && isset($_REQUEST[$name])) $value = $_REQUEST[$name];
+    if (!empty($value)) $session[$sessionvarid] = $value;
+    return $session[$sessionvarid];
   }
 
   function descriptor(&$record)
@@ -477,7 +487,7 @@ class hours extends atkNode
   function getDateJumper()
   {
     $dummy_rec = array("viewdate"=>$this->getInitialDate());
-    $datebox = new atkDateAttribute("viewdate","F d Y","d F Y",0, date("Ymd"),AF_OBLIGATORY);
+    $datebox = new atkDateAttribute("viewdate","","",0, date("Ymd"),AF_OBLIGATORY);
     return $datebox->edit($dummy_rec);
   }
 
@@ -486,7 +496,7 @@ class hours extends atkNode
     if ($this->allowed("any_user"))
     {
       $db = &atkGetDb();
-      $users = $db->getRows("SELECT id, lastname, firstname FROM person WHERE role = 'employee' AND status = 'active'");
+      $users = $db->getRows("SELECT id, lastname, firstname FROM person WHERE role = 'employee' AND status = 'active' ORDER BY lastname");
       $res = '<select name="viewuser">';
       for ($i=0;$i<count($users);$i++)
       {
@@ -1009,7 +1019,7 @@ class hours extends atkNode
       if ($this->m_insertmode=="multi")
       {
         $res = $this->m_attribList["activitydate"]->edit($record, $prefix, $mode);
-        $toDate = new atkDateAttribute("todate", "F d Y","d F Y", 0, date("Ymd"), AF_OBLIGATORY);
+        $toDate = new atkDateAttribute("todate", "","", 0, date("Ymd"), AF_OBLIGATORY);
 
         $res.= " ".atktext("uptoandincluding")." ".$toDate->edit($record, $prefix, $mode);
         $res.= '<input type="hidden" name="'.$prefix.'activitydate[multi]" value="1">';
