@@ -11,8 +11,8 @@
  * @copyright (c) 2004-2005 Peter C. Verhage
  * @license http://www.achievo.org/atk/licensing ATK Open Source License
  *
- * @version $Revision: 1.4 $
- * $Id: class.atkdutchmetagrammar.inc,v 1.4 2006/01/30 11:03:32 boy Exp $
+ * @version $Revision: 1.5 $
+ * $Id: class.atkdutchmetagrammar.inc,v 1.5 2006/10/10 12:42:19 peter Exp $
  */
  
 /**
@@ -36,6 +36,9 @@ class atkDutchMetaGrammar extends atkMetaGrammar
       '/ven$/i' => 'f',    
       '/ia$/i' => 'ium',
       '/onen$/i' => 'oon',
+      '/aren$/i' => 'aar',
+      '/ieen$/i' => 'ie',
+      '/ingen$/i' => 'ing',
       '/([aoeiu])s$/i' => '\1',
       '/([^aoeiu])en$/i' => '\1'
     );
@@ -52,6 +55,9 @@ class atkDutchMetaGrammar extends atkMetaGrammar
       '/f$/i' => 'ven',
       '/ium$/i' => 'ia',
       '/oon$/i' => 'onen',
+      '/aar$/i' => 'aren',
+      '/([^t])ie$/i' => '\1ieen',
+      '/ing$/i' => 'ingen',
       '/([aoeiu])$/i' => '\1s',
       '/([^aoeiu])$/i' => '\1en'
     );

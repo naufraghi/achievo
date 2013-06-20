@@ -18,16 +18,17 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.7 $
-   * $Id: atk.inc,v 5.7 2005/10/02 09:03:45 ivo Exp $
+   * @version $Revision: 5.8 $
+   * $Id: atk.inc,v 5.8 2007/02/05 21:53:38 guido Exp $
    */
    
   /**
    * @internal This variable indicates where to get all the includes. Usually,
-   *           this is the current pc.
+   *           this is the current dir.
    */
   if ($config_atkroot =="")  $config_atkroot = "./";      
-  
+
+  // Atknode is required. Don't remove it.
   include_once($config_atkroot."atk/include/initial.inc");
   
 ?>

@@ -6,9 +6,9 @@
    * This file generates the ganttchart. .
    *
    * @author Ludo M. Beumer  <ludo@ibuildings.nl>
-   * @version $Revision: 1.13 $
+   * @version $Revision: 1.14 $
    *
-   * $Id: ganttchart.php,v 1.13 2006/04/17 20:50:21 sandy Exp $
+   * $Id: ganttchart.php,v 1.14 2006/07/22 23:01:26 sandy Exp $
    */
 
 chdir("../..");

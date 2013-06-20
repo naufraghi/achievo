@@ -10,8 +10,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision: 1.4 $
-   * $Id: class.mastergantt.inc,v 1.4 2006/05/25 01:52:19 guido Exp $
+   * @version $Revision: 1.9 $
+   * $Id: class.mastergantt.inc,v 1.9 2007/05/10 20:59:14 ivo Exp $
    */
 
   /**

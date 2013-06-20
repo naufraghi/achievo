@@ -81,6 +81,9 @@ have a working webserver with PHP support and a MySQL database installed.
    and upgrades. You can revoke these privileges once the installation is
    complete.
 
+   mysql> grant LOCK TABLES on achievo.* to achievo@localhost
+          identified by 'secret';
+
 4) Edit the file config.inc.php in the achievo directory, and set the
    $config_db variable to match your setup.
 

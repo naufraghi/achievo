@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.4 $
-   * $Id: class.auth_config.inc,v 5.4 2005/12/21 21:46:52 ivo Exp $
+   * @version $Revision: 5.6 $
+   * $Id: class.auth_config.inc,v 5.6 2007/02/05 16:40:53 ivo Exp $
    */
 
   /**

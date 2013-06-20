@@ -18,6 +18,8 @@
 
 
 
+
+
   // The database configuration. Specify the hostname of the database server,
   // the database to use and the user/password.
   //
@@ -207,6 +209,43 @@
   $config_project_dir_name_template = '[abbreviation]';
   $config_project_formatmail = 'html';
   $config_project_sendto = 'sendto@domein.nl';
+
+  // -------------------------------------------
+  //             PIM MODULE
+  // -------------------------------------------
+  // If you don't want a pim, set an URL in the config below to let PIM
+  // redirect to the specified url. If not set or empty this feature is
+  // disabled.
+  $config_pim_redirect_to = "";
+
+
+
+  // -------------------------------------------
+  //             DOCMANAGER MODULE
+  // -------------------------------------------
+  // If you a docmanager to other nodes add the node and file location here
+  $config_docmanageroptions = array(
+        "project.project"=>array("dir"=>"./documents/project/", "url"=>"documents/project/"),
+        "quotation.quotation"=>array("dir"=>"./documents/quotations/", "url"=>"documents/quotations/"),
+        );
+
+
+  // -------------------------------------------
+  //            GENERAL SETTINGS
+  // -------------------------------------------
+  // Startday is
+  // 6 = saturday
+  // 0 = sunday
+  // 1 = monday (ISO)
+  // 3 = wednesday
+  $config_startday = 1;
+
+  // First week contains has 3 valid options
+  // 1 = Starts on 1 january
+  // 4 = First week with 4 days (ISO)
+  // 7 = First full week
+  $config_firstweekcontains = 4;
+
 
   // -------------------------------------------
   //             PIM MODULE

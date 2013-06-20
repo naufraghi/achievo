@@ -47,6 +47,7 @@ class projecttemplateAttribute extends atkManyToOneRelation
         {
            $new_id = $db->nextid('phase');
            $id_table[$phases[$i]['id']] = $new_id;
+           $phase_tpl_id = $phases[$i]['id'];
 
            $query = "INSERT INTO phase (id, name, status, projectid, description)
                      VALUES ('".$new_id."','".escapeSQL($phases[$i]['name'])."','active','".$record['id']."','".escapeSQL($phases[$i]['description'])."')";

@@ -17,14 +17,14 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.1 $
-   * $Id: lock.js.php,v 5.1 2004/05/31 22:11:11 ivo Exp $
+   * @version $Revision: 5.2 $
+   * $Id: lock.js.php,v 5.2 2007/04/10 20:06:15 sandy Exp $
    */
 
   /** @internal some defines */
   global $ATK_VARS;
   $id = (int)$ATK_VARS["id"];
-  $message = text("lock_expired");
+  $message = atktext("lock_expired");
   $stack = $ATK_VARS["stack"];
 ?>
 var atkLock = new Object();

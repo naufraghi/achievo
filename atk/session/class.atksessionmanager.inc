@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.34 $
-   * $Id: class.atksessionmanager.inc,v 5.34 2006/05/25 01:48:37 guido Exp $
+   * @version $Revision: 5.63 $
+   * $Id: class.atksessionmanager.inc,v 5.63 2008/01/16 14:11:27 lineke Exp $
    */
 
   /**
@@ -23,8 +23,9 @@
   $config_identifier = atkconfig("identifier");
   if (empty($config_identifier)) $config_identifier = "default";
 
-  $cookiepath = atkconfig("application_root");
-  session_set_cookie_params($cookie_params["lifetime"],$cookiepath);
+  $cookiepath   = atkconfig("application_root");
+  $cookiedomain = (atkconfig("cookiedomain") != "") ? atkconfig("cookiedomain") : NULL;
+  session_set_cookie_params($cookie_params["lifetime"],$cookiepath, $cookiedomain);
 
   // set cache expire (if function exists, or show upgrade hint if not)
   if (function_exists("session_cache_expire"))
@@ -39,7 +40,11 @@
   // we don't have a session...
   if (isValidSessionId())
   {
-    session_name(atkconfig("identifier"));
+    $sessionName = atkconfig("session_name");
+    if (empty($sessionName))
+      $sessionName = atkconfig("identifier");
+    
+    session_name($sessionName);
     session_start();
 
   // backwardscompatibility hacks. g_sessionData and g_sessionData are obsolete actually.
@@ -54,10 +59,11 @@
   define("SESSION_NESTED",2);  // new item on current stack
   define("SESSION_BACK",3);    // move one level down on stack
   define("SESSION_REPLACE",4); // replace current stacklevel
+  define("SESSION_PARTIAL",5); // same as replace, but ignore atknodetype and atkaction
 
-  if (isset($_REQUEST["atklevel"])) 	 $atklevel 		= trim($_REQUEST["atklevel"]);
+  if (isset($_REQUEST["atklevel"]))    $atklevel    = trim($_REQUEST["atklevel"]);
   if (isset($_REQUEST["atkprevlevel"]))$atkprevlevel= trim($_REQUEST["atkprevlevel"]);
-  if (isset($_REQUEST["atkstackid"]))  $atkstackid 	= trim($_REQUEST["atkstackid"]);
+  if (isset($_REQUEST["atkstackid"]))  $atkstackid  = trim($_REQUEST["atkstackid"]);
 
   /**
    * The atk session manager.
@@ -173,13 +179,12 @@
     function getValue($var, $namespace="")
     {
       global $g_sessionData;
-      if ($namespace=="globals") return $g_sessionData["globals"][$var];
-      else if ($namespace!="") return $g_sessionData[$namespace]["globals"][$var];
-      if (isset($g_sessionData[$this->m_namespace]["globals"][$var]))
-      {
-        return $g_sessionData[$this->m_namespace]["globals"][$var];
-      }
-      return NULL;
+      if ($namespace=="globals")
+        return isset($g_sessionData["globals"][$var]) ? $g_sessionData["globals"][$var] : null;
+      else if ($namespace!="")
+        return isset($g_sessionData[$namespace]["globals"][$var]) ? $g_sessionData[$namespace]["globals"][$var] : null;
+      else
+        return isset($g_sessionData[$this->m_namespace]["globals"][$var]) ? $g_sessionData[$this->m_namespace]["globals"][$var] : null;
     }
 
     /**
@@ -325,11 +330,15 @@
 
       // session vars are valid until they are set to something else. if you go a session level higher,
       // the next level will still contain these vars (unless overriden in the url)
-      $sessionVars = array("atknodetype","atkfilter","atkselector","atkaction","atkpkret");
+      $sessionVars = array("atknodetype","atkfilter","atkaction","atkpkret");
 
       // pagevars are valid on a page. if you go a session level higher, the pagevars are no longer
       // visible until you return.
-      $pageVars = array("atksearch","atksearchmode","atkorderby","atkstartat","atktarget","atkformdata","atktree","atksuppress","atktab","atksmartsearch");
+      $pageVars = array("atkdg", "atksearch","atkselector","atksearchmode","atkorderby","atkstartat","atklimit","atktarget","atkformdata","atktree","atksuppress","atktab","atksmartsearch","atkindex");
+
+      // lockedvars are session or page vars that will not be overwritten in partial mode
+      // e.g., the values that are already known in the session will be used
+      $lockedVars = array('atknodetype', 'atkaction', 'atkselector');
 
       // Mental note: We have an atkLevel() function for retrieving the atklevel,
       // but we use the global var itself here, because it gets modified in
@@ -346,6 +355,15 @@
 
       $stack = &$g_sessionData[$this->m_namespace]["stack"][$stackid];
 
+      // Prevent going more than 1 level above the current stack top which
+      // causes a new stackitem to be pushed onto the stack at the wrong
+      // location.
+      if ($atklevel > count($stack))
+      {
+        atkdebug("Requested ATKLevel (".$atklevel.") too high for stack, lowering to ".count($stack));
+        $atklevel = count($stack);
+      }
+
       if (isset($postvars["atkescape"]) && $postvars["atkescape"]!="")
       {
         $this->m_escapemode = true;
@@ -358,8 +376,11 @@
         $atkformdata = array();
         foreach(array_keys($postvars) as $varname)
         {
-          // only save formdata itself, hence no $atk.. variables
-          if (substr($varname,0,3)!="atk")
+          // Only save formdata itself, hence no $atk.. variables.
+          // Except atktab because it could be changed in the page load.
+          // but why don't we save all page vars here? What is the reason for
+          // not doing this? TODO: Ask Ivo.
+          if (substr($varname,0,3)!="atk" || $varname == 'atktab')
           {
             $atkformdata[$varname] = $postvars[$varname];
           }
@@ -379,17 +400,21 @@
           }
         }
 
+        // finally, reset atkescape to prevent atk from keeping escaping upon return
+        unset($currentitem['atkescape']);
       }
       else
       {
+        // partial mode?
+        $partial = false;
 
-        if ($atklevel==-1||!is_array($stack))
+        if ($atklevel==-1||!is_array($stack)) // SESSION_NEW
         {
           atkdebug("Cleaning stack");
           $stack = array();
           $atklevel = 0;
         }
-        else if ($atklevel==-2)
+        else if ($atklevel==-2) // SESSION_REPLACE
         {
           // Replace top level.
           array_pop($stack);
@@ -398,6 +423,15 @@
           // some level in the stack. We can determine the real level by
           // counting the stack.
           $atklevel = count($stack);
+        }
+        else if ($atklevel == -3) // SESSION_PARTIAL
+        {
+          $partial = true;
+
+          // Note that the atklevel is now -3. This is actually wrong. We are at
+          // some level in the stack. We can determine the real level by
+          // counting the stack.
+          $atklevel = count($stack) - 1;
         }
 
         if (isset($stack[$atklevel])) $currentitem = $stack[$atklevel];
@@ -459,19 +493,19 @@
 
           foreach($pageVars as $var)
           {
-            if (isset($postvars[$var])&&count($postvars[$var])>0)
+            if (isset($postvars[$var])&&count($postvars[$var])>0 && (!$partial || !in_array($var, $lockedVars)))
             {
               $currentitem[$var] = $postvars[$var];
             }
           }
 
           // page vars must overwrite the current stack..
-          $stack[$atklevel] = $currentitem;
+          $stack[$atklevel] = &$currentitem;
 
           // session vars need not be remembered..
           foreach ($sessionVars as $var)
           {
-            if (isset($postvars[$var])&&count($postvars[$var])>0)
+            if (isset($postvars[$var])&&count($postvars[$var])>0 && (!$partial || !in_array($var, $lockedVars)))
             {
               $currentitem[$var] = $postvars[$var];
             }
@@ -482,7 +516,25 @@
         if (isset($currentitem["atkformdata"]) && is_array($currentitem["atkformdata"]))
         {
           atkdebug("Session formdata present");
-          // atkformdata will be present in postvars.. editForm() has to read them..
+          foreach($currentitem['atkformdata'] as $var => $value)
+          {
+
+            // don't override what was passed in the url.
+            if (!isset($postvars[$var]))
+            {
+              $postvars[$var] = $value;
+            }
+            else if (is_array($postvars[$var]) && is_array($value))
+            {
+              // Formdata that was posted earlier needs to be merged with the current
+              // formdata. We use a custom array_merge here to preserve key=>value pairs.
+              $postvars[$var] = atk_array_merge_keys($value, $postvars[$var]);
+            }
+          }
+
+          // We leave atkformdata in the current stack entry untouched so that
+          // when the stack might be forked of whatsoever the form data is still
+          // present. However, this data should not be directly accessed in the node!
         }
 
         if (is_array($currentitem))
@@ -497,7 +549,6 @@
           }
         }
       } // end if atkescape
-
     }
 
     /**
@@ -517,19 +568,24 @@
 
       for ($i=0;$i<count($stack);$i++)
       {
+        if (!isset($stack[$i]["atknodetype"])) continue;
+
         $mod = getNodeModule($stack[$i]["atknodetype"]);
         $node = getNodeType($stack[$i]["atknodetype"]);
         $title = $ui->title($mod, $node, $stack[$i]["atkaction"]);
+        $descriptor = atkArrayNvl($stack[$i], "descriptor", "");
         if ($i<count($stack)-1)
         {
-          $res[]=array("url"=>session_url('dispatch.php?atklevel='.$i),
-                       "title"=>$title);
+          $res[]=array("url"=>session_url(getDispatchFile().'?atklevel='.$i),
+                       "title"=>$title,
+                       "descriptor"=>$descriptor);
         }
         else
         {
-          $res[]=array("url"=>"", "title"=>$title);
+          $res[]=array("url"=>"", "title"=>$title, "descriptor"=>$descriptor);
         }
       }
+
       return $res;
     }
 
@@ -554,9 +610,12 @@
       {
         if (isset($stack[$i]["descriptor"]) || $i == ($stackcount-1))
         {
-          $node = &getNode($stack[$i]["atknodetype"]);
-          $module = getNodeModule($stack[$i]["atknodetype"]);
-          $nodename = getNodeType($stack[$i]["atknodetype"]);
+          if($stack[$i]["atknodetype"] != "")
+          {
+            $node = &getNode($stack[$i]["atknodetype"]);
+            $module = getNodeModule($stack[$i]["atknodetype"]);
+            $nodename = getNodeType($stack[$i]["atknodetype"]);
+          }
 
           if (is_object($node))
           {
@@ -585,11 +644,11 @@
      */
     function _verifyStackIntegrity()
     {
-      global $g_sessionData, $atkstackid, $atklevel, $atkprevlevel;
+      global $g_sessionData, $atklevel, $atkprevlevel;
       $stack = "";
 
       if (isset($g_sessionData[$this->m_namespace]["stack"][atkStackID()]))
-      	$stack = $g_sessionData[$this->m_namespace]["stack"][atkStackID()];
+        $stack = $g_sessionData[$this->m_namespace]["stack"][atkStackID()];
       if (!is_array($stack)) $prevlevelfromstack = 0;
       else $prevlevelfromstack = count($stack)-1;
 
@@ -631,8 +690,215 @@
      */
     function &getSession()
     {
+      if (!isset($_SESSION[atkconfig("identifier")]) || !is_array($_SESSION[atkconfig("identifier")]))
+        $_SESSION[atkconfig("identifier")] = array();
       return $_SESSION[atkconfig("identifier")];
     }
+
+    /**
+     * Calculate a new session level based on current level and
+     * a passed sessionstatus.
+     * @param var $sessionstatus the session flags
+     *            (SESSION_DEFAULT (default)|SESSION_NEW|SESSION_REPLACE|
+     *             SESSION_NESTED|SESSION_BACK)
+     * @param int $levelskip how many levels to skip when we use SESSION_BACK,
+     *            default 1
+     * @static
+     * @return int the new session level
+     */
+    function newLevel($sessionstatus=SESSION_DEFAULT, $levelskip=1)
+    {
+      $currentlevel = atkLevel();
+
+      $newlevel = -1;
+
+      switch ($sessionstatus)
+      {
+        case SESSION_NEW:
+        {
+          $newlevel = -1;
+          break;
+        }
+        case SESSION_REPLACE:
+        {
+          $newlevel = -2;
+          break;
+        }
+        case SESSION_PARTIAL:
+        {
+          $newlevel = -3;
+          break;
+        }
+        case SESSION_NESTED:
+        {
+          $newlevel = $currentlevel+1;
+          break;
+        }
+        case SESSION_BACK:
+        {
+          $newlevel = max(0,$currentlevel-$levelskip);
+          break;
+        }
+        default:
+        {
+          $newlevel = $currentlevel;
+        }
+      }
+      return $newlevel;
+    }
+
+    /**
+     * Adds session information to a form
+     *
+     * @param int $sessionstatus the session flags
+     *            (SESSION_DEFAULT (default)|SESSION_NEW|SESSION_REPLACE|
+     *             SESSION_NESTED|SESSION_BACK)
+     * @param int $returnbehaviour When SESSION_NESTED is used, this is used to
+     *            indicate where to return to.
+     * @param string $fieldprefix
+     * @return string the HTML formcode with the session info
+     */
+    function formState($sessionstatus=SESSION_DEFAULT, $returnbehaviour=NULL, $fieldprefix='')
+    {
+      global $g_stickyurl;
+
+      $res = "";
+
+      $newlevel = atkSessionManager::newLevel($sessionstatus);
+
+      if ($newlevel!=0)
+      {
+        $res= '<input type="hidden" name="atklevel" value="'.$newlevel.'" />';
+      }
+      $res.='<input type="hidden" name="atkprevlevel" value="'.atkLevel().'" />';
+
+      if ($sessionstatus!=SESSION_NEW)
+      {
+        $res.='<input type="hidden" name="atkstackid" value="'.atkStackID().'" />';
+      }
+
+      if (!is_null($returnbehaviour))
+      {
+        $res.= '<input type="hidden" name="'.$fieldprefix.'atkreturnbehaviour" value="'.$returnbehaviour.'" />';
+      }
+
+      $res .= '<input type="hidden" name="'.session_name().'" value="'.session_id().'" />';
+      $res .= '<input type="hidden" name="atkescape" value="" />';
+
+      for ($i=0;$i<count($g_stickyurl);$i++)
+      {
+        $value = $GLOBALS[$g_stickyurl[$i]];
+        if ($value!="")
+        {
+          $res.="\n".'<input type="hidden" name="'.$g_stickyurl[$i].'" value="'.$value.'" />';
+        }
+      }
+      return $res;
+    }
+
+
+    /**
+     * Gets the session vars
+     * @param var $sessionstatus the session flags
+     *                           (SESSION_DEFAULT (default)|SESSION_NEW|SESSION_REPLACE|
+     *                            SESSION_NESTED|SESSION_BACK)
+     * @param int $levelskip      the amount of levels to skip if we go back
+     * @param string $url         the URL
+     * @return array the vars of the session
+     */
+    function sessionVars($sessionstatus=SESSION_DEFAULT, $levelskip=1, $url="")
+    {
+      global $g_stickyurl;
+
+      $newlevel = atkSessionManager::newLevel($sessionstatus, $levelskip);
+      $vars="";
+     // atklevel is already set manually, we don't append it..
+      if ($newlevel!=0 && !strpos($url,"atklevel=")>0)
+      {
+        $vars.= "atklevel=".$newlevel."&";
+      }
+      $vars.= "atkprevlevel=".atkLevel();
+      if ($sessionstatus!=SESSION_NEW)
+      {
+        $vars.="&atkstackid=".atkStackID();
+      }
+      $vars.= "&".SID;
+
+      for ($i=0;$i<count($g_stickyurl);$i++)
+      {
+        $value = $GLOBALS[$g_stickyurl[$i]];
+        if ($value!="")
+        {
+          if (substr($vars,-1)!="&") $vars.="&";
+          $vars.=$g_stickyurl[$i]."=".$value;
+        }
+      }
+      return $vars;
+    }
+
+    /**
+     * Makes a session-aware URL.
+     *
+     * @param string $url         the url to make session-aware
+     * @param var $sessionstatus  the session flags
+     *                            (SESSION_DEFAULT (default)|SESSION_NEW|SESSION_REPLACE|
+     *                             SESSION_NESTED|SESSION_BACK)
+     * @param int $levelskip      the amount of levels to skip if we go back
+     * @static
+     * @return string the session aware URL
+     */
+    function sessionUrl($url,$sessionstatus=SESSION_DEFAULT, $levelskip=1)
+    {
+      if (strpos($url,"?")!==false)
+      {
+        $start = "&";
+      }
+      else
+      {
+        $start = "?";
+      }
+
+      $url.=$start;
+
+      $url.=atkSessionManager::sessionVars($sessionstatus, $levelskip, $url);
+
+      return $url;
+    }
+
+
+    /**
+     * Makes a session-aware href url.
+     * When using hrefs in the editform, you can set saveform to true. This will save your
+     * form variables in the session and restore them whenever you come back.
+     *
+     * @param string $url         the url to make session aware
+     * @param string $name        the name to display
+     * @param var $sessionstatus  the session flags
+     *                            (SESSION_DEFAULT (default)|SESSION_NEW|SESSION_REPLACE|
+     *                             SESSION_NESTED|SESSION_BACK)
+     * @param bool $saveform      wether or not to save the form
+     * @param string $extraprops  extra props you can add in the link such as
+     *                            'onChange="doSomething()"'
+     * @static
+     * @return string the HTML link for the session aware URI
+     */
+    function href($url,$name="",$sessionstatus=SESSION_DEFAULT, $saveform=false, $extraprops="")
+    {
+      if ($saveform)
+      {
+        $str = 'javascript:atkSubmit("'.atkurlencode(atkSessionManager::sessionUrl($url,$sessionstatus)).'")';
+      }
+      else
+      {
+        $str = atkSessionManager::sessionUrl($url,$sessionstatus);
+      }
+
+      // note, we use single quotes instead of doublequotes in the href='',
+      // because we otherwise have a problem with internet explorers buggy
+      // javascript parser..
+      return "<a href='".$str."' ".$extraprops.">".$name."</a>";
+    }
+
 
   }
 
@@ -662,15 +928,17 @@
     $g_sessionManager = new atkSessionManager($namespace, $usestack);
 
     atkDataDecode($_REQUEST);
-    $ATK_VARS = $_REQUEST;
+    $ATK_VARS = array_merge($_GET, $_POST);
+    atkDataDecode($ATK_VARS);
+    if ($ATK_VARS['atkfieldprefix'] != '') $ATK_VARS = $ATK_VARS[$ATK_VARS['atkfieldprefix']];
 
     $g_sessionManager->session_read($ATK_VARS);
 
     // Escape check
-    if (isset($ATK_VARS["atkescape"]) && $ATK_VARS["atkescape"]!="")
+    if (isset($_REQUEST["atkescape"]) && $_REQUEST["atkescape"]!="")
     {
       atkimport("atk.atknode");
-      atkNode::redirect(atkurldecode($ATK_VARS["atkescape"]));
+      atkNode::redirect(atkurldecode($_REQUEST["atkescape"]));
 
       $output = &atkOutput::getInstance();
       $output->outputFlush();
@@ -681,7 +949,7 @@
     {
       // When we go back, we go one level deeper than the level we came from.
       atkimport("atk.atknode");
-      atkNode::redirect(session_url($_SERVER["PHP_SELF"]."?atklevel=".($atkprevlevel-1)));
+      atkNode::redirect(session_url(atkSelf()."?atklevel=".($atkprevlevel-1)));
       $output = &atkOutput::getInstance();
       $output->outputFlush();
       exit;
@@ -750,6 +1018,16 @@
     return $atklevel;
   }
 
+  function atkPrevLevel()
+  {
+    global $atkprevlevel;
+    if (!isset($atkprevlevel)||$atkprevlevel=="")
+    {
+      $atkprevlevel = 0; // assume bottom level.
+    }
+    return $atkprevlevel;
+  }
+
   // Below added in 5.3 but not working right!!
 
   // Function created by timo at frenay dot net taken from:
@@ -814,8 +1092,11 @@
    */
   function isValidSessionId()
   {
-  	$name = atkconfig("identifier");
-  	$sessionid = "";
+    $name = atkconfig("session_name");
+    if (empty($name))
+      $name = atkconfig("identifier");
+      
+    $sessionid = "";
     global ${$name};
 
     if (isset($_COOKIE[$name])&&$_COOKIE[$name])
@@ -831,7 +1112,7 @@
 
     for ($position=0; $position<strlen($sessionid); $position++)
     {
-      if (!eregi('[a-zA-Z0-9]', $sessionid[$position])) return false;
+      if (!eregi('[a-zA-Z0-9:-]', $sessionid[$position])) return false;
     }
     return true;
   }

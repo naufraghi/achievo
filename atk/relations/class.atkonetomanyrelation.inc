@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.68 $
-   * $Id: class.atkonetomanyrelation.inc,v 5.68 2006/05/22 12:57:57 ivo Exp $
+   * @version $Revision: 5.95 $
+   * $Id: class.atkonetomanyrelation.inc,v 5.95 2007/12/19 13:48:37 sandy Exp $
    */
 
   /**
@@ -21,10 +21,25 @@
   userelation("atkrelation");
 
   /**
-   * flag(s) specific for atkManyToOneRelation
+   * Only allow deletion of master item when there are no child records
    */
-  define("AF_RESTRICTED_DELETE", AF_SPECIFIC_1); // Only allow deletion of master item when there are no child records
-  define("AF_ONETOMANY_EMBED", AF_SPECIFIC_2);
+  define("AF_RESTRICTED_DELETE", AF_SPECIFIC_1);
+
+  /**
+   * Use pop-up dialogs for adding records
+   */
+  define("AF_ONETOMANY_ADD_DIALOG", AF_SPECIFIC_2);
+
+  /**
+   * Use embedded forms for adding records
+   * @deprecated Replaced by AF_ONETOMANY_ADD_DIALOG.
+   */
+  define("AF_ONETOMANY_EMBED", AF_ONETOMANY_ADD_DIALOG);
+
+  /**
+   * Use pop-up dialog for whatever a new record must be copied or must be added.
+   */
+  define("AF_ONETOMANY_ADDORCOPY_DIALOG", AF_SPECIFIC_3);
 
   /**
    * Implementation of one-to-many relationships.
@@ -59,6 +74,7 @@
     /**
      * The maximum number of detail records. If the number of detail records
      * exceeds this maximum, the link for adding new details disappears.
+     * @access private
      * @var int
      */
     var $m_maxRecords = 0;
@@ -67,9 +83,34 @@
     /**
      * The load method might build a custom filter. When it does, we might want
      * to use it again in other methods.
+     * @access private
      * @var string
      */
     var $m_loadFilter = "";
+
+    /**
+     * The field that the foreign key in the destination points to.
+     * Is set to the primary key if no value is provided.
+     * @access private
+     * @var array;
+     */
+    var $m_ownerFields = array();
+
+    /**
+     * Use destination filter for autolink add link?
+     *
+     * @access private
+     * @var boolean
+     */
+    var $m_useFilterForAddLink = true;
+
+    /**
+     * Use destination filter for edit link (edit button)?
+     *
+     * @access private
+     * @var boolean
+     */
+    var $m_useFilterForEditLink = true;
 
     /**
      * Default constructor.
@@ -98,7 +139,7 @@
      */
     function atkOneToManyRelation($name, $destination, $refKey="", $flags=0)
     {
-      $page = &atkPage::getInstance();
+      $page = &atkinstance('atk.ui.atkpage');
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/class.atkonetomanyrelation.js");
 
@@ -114,6 +155,40 @@
       {
         $this->m_refKey[] = $refKey;
       }
+    }
+
+    function setOwnerFields($ownerfields)
+    {
+      $this->m_ownerFields = $ownerfields;
+    }
+
+    function getOwnerFields()
+    {
+      if (is_array($this->m_ownerFields) && count($this->m_ownerFields)>0)
+      {
+        return $this->m_ownerFields;
+      }
+      return $this->m_ownerInstance->m_primaryKey;
+    }
+
+    /**
+     * Use destination filter for auto add link?
+     *
+     * @param boolean $useFilter use destnation filter for add link?
+     */
+    function setUseFilterForAddLink($useFilter)
+    {
+      $this->m_useFilterForAddLink = $useFilter;
+    }
+
+    /**
+     * Use destination filter for edit link (edit button)?
+     *
+     * @param boolean $useFilter use destnation filter for edit link (edit button)?
+     */
+    function setUseFilterForEditLink($useFilter)
+    {
+      $this->m_useFilterForEditLink = $useFilter;
     }
 
     /**
@@ -137,23 +212,34 @@
         $myrecords = $this->load(atkGetDb(), $record, "admin",true);
       }
 
-      $result = atktext("none"); // default result
+      if (!in_array($mode, array("csv", "plain"))) { $result = atktext("none"); } else { $result=''; }
 
       if ($this->createDestination())
       {
-        /* record list */
+        // record list
         if (count($myrecords) > 0)
         {
-          $result = "";
-          /* display in list mode */
-          if (($mode == "list") || ($mode == "csv"))
+          // display in list mode
+          if ($mode == "list")
+          {
+            $result = "<ul>";
             for ($i = 0; $i < count($myrecords);$i++)
-              $result .= ($i > 0 ? "<br>" : "").$this->m_destInstance->descriptor($myrecords[$i]);
+              $result .= sprintf("<li>%s</li>", $this->m_destInstance->descriptor($myrecords[$i]));
+            $result .= "</ul>";
+          }
 
-          /* display in view mode */
+          // display in csv/plain mode
+          elseif (in_array($mode, array("csv", "plain")))
+          {
+            $result = "";
+            for ($i = 0; $i < count($myrecords);$i++)
+              $result .= ($i > 0 ? ', ' : '').$this->m_destInstance->descriptor($myrecords[$i]);
+          }
+
+          // display in view mode
           else
           {
-            if (!empty($this->m_destinationFilter)) $filter = rawurlencode($this->m_destinationFilter);
+            if (!empty($this->m_destinationFilter)) $filter =$this->m_destinationFilter;
             if (!$this->m_destInstance->hasFlag(NF_NO_VIEW))
               $actions = array("view" => dispatch_url($this->m_destination, "view", array("atkselector" => "[pk]", "atkfilter" => $filter)));
             else $actions = array();
@@ -181,8 +267,6 @@
     {
       if ($this && $this->createDestination())
       {
-        $error = $this->_checkIntegratedSave();
-
         if ($this->m_destInstance->hasFlag(NF_CACHE_RECORDLIST))
         {
           $this->_setRecordlistCache();
@@ -193,11 +277,12 @@
             return $cache;
           }
         }
-        $output = $error;
-        $output .= $this->_getEditOutput($record,$fieldprefix);
+
+        $output = $this->_getEditOutput($record,$fieldprefix);
         if ($this->m_recordlistcache) $this->m_recordlistcache->writeCache($output, $this->m_recordlist->m_actionloader);
         return $output;
       }
+
       return "";
     }
 
@@ -208,7 +293,6 @@
       $output=$this->editHeader($record, $myrecords);
 
       $output.= $this->_getRecordList($myrecords);
-
 
       $output.=$this->editFooter($record, $myrecords);
       $this->_fetchNavigationLinks($output);
@@ -221,48 +305,6 @@
     }
 
     /**
-     * Checks for an added integrated record and adds it
-     * @return String An error, if one occured
-     */
-    function _checkIntegratedSave()
-    {
-      $error = "";
-      if ($this->hasFlag(AF_ONETOMANY_EMBED))
-      {
-        if ($this->m_ownerInstance->m_postvars[$this->fieldName()."_save"])
-        {
-          foreach (array_keys($this->m_ownerInstance->m_postvars[$this->fieldName()]) as $fieldname)
-          {
-            if (!in_array($fieldname,array("atkaction","atknodetype","atkprimkey")))
-            {
-              $attribute = &$this->m_destInstance->getAttribute($fieldname);
-              if (is_object($attribute))
-              {
-                $this->m_ownerInstance->m_postvars[$this->fieldName()][$fieldname] = $attribute->fetchValue($this->m_ownerInstance->m_postvars[$this->fieldName()]);
-              }
-              else
-              {
-                $this->m_ownerInstance->m_postvars[$this->fieldName()][$fieldname] = $this->m_ownerInstance->m_postvars[$this->fieldName()];
-                atkerror("$fieldname is no attribute for integrated save, is this correct?");
-              }
-            }
-          }
-
-          $this->m_destInstance->validate($this->m_ownerInstance->m_postvars[$this->fieldName()],"add");
-          if (!$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'])
-          {
-            $this->m_destInstance->addDb($this->m_ownerInstance->m_postvars[$this->fieldName()]);
-          }
-          else
-          {
-            $error = "<span class='error'>".$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'][0]['attrib_name'].': '.$this->m_ownerInstance->m_postvars[$this->fieldName()]['atkerror'][0]['msg']."</span><br />";
-          }
-        }
-      }
-      return $error;
-    }
-
-    /**
      * Adds the 'add' option to the onetomany, either integrated or as a link
      *
      * @param String $output   The HTML output of the edit function
@@ -271,68 +313,28 @@
      */
     function _addAddToEditOutput(&$output, $myrecords, $record)
     {
-      if (atkconfig("onetomany_addlink_position","bottom")=="top")
+      if (atkconfig("onetomany_addlink_position","bottom") == "top")
       {
-        if ($this->hasFlag(AF_ONETOMANY_EMBED))
-          $output=$this->_getEmbededOutput()."<br />".$output;
-        else
-          $output=$this->_addAddLink($myrecords, $record)."<br />".$output;
+        $output = $this->_getAddLink($myrecords, $record)."<br />".$output;
       }
-      else if (atkconfig("onetomany_addlink_position","bottom")=="bottom")
+      else if (atkconfig("onetomany_addlink_position","bottom") == "bottom")
       {
-        if ($this->hasFlag(AF_ONETOMANY_EMBED))
-          $output.=$this->_getEmbededOutput();
-        else
-          $output.=$this->_addAddLink($myrecords, $record)."<br />";
+        $output .= $this->_getAddLink($myrecords, $record)."<br />";
       }
     }
 
     /**
-     * Returns the HTML for the embedded form for the OneToMany
-     * @return String The embeded form
-     * @todo Move the HTML to a template
-     * @todo Expand this to make this integrate editting as well and
-     *        make it respect an editafteradd
-     * @todo Make this work with an atkManyToOne
+     * Get the buttons for the embedded mode of the onetomany relation.
+     * @todo Move this to a template
+     * @return String The HTML buttons
      */
-    function _getEmbededOutput()
+    function _getEmbeddedButtons()
     {
-      if ($this->createDestination())
-      {
-        $output.="\n".'<div id="'.$this->fieldName().'_integrated" style="display: none;" class="onetomanyintegrated">';
-
-        $destInstanceCopy = $this->m_destInstance;
-        $editrecord=array();
-        foreach ($destInstanceCopy->m_attribList as $key=> $attribute)
-        {
-          if (strtolower($attribute->m_destination)==strtolower($this->m_ownerInstance->atknodetype()))
-          {
-            $selector = array_values(decodeKeyValuePair($this->m_ownerInstance->m_postvars["atkselector"]));
-            $editrecord[$attribute->fieldname()] = array($this->m_ownerInstance->primaryKeyField()=>$selector[0]);
-            $p_attrib = &$destInstanceCopy->m_attribList[$key];
-            $p_attrib->addFlag(AF_HIDE);
-          }
-        }
-        $fname = $this->fieldName();
-
-        atkimport("atk.handlers.atkedithandler");
-        $handler = new atkEditHandler();
-        $handler->m_node = &$destInstanceCopy;
-        $output.=$handler->editForm("add",$editrecord,"","",$fname."_AE_","integratededitform.tpl");
-
-        $output.='<input type="submit" class="otm_add" name="'.$fname.'_save" value="'.atktext("add").'">';
-        $output.='<input type="button" onClick="toggleAddForm(\''.$fname."_integrated',
+      $fname = $this->fieldName();
+      $output.='<input type="submit" class="otm_add" name="'.$fname.'_save" value="'.atktext("add").'">';
+      return $output.'<input type="button" onClick="toggleAddForm(\''.$fname."_integrated',
                                                                '".$fname."_integrated_link');\"
                                        class=\"otm_add\" name=\"".$fname."_cancel\" value=\"".atktext("cancel").'">';
-        $text = atktext("link_".$fname."_add",$this->m_ownerInstance->m_module,$this->m_owner,"","",true);
-        if (!$text) $text = atktext($fname,$this->m_ownerInstance->m_module,$this->m_owner)." ".atktext("add");
-        $output.="\n </div> <a id=\"".$fname."_integrated_link\"
-                                href=\"javascript:toggleAddForm('".$fname."_integrated','".$fname."_integrated_link');\">$text</a>";
-      }
-      else
-        atkerror("Could not create destination for ". $this->fieldName()."!");
-
-      return $output;
     }
 
     /**
@@ -350,17 +352,7 @@
      */
     function _getRecords($record,$paging=false)
     {
-      $ownerorderby="";
-      if (isset($this->m_ownerInstance->m_postvars['atkorderby']))
-      {
-        $ownerorderby = $this->m_ownerInstance->m_postvars['atkorderby'];
-        if(isset($this->m_ownerInstance->m_postvars['atkorderby'.$this->fieldName()]))
-          $this->m_ownerInstance->m_postvars['atkorderby'] = $this->m_ownerInstance->m_postvars['atkorderby'.$this->fieldName()];
-      }
-
       $myrecords = $this->load(atkGetDb(), $record, "admin", $paging);
-
-      $this->m_ownerInstance->m_postvars['atkorderby'] = $ownerorderby;
       return $myrecords;
     }
 
@@ -378,7 +370,7 @@
 
         $embedprefix = "{$this->m_name}";
 
-        if ($this->m_destinationFilter!="")
+        if ($this->m_useFilterForEditLink && $this->m_destinationFilter!="")
         {
           $params["atkfilter"]=$this->m_destinationFilter;
         }
@@ -418,7 +410,7 @@
       // for now, we don't support extended search in embedded one2many recordlists.
       atkimport("atk.recordlist.atkrecordlist");
       $flags  = atkRecordList::convertFlags($this->m_destInstance->getFlags());
-      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH;
+      $flags |= RL_EMBED|RL_NO_EXTENDED_SEARCH|RL_NO_SORT|RL_NO_SEARCH;
       return $flags;
     }
 
@@ -428,37 +420,83 @@
      * @param Array $record     The record that holds the value for this attribute.
      * @return String  The link to add records to the onetomany
      */
-    function _addAddLink($myrecords, $record,$saveform=true)
+    function _getAddLink($myrecords, $record,$saveform=true)
+    {
+      $filter = $this->getAddFilterString($record);
+
+      $addorcopy = $this->hasFlag(AF_ONETOMANY_ADDORCOPY_DIALOG) ||
+                   $this->m_destInstance->hasFlag(NF_ADDORCOPY_DIALOG);
+
+      $add = $this->hasFlag(AF_ONETOMANY_ADD_DIALOG) ||
+             $this->m_destInstance->hasFlag(NF_ADD_DIALOG);
+
+      if ($addorcopy)
+      {
+        atkimport('atk.handlers.atkaddorcopyhandler');
+        $showDialog = atkAddOrCopyHandler::hasCopyableRecords($this->m_destInstance, $filter);
+
+        if ($showDialog)
+          return $this->_getDialogAddLink($record, 'addorcopy');
+      }
+
+      if ($add)
+      {
+        return $this->_getDialogAddLink($record, 'add');
+      }
+      else
+      {
+        return $this->_getNestedAddLink($myrecords, $record, $saveform);
+      }
+    }
+
+    /**
+     * Uses the given record to create an add filter string.
+     *
+     * @param array $record
+     * @return string filter string
+     */
+    function getAddFilterString($record)
+    {
+      $filterelems = $this->_getFilterElements($record);
+      $strfilter = implode(" AND ", $filterelems);
+      if ($this->m_useFilterForAddLink && $this->m_destinationFilter!="")
+      {
+        $strfilter.=' AND '.$this->parseFilter($this->m_destinationFilter,$record);
+      }
+
+      return $strfilter;
+    }
+
+    function _getDialogAddLink($record, $action)
+    {
+      atkimport("atk.ui.atkdialog");
+
+      $filter = $this->getAddFilterString($record);
+
+      $ui = &$this->m_ownerInstance->getUi();
+
+      $dialog = new atkDialog($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.'.$action.'_dialog', array('atkfilter' => $filter));
+      $title = $ui->title($this->m_destInstance->m_module, $this->m_destInstance->m_type, $action);
+      $dialog->setTitle($title);
+      $onClick = $dialog->getCall();
+
+      return '<a href="javascript:void(0)" onclick="'.$onClick.'" class="valignMiddle">'.$this->getAddLabel().'</a>';
+    }
+
+    /**
+     * Internal function to get the add link for a atkOneToManyRelation.
+     *
+     * @param Array $myrecords  The load of all attributes (see comment in edit() code)
+     * @param Array $record     The record that holds the value for this attribute.
+     * @return String  The link to add records to the onetomany
+     */
+    function _getNestedAddLink($myrecords, $record,$saveform=true)
     {
       $url = "";
       if (($this->m_maxRecords==0||$this->m_maxRecords>count($myrecords))&&$this->createDestination() && !$this->m_destInstance->hasFlag(NF_NO_ADD))
       {
-        if ($this->destinationHasRelation())
-        {
-          // we need to set the filter of the record we are going to add.
-          // The referential key must be set to the value of the current
-          // primary key.
-          for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
-          {
-            $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
-
-            $filterelems[] = $this->m_refKey[0].".".$this->m_ownerInstance->m_primaryKey[$i]."=".$primkeyattr->value2db($record);
-
-          }
-        }
-        else
-        {
-          for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
-          {
-            $filterelems[] = $this->m_refKey[$i]."=".$record[$this->m_ownerInstance->m_primaryKey[$i]];
-          }
-        }
-        $strfilter = implode(" AND ", $filterelems);
-        if ($this->m_destinationFilter!="")
-        {
-        	$strfilter.=' AND '.$this->parseFilter($this->m_destinationFilter,$record);
-        }
-        $add_url = 'dispatch.php?atknodetype='.$this->m_destination.'&atkaction=add&atkfilter='.rawurlencode($strfilter);
+        $strfilter = $this->getAddFilterString($record);
+        $add_url = dispatch_url($this->m_destination,"add", array("atkfilter"=>$strfilter));
         $label = $this->getAddLabel();
 
         if (count($this->m_onchangecode))
@@ -473,6 +511,30 @@
         $url = href($add_url,$label,SESSION_NESTED,$saveform,$onchange.' class="atkonetomanyrelation"');
       }
       return $url;
+    }
+
+    function _getFilterElements($record)
+    {
+      $ownerfields = $this->getOwnerFields();
+      if ($this->destinationHasRelation())
+      {
+        // we need to set the filter of the record we are going to add.
+        // The referential key must be set to the value of the current
+        // primary key.
+        for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
+        {
+          $primkeyattr = &$this->m_ownerInstance->m_attribList[$ownerfields[$i]];
+          $filterelems[] = $this->m_refKey[0].".".$ownerfields[$i]."='".$primkeyattr->value2db($record)."'";
+        }
+      }
+      else
+      {
+        for ($i=0, $_i=count($this->m_refKey); $i<$_i; $i++)
+        {
+          $filterelems[] = $this->m_refKey[$i]."=".$record[$ownerfields[$i]];
+        }
+      }
+      return $filterelems;
     }
 
     /**
@@ -550,10 +612,11 @@
       $whereelems = array();
 
       if (count($this->m_refKey)==0||$this->m_refKey[0]=="") $this->m_refKey[0]=$this->m_owner;
+      $ownerfields = $this->getOwnerFields();
 
       for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
       {
-        $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
+        $primkeyattr = &$this->m_ownerInstance->m_attribList[$ownerfields[$i]];
 
         if (!$primkeyattr->isEmpty($record))
         {
@@ -621,9 +684,33 @@
               $this->m_destInstance->m_postvars['atksearchmode'] = $this->m_ownerInstance->m_postvars['atksearchmode'];
             }
             ($paging==true)?$limitarray=$this->fetchLimitArray():$limitarray="";
-            $atkorderby = isset($this->m_ownerInstance->m_postvars['atkorderby']) ? $this->m_ownerInstance->m_postvars['atkorderby'] : "";
-            $recordset = $this->m_destInstance->selectDb($where,$atkorderby,
-            $limitarray,$excludes,"",$mode);
+
+            $stmt = "";
+            if(isset($this->m_ownerInstance->m_postvars['atkorderby'.$this->fieldName()]))
+            {
+              $atkorderby = $this->m_ownerInstance->m_postvars['atkorderby'.$this->fieldName()];
+              // EVIL BAD SMELL, sorting and recordlist embedding is handled in a very cumbersome way (with prefixes and embedprefixes
+              // that are hardly understandable
+              $elems = explode(" ", $atkorderby);
+              if (isset($this->m_destInstance->m_attribList[$elems[0]]))
+              {
+                $attr = &$this->m_destInstance->getAttribute($elems[0]);
+                $stmt = $attr->getOrderByStatement();
+
+                if (count($elems)>1)
+                {
+                  // probably asc or desc
+                  $stmt.=" ".$elems[1];
+                }
+              }
+              else
+              {
+                // not an attribute, probably custom order by
+                $stmt = $atkorderby;
+              }
+            }
+
+            $recordset = $this->m_destInstance->selectDb($where,$stmt,$limitarray,$excludes,"",$mode);
             $this->m_loadFilter = $where;
             return $recordset;
           }
@@ -637,7 +724,7 @@
      * relation contains any records. When there aren't any, the relation is empty,
      * otherwise it isn't
      *
-     * @param	array	&$record The record to check
+     * @param  array  &$record The record to check
      * @return bool true if a destination record is present. False if not.
      */
     function isEmpty($record)
@@ -647,7 +734,7 @@
       {
         // empty. It might be that the record has not yet been fetched. In this case, we do
         // a forced load to see if it's really empty.
-        $recs = $this->load(atkGetDb(), $record);
+        $recs = $this->load($this->m_ownerInstance->getDb(), $record);
         return (count($recs)==0);
       }
       return false;
@@ -707,10 +794,11 @@
       $classname = $this->m_destination;
       $cache_id = $this->m_owner.".".$this->m_name;
       $rel = &getNode($classname,$cache_id);
+      $ownerfields = $this->getOwnerFields();
 
       for ($i=0, $_i = count($this->m_refKey); $i<$_i; $i++)
       {
-         $primkeyattr = &$this->m_ownerInstance->m_attribList[$this->m_ownerInstance->m_primaryKey[$i]];
+         $primkeyattr = &$this->m_ownerInstance->m_attribList[$ownerfields[$i]];
          $whereelems[] = $rel->m_table.".".$this->m_refKey[$i]."='".$primkeyattr->value2db($record)."'";
       }
       $where = implode(" AND ", $whereelems);
@@ -744,6 +832,7 @@
         {
           if ($this->createDestination())
           {
+            $ownerfields = $this->getOwnerFields();
             for ($i=0;$i<count($onetomanyrecs);$i++)
             {
               // the referential key of the onetomanyrecs could be wrong, if we
@@ -753,14 +842,14 @@
               {
                 for ($j=0, $_j = count($this->m_refKey); $j<$_j; $j++)
                 {
-                  $onetomanyrecs[$i][$this->m_refKey[$j]] = $record[$this->m_ownerInstance->m_primaryKey[$j]];
+                  $onetomanyrecs[$i][$this->m_refKey[$j]] = $record[$ownerfields[$j]];
                 }
               }
               else
               {
                 for ($j=0, $_j = count($this->m_refKey); $j<$_j; $j++)
                 {
-                   $onetomanyrecs[$i][$this->m_refKey[0]][$this->m_ownerInstance->m_primaryKey[$j]] = $record[$this->m_ownerInstance->m_primaryKey[$j]];
+                   $onetomanyrecs[$i][$this->m_refKey[0]][$ownerfields[$j]] = $record[$ownerfields[$j]];
                 }
               }
 
@@ -821,16 +910,16 @@
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').'>';
       return $result;
     }
-    
-    
+
+
     /**
      * Returns the condition (SQL) that should be used when we want to join an owner
      * node with the destination node of the atkOneToManyRelation.
-     * 
+     *
      * @param atkQuery $query      The query object.
      * @param String   $ownerAlias The owner table alias.
      * @param String   $destAlias  The destination table alias.
-     * 
+     *
      * @return String SQL string for joining the owner with the destination.
      */
     function getJoinCondition(&$query, $ownerAlias="", $destAlias="")
@@ -839,24 +928,25 @@
 
       if ($ownerAlias == "")
         $ownerAlias = $this->m_ownerInstance->m_table;
-        
+
       if ($destAlias == "")
         $destAlias = $this->m_destInstance->m_table;
-        
+
       $conditions = array();
+      $ownerfields = $this->getOwnerFields();
 
       for ($i = 0, $_i = count($this->m_refKey); $i < $_i; $i++)
       {
-        $conditions[] = $destAlias.".".$this->m_refKey[$i]."=".$ownerAlias.".".$this->m_ownerInstance->m_primaryKey[$i];
+        $conditions[] = $destAlias.".".$this->m_refKey[$i]."=".$ownerAlias.".".$ownerfields[$i];
       }
 
       return implode(" AND ", $conditions);
-    }     
+    }
 
     /**
      * Creates a smart search condition for a given search value, and adds it
      * to the query that will be used for performing the actual search.
-     * 
+     *
      * @param Integer  $id         The unique smart search criterium identifier.
      * @param Integer  $nr         The element number in the path.
      * @param Array    $path       The remaining attribute path.
@@ -869,13 +959,13 @@
     {
       // one-to-many join means we need to perform a distinct select
       $query->setDistinct(true);
-      
+
       if (count($path) > 0)
       {
         $this->createDestination();
-        
+
         $destAlias = "ss_{$id}_{$nr}_".$this->fieldName();
-        
+
         $query->addJoin(
           $this->m_destInstance->m_table, $destAlias,
           $this->getJoinCondition($query, $ownerAlias, $destAlias),
@@ -884,17 +974,17 @@
 
         $attrName = array_shift($path);
         $attr = &$this->m_destInstance->getAttribute($attrName);
-        
+
         if (is_object($attr))
         {
           $attr->smartSearchCondition($id, $nr + 1, $path, $query, $destAlias, $value, $mode);
         }
       }
-      else 
+      else
       {
         $this->searchCondition($query, $ownerAlias, $value, $mode);
       }
-    }    
+    }
 
     /**
      * Adds a search condition for a given search value
@@ -915,7 +1005,6 @@
          }
        }
      }
-     
 
      function getSearchCondition(&$query, $table, $value, $searchmode)
      {
@@ -961,9 +1050,10 @@
          $attr->searchCondition($query, $alias, $value, $searchmode);
 
          $condition = array();
-         for ($i = 0; $i < sizeof($this->m_ownerInstance->m_primaryKey); $i++)
+         $ownerfields = $this->getOwnerFields();
+         for ($i = 0; $i < sizeof($ownerfields); $i++)
          {
-            $condition[] = $this->m_ownerInstance->m_table . "." . $this->m_ownerInstance->m_primaryKey[$i] . "=". $alias . "." . $this->m_refKey[$i];
+            $condition[] = $this->m_ownerInstance->m_table . "." . $ownerfields[$i] . "=". $alias . "." . $this->m_refKey[$i];
          }
 
          $query->addJoin($table,$alias,implode(" AND ",$condition),false);
@@ -995,16 +1085,16 @@
     {
       if ($this->hasFlag(AF_RESTRICTED_DELETE))
       {
-    		// Get the destination node
-    		$classname = $this->m_destination;
-      	$cache_id = $this->m_owner.".".$this->m_name;
-      	$rel = &getNode($classname,$cache_id);
-      	// Get the current atkselector
-      	$where = $this->translateSelector($this->m_ownerInstance->m_postvars['atkselector']);
-      	if ($where)
-      	{
-      		$childrecords = $rel->selectDb($where);
-        	if (!empty($childrecords)) return atktext("restricted_delete_error");
+        // Get the destination node
+        $classname = $this->m_destination;
+        $cache_id = $this->m_owner.".".$this->m_name;
+        $rel = &getNode($classname,$cache_id);
+        // Get the current atkselector
+        $where = $this->translateSelector($this->m_ownerInstance->m_postvars['atkselector']);
+        if ($where)
+        {
+          $childrecords = $rel->selectDb($where);
+          if (!empty($childrecords)) return atktext("restricted_delete_error");
         }
         else return;
       }
@@ -1123,6 +1213,118 @@
         $this->m_recordlistcache->addCacheIdentifier(array('key'=>"embeded"));
       }
       return true;
+    }
+
+    /**
+     * Add dialog.
+     */
+    function partial_add_dialog()
+    {
+       $this->createDestination();
+      $this->m_destInstance->m_partial = 'dialog';
+      $handler = &$this->m_destInstance->getHandler('add');
+      $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+      $handler->setDialogSaveUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.add_process'));
+      $result = $handler->renderAddDialog();
+      $page = &$this->m_ownerInstance->getPage();
+      $page->addContent($result);
+    }
+
+    /**
+     * Process add dialog save action.
+     */
+    function partial_add_process()
+    {
+      $this->createDestination();
+      $handler = &$this->m_destInstance->getHandler('save');
+      $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+       $handler->setDialogSaveUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.add_process'));
+      $handler->handleSave(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.refresh'));
+    }
+
+    /**
+     * Add or copy dialog.
+     */
+    function partial_addorcopy_dialog()
+    {
+      $this->createDestination();
+      $this->m_destInstance->addFilter($this->m_ownerInstance->m_postvars['atkfilter']);
+      $handler = &$this->m_destInstance->getHandler('addorcopy');
+      $handler->setProcessUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.addorcopy_process', array('atkfilter' => $this->m_ownerInstance->m_postvars['atkfilter'])));
+      $handler->handleDialog();
+    }
+
+    /**
+     * Process add or copy action.
+     */
+    function partial_addorcopy_process()
+    {
+      $this->createDestination();
+      $addOrCopy = $this->m_ownerInstance->m_postvars['addorcopy'];
+
+      // user has choosen to copy an existing record, let the copy action
+      // be handled by the normal addorcopy handler
+      if ($addOrCopy == 'copy')
+      {
+        $handler = &$this->m_destInstance->getHandler('addorcopy');
+        $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+        $handler->handleCopy(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.refresh'));
+      }
+
+      // user has choosen to add a new record, depending on whatever the AF_ONETOMANY_ADD_DIALOG
+      // or the destination instance NF_ADD_DIALOG flags has been set we either show the user an
+      // add dialog or redirect him/her to the add page (using an atkSubmit)
+      else
+      {
+        atkimport("atk.ui.atkdialog");
+
+        $script = atkDialog::getCloseCall();
+
+        if ($this->hasFlag(AF_ONETOMANY_ADD_DIALOG) || $this->m_destInstance->hasFlag(NF_ADD_DIALOG))
+        {
+          $ui = &$this->m_ownerInstance->getUi();
+          $filter = $this->m_ownerInstance->m_postvars['atkfilter'];
+          $dialog = new atkDialog($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.add_dialog', array('atkfilter' => $filter));
+          $title = $ui->title($this->m_destInstance->m_module, $this->m_destInstance->m_type, 'add');
+          $dialog->setTitle($title);
+          $script .= $dialog->getCall(true, false);
+        }
+        else
+        {
+          $url = dispatch_url($this->m_destInstance->atkNodeType(), 'add');
+          $script .= "atkSubmit('".atkurlencode(session_url($url, SESSION_NESTED))."');";
+        }
+
+        $page = &$this->m_ownerInstance->getPage();
+        $page->register_loadscript($script);
+      }
+    }
+
+    /**
+     * Edit dialog.
+     */
+    function partial_edit_dialog()
+    {
+      $this->createDestination();
+      $this->m_destInstance->m_partial = 'dialog';
+      $handler = &$this->m_destInstance->getHandler('edit');
+      $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+      $handler->setDialogSaveUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.edit_process'));
+      $result = $handler->renderEditDialog();
+      $page = &$this->m_ownerInstance->getPage();
+      $page->addContent($result);
+    }
+
+    /**
+     * Process edit dialog update action.
+     */
+    function partial_edit_process()
+    {
+      $this->createDestination();
+      $handler = &$this->m_destInstance->getHandler('update');
+      $handler->m_postvars = $this->m_ownerInstance->m_postvars;
+      $handler->setDialogSaveUrl(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.edit_process'));
+      $handler->handleUpdate(partial_url($this->m_ownerInstance->atkNodeType(), 'edit', 'attribute.'.$this->fieldName().'.refresh'));
     }
   }
 ?>

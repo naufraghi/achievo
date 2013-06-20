@@ -12,8 +12,8 @@
    * @copyright (c)2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.3 $
-   * $Id: class.atkactionlistener.inc,v 1.3 2005/12/21 22:15:32 ivo Exp $
+   * @version $Revision: 1.4 $
+   * $Id: class.atkactionlistener.inc,v 1.4 2006/09/19 09:04:00 patrick Exp $
    */
 
   /**
@@ -101,6 +101,39 @@
     function actionPerformed($action, $record)
     {
     }
+
+    /**
+     * Notify the listener of any action about to be performed on a record.
+     *
+     * This method is called by the framework for each action called on a
+     * node. Depending on the actionfilter passed in the constructor, the
+     * call is forwarded to the preActionPerformed($action, $record) method.
+     *
+     * @param String $action The action about to be performed
+     * @param array $record The record on which the action is about to be performed
+     */
+    function preNotify($action, &$record)
+    {
+      if (count($this->m_actionfilter)==0 || atk_in_array($action, $this->m_actionfilter))
+      {
+        atkdebug("Action $action to be performed on ".$this->m_node->atkNodeType()." (".$this->m_node->primaryKey($record).")");
+        $this->preActionPerformed($action, $record);
+      }
+    }
+
+    /**
+     * Notify the listener of an action about to be performed on a record.
+     *
+     * This method should be overriden in custom action listeners, to catch
+     * the action event.
+     * @abstract
+     * @param String $action The action about to be performed
+     * @param array $record The record on which the action is about to be performed
+     */
+    function preActionPerformed($action, &$record)
+    {
+    }
+
   }
 
 ?>

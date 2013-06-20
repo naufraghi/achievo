@@ -13,8 +13,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.9 $
-   * $Id: class.atkaddhandler.inc,v 5.9 2006/01/03 11:27:02 nico Exp $
+   * @version $Revision: 5.25 $
+   * $Id: class.atkaddhandler.inc,v 5.25 2008/01/16 14:12:04 lineke Exp $
    */
 
   /**
@@ -28,14 +28,31 @@
    */
   class atkAddHandler extends atkActionHandler
   {
+    var $m_buttonsource = null;
+    var $m_dialogSaveUrl = null;
+
+    function atkAddHandler()
+    {
+      $this->atkActionHandler();
+      $this->setReturnBehaviour(ATK_ACTION_BACK);
+    }
+
     /**
      * The action handler.
      */
     function action_add()
     {
-      atkdebug("Action add");
+      if (isset($this->m_partial) && $this->m_partial!="")
+      {
+        $this->partial($this->m_partial);
+        return;
+      }
+
+      // we could get here because of a reject.
+      $record = $this->getRejectInfo();
+
       $page = &$this->getPage();
-      $page->addContent($this->m_node->renderActionPage("add", $this->invoke("addPage")));
+      $page->addContent($this->m_node->renderActionPage("add", $this->invoke("addPage", $record)));
     }
 
     /**
@@ -47,59 +64,246 @@
      */
     function addPage($record=NULL)
     {
-      $node = &$this->m_node;
+      $result = $this->getAddPage($record);
+      if ($result !== false)
+        return $result;
+    }
+
+    function getAddPage($record=NULL)
+    {
+      // check if there are postvars set for filling the record, this
+      // can happen when a new selection is made using the select handler etc.
+      if ($record == NULL)
+      {
+        $record = $this->m_node->updateRecord('', NULL, NULL, true);
+      }
+
+      $this->registerExternalFiles();
+
+      $params = $this->getAddParams($record);
+
+      if ($params===false)
+        return false;
+
+      return $this->renderAddPage($params);
+    }
+
+    function setButtonSource(&$object)
+    {
+      $this->m_buttonsource = &$object;
+    }
+
+    function registerExternalFiles()
+    {
       $page = &$this->getPage();
-
-      // Utility.
-      $edithandler = &$node->getHandler("edit");
-
+      $ui = &$this->getUi();
       $page->register_script(atkconfig("atkroot")."atk/javascript/tools.js");
       $page->register_script(atkconfig("atkroot")."atk/javascript/formfocus.js");
-      $node->addStyle("style.css");
+      $page->register_loadscript("placeFocus();");
+      $page->register_style($ui->stylePath("style.css"));
+    }
 
-      $params = $node->getDefaultActionParams();
+    function getAddParams($record=NULL)
+    {
+      $node = &$this->m_node;
+      $ui = &$node->getUi();
 
-      $formstart ='<form name="entryform" enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?'.SID.'"'.
+      if (!is_object($ui))
+      {
+        atkerror("ui object failure");
+        return false;
+      }
+
+      $params               = $node->getDefaultActionParams();
+      $params["formstart"]  = $this->getFormStart();
+      $params["content"]    = $this->getContent($record);
+      $params["buttons"]    = $this->getFormButtons($record);
+      $params["formend"]    = $this->getFormEnd();
+      return $params;
+    }
+
+    function getFormStart()
+    {
+      $controller = &atkcontroller::getInstance();
+      $controller->setNode($this->m_node);
+
+      $node = &$this->m_node;
+
+      $formIdentifier = ((isset($this->m_partial) && $this->m_partial!="")) ? "dialogform" : "entryform";
+      $formstart ='<form id="'.$formIdentifier.'" name="'.$formIdentifier.'" enctype="multipart/form-data" action="'.$controller->getPhpFile().'?'.SID.'"'.
                      ' method="post" onsubmit="return globalSubmit(this)">';
 
-      /* if we are on an admin page we would like to stay on the admin page after adding a new record */
-      if ($node->m_action == "admin") $formstart.=session_form(SESSION_NESTED);
-      else $formstart.=session_form();
+
+      $formstart .= session_form(SESSION_NESTED, $this->getReturnBehaviour(), $node->getEditFieldPrefix());
+      $formstart .= $controller->getHiddenVarsString();
 
       if (isset($node->m_postvars['atkfilter']))
       {
         $formstart .= '<input type="hidden" name="atkfilter" value="'.$node->m_postvars['atkfilter'].'">';
       }
-      
-      $params["formstart"] = $formstart;
 
+      return $formstart;
+    }
+
+    function getContent($record)
+    {
+      $node = &$this->m_node;
+
+      // Utility.
+      $edithandler = &$node->getHandler("edit");
+
+      $forceList = (isset($node->m_postvars['atkfilter'])) ? decodeKeyValueSet($node->m_postvars['atkfilter']) : array();
+      $form = $edithandler->editForm("add",$record,$forceList,'',$node->getEditFieldPrefix());
+
+      return $node->tabulate("add", $form);
+    }
+
+    /**
+     * Get the end of the form.
+     *
+     * @return String HTML The forms' end
+     */
+    function getFormEnd()
+    {
+      return '</form>';
+    }
+
+    function getFormButtons($record=null)
+    {
+      if ($this->m_partial == 'dialog')
+      {
+        $controller = &atkController::getInstance();
+        $result = array();
+        $result[] = $controller->getDialogButton('save', null, $this->getDialogSaveUrl(), $this->getDialogSaveParams());
+        $result[] = $controller->getDialogButton('cancel');
+        return $result;
+      }
+
+      // If no custom button source is given, get the default atkController.
+      if ($this->m_buttonsource===null)
+      {
+        $this->m_buttonsource = &$this->m_node;
+      }
+
+      return $this->m_buttonsource->getFormButtons("add", $record);
+    }
+
+    function renderAddPage($params)
+    {
+      $node = &$this->m_node;
       $ui = &$node->getUi();
+
       if (is_object($ui))
       {
-        $forceList = array();
-        if (isset($node->m_postvars['atkfilter']))
-        {
-          $forceList = decodeKeyValueSet($node->m_postvars['atkfilter']);
-        }
-        $form = $edithandler->editForm("add",$record,$forceList);
-
-        $params["content"] = $node->tabulate("add", $form);
-
-				$params["buttons"] = $this->m_node->getFormButtons("add", $record);
-        $params["formend"] = '</form><SCRIPT type="text/javascript" language="JavaScript">placeFocus()</SCRIPT>';
-
         $output = $ui->renderAction("add", $params);
+        $this->addRenderBoxVar("title", $node->actionTitle('add'));
+        $this->addRenderBoxVar("content", $output);
 
-        $total = $ui->renderBox(array("title"=>$node->actionTitle('add'),
-                                      "content"=>$output));
+        if ($this->getRenderMode() == "dialog")
+        {
+          $total = $ui->renderDialog($this->m_renderBoxVars);
+        }
+        else
+        {
+          $total = $ui->renderBox($this->m_renderBoxVars);
+        }
 
         return $total;
       }
+    }
+
+    /**
+     * Attribute handler.
+     *
+     * @param string $partial full partial
+     */
+    function partial_attribute($partial)
+    {
+      list($type, $attribute, $partial) = explode('.', $partial);
+
+      $attr = &$this->m_node->getAttribute($attribute);
+      if ($attr == NULL)
+      {
+        atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+        return '';
+      }
+
+      return $attr->partial($partial, 'add');
+    }
+
+    /**
+     * Section state handler.
+     */
+    function partial_sectionstate()
+    {
+      atkimport("atk.session.atkstate");
+      atkState::set(array("nodetype"=>$this->m_node->atknodetype(),"section"=>$this->m_postvars['atksectionname']),$this->m_postvars['atksectionstate']);
+    }
+
+    /**
+     * Render add dialog.
+     *
+     * @param array $record
+     * @return string html
+     */
+    function renderAddDialog($record=null)
+    {
+      $this->setRenderMode('dialog');
+      $result = $this->m_node->renderActionPage("add", $this->invoke("addPage", $record));
+      return $result;
+    }
+
+    /**
+     * Handle the dialog partial.
+     *
+     * @param String $mode
+     * @return unknown
+     */
+    function partial_dialog()
+    {
+      return $this->renderAddDialog();
+    }
+
+
+    /**
+     * Returns the dialog save URL.
+     *
+     * @return string dialog save URL
+     */
+    function getDialogSaveUrl()
+    {
+      if ($this->m_dialogSaveUrl != null)
+      {
+        return $this->m_dialogSaveUrl;
+      }
       else
       {
-        atkerror("ui object failure");
+        return partial_url($this->m_node->atkNodeType(), 'save', 'dialog');
       }
     }
-  }
 
+    /**
+     * Returns the dialog save params. These are the same params that are part of the
+     * dialog save url, but they will be appended at the end of the query string to
+     * override any form variables with the same name!
+     */
+    function getDialogSaveParams()
+    {
+      $parts = parse_url($this->getDialogSaveUrl());
+      $query = $parts['query'];
+      $params = array();
+      parse_str($query, $params);
+      return $params;
+    }
+
+    /**
+     * Override the default dialog save URL.
+     *
+     * @param string $url dialog save URL
+     */
+    function setDialogSaveUrl($url)
+    {
+      $this->m_dialogSaveUrl = $url;
+    }
+  }
 ?>

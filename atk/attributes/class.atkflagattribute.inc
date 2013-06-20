@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.4 $
-   * $Id: class.atkflagattribute.inc,v 5.4 2005/05/01 09:40:42 ivo Exp $
+   * @version $Revision: 5.6 $
+   * $Id: class.atkflagattribute.inc,v 5.6 2006/10/10 12:41:55 peter Exp $
    */
   
   /** @internal include base class. */
@@ -114,7 +114,7 @@
      */
     function fetchValue($postvars)
     {
-			$vars = $postvars[$this->fieldName()];
+			$vars = atkArrayNvl($postvars, $this->fieldName());
 			if(!is_array($vars))
 			{
 				$result = array();

@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.6 $
-   * $Id: class.atkdblock.inc,v 5.6 2005/10/24 19:34:55 ivo Exp $
+   * @version $Revision: 5.7 $
+   * $Id: class.atkdblock.inc,v 5.7 2007/03/19 21:59:28 ivo Exp $
    */
 
   /**
@@ -174,6 +174,8 @@
         $selectorList[$selector] = $table;
         $atklock["stack"][] = $selectorList;
         $this->storeLockList($atklockList);
+
+        $db->commit();
 
         $success = TRUE;
       }

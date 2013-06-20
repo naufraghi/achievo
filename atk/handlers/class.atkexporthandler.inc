@@ -12,8 +12,8 @@
    * @copyright (c)2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: class.atkexporthandler.inc,v 5.3 2006/02/12 19:56:02 boy Exp $
+   * @version $Revision: 5.9 $
+   * $Id: class.atkexporthandler.inc,v 5.9 2007/12/19 13:59:11 sandy Exp $
    */
 
   /**
@@ -40,7 +40,9 @@
           $this->m_postvars[$key] = $value;
 
       //need to keep the selected item after an exporterror
-      $phase = ($this->m_postvars["phase"]!=""?$this->m_postvars["phase"]:"init");
+      $phase = atkArrayNvl($this->m_postvars, "phase", "init");
+      if (!in_array($phase, array("init", "process")))
+        $phase = "init";
 
       switch ($phase)
       {
@@ -55,9 +57,9 @@
      */
     function doInit()
     {
-      $content.=$this->_getInitHtml();
+      $content = $this->_getInitHtml();
       $page = &$this->getPage();
-      $page->addContent($this->m_node->genericPage(atktext("export", "atk"), $content));
+      $page->addContent($this->m_node->genericPage("export", $content));
       return true;
     }
 
@@ -67,10 +69,10 @@
      */
     function _getInitHtml()
     {
-      global $HTTP_SERVER_VARS;
+      $action = dispatch_url($this->m_node->m_module.'.'.$this->m_node->m_type, "export");
       $content = atktext("export_config_explanation", "atk", $this->m_node->m_type);
-      $content.= '<br><br><form name="entryform" enctype="multipart/form-data" action="'.$HTTP_SERVER_VARS['REQUEST_URI'].'?'.SID.'"'.
-                                  ' method="post">'.session_form();
+      $content.= '<br><br><form name="entryform" enctype="multipart/form-data" action="'.$action.'" method="post">';
+      $content.= session_form();
       $content.= '<input type="hidden" name="phase" value="process">';
       $content.= $this->_getOptions();
 
@@ -87,17 +89,17 @@
      */
     function doProcess()
     {
-      return $this->doExport($filename);
+      return $this->doExport();
     }
 
     function _getOptions()
     {
-      $content.= '<table border="0" width="100%">';
-      $content.= '<tr><td>'.atktext("delimiter").': </td><td><input type="text" size="2" name="delimiter" value=";"></td></tr>';
-      $content.= '<tr><td>'.atktext("enclosure").': </td><td><input type="text" size="2" name="enclosure" value="&quot;"></td></tr>';
-      $content.= '<tr><td valign="top">'.atktext("export_selectcolumns").': </td><td>'.$this->getAttributeSelect().'</td></tr>';
+      $content = '<table border="0" width="100%">';
+      $content.= '<tr><td>'.atktext("delimiter", "atk").': </td><td><input type="text" size="2" name="delimiter" value=";"></td></tr>';
+      $content.= '<tr><td>'.atktext("enclosure", "atk").': </td><td><input type="text" size="2" name="enclosure" value="&quot;"></td></tr>';
+      $content.= '<tr><td valign="top">'.atktext("export_selectcolumns", "atk").': </td><td>'.$this->getAttributeSelect().'</td></tr>';
       $content.= '<tr><td>';
-      $content.= atktext("export_generatetitlerow").': </td><td><input type="checkbox" name="generatetitlerow" value="1" />';
+      $content.= atktext("export_generatetitlerow").': </td><td><input type="checkbox" name="generatetitlerow" class="atkcheckbox" value="1" />';
       $content.= '</td></tr>';
       $content.= '</table><br /><br />';
       return $content;
@@ -108,6 +110,7 @@
       $cols = 5;
 
       $atts = $this->getUsableAttributes();
+      $content = "";
 
       foreach($atts as $tab => $group)
       {
@@ -121,9 +124,9 @@
         {
           if($item['checked']) $checked = 'CHECKED';
           else $checked = '';
-          
-          $p_attr = &$this->m_node->getAttribute($item['name']);
-          $content.= '<TD align="left" width="'.(90/$cols).'%"><LABEL><INPUT TYPE="checkbox" NAME="export_'.$item['name'].'" VALUE="export_'.$group[$i]['name'].'" '.$checked.'>'.atktext($item['name'],$p_attr->getModule(),$this->m_node->m_type).'</LABEL></TD>';
+
+          $content.= '<TD align="left" width="'.(90/$cols).'%"><LABEL><INPUT type="checkbox" name="export_'.$item['name'].'" class="atkcheckbox" value="export_'.$item['name'].'" '.$checked.'>'.$item['text'].'</LABEL></TD>';
+
           $idx++;
           if($idx%$cols == 0)
           {
@@ -145,25 +148,46 @@
      */
     function getUsableAttributes()
     {
-      $node = &$this->m_node;
       $atts = array();
-      $tabs = array();
-      foreach($node->m_attribList as $key => $value){
+      $attriblist = $this->invoke('getExportAttributes');
+      foreach($attriblist as $key => $value)
+      {
         $flags = $value->m_flags;
-        $class = get_class($value);
+        $class = strtolower(get_class($value));
         if($value->hasFlag(AF_AUTOKEY) ||
            $value->hasFlag(AF_HIDE_VIEW) ||
            !(strpos($class, "dummy") === FALSE) ||
-           !(strpos($class, "image") === FALSE))
+           !(strpos($class, "image") === FALSE) ||
+           !(strpos($class,'tabbedpane') === FALSE)
+           )
           continue;
-        if(in_array($value->m_tabs[0], $tabs)){
-          $tabs[] = $value->m_tabs[0];
-          $atts[$value->m_tabs[0]] = array();
+        if (method_exists($this->m_node, "getExportAttributeGroup"))
+        {
+          $group = $this->m_node->getExportAttributeGroup($value->m_name);
         }
-
-        $atts[$value->m_tabs[0]][] = array('name' => $key, 'checked' => !$value->hasFlag(AF_HIDE_LIST));
+        else
+        {
+          $group = $value->m_tabs[0];
+        }
+        if(in_array($group, $atts))
+        {
+          $atts[$group] = array();
+        }
+        $atts[$group][] = array('name' => $key, 'text' => $value->label(), 'checked' => !$value->hasFlag(AF_HIDE_LIST));
       }
       return $atts;
+    }
+
+    /**
+     * Return all attributes that can be exported
+     *
+     * @param object $handler atkExport
+     * @return array Array with attribs that needs to be exported
+     */
+    function getExportAttributes()
+    {
+      $attribs = $this->m_node->getAttributes();
+      if(is_null($attribs)) { return array(); } else { return $attribs; }
     }
 
     /**
@@ -176,50 +200,56 @@
       $delimiter = $this->m_postvars["delimiter"];
       $source = $this->m_postvars;
       $list_includes = array();
-      foreach($source as $name => $value) {
-          $pos = strpos($name, 'export_');
-          if (is_integer($pos) and $pos == 0)
-            $list_includes[] = substr($name, strlen('export_'));
-        }
-        global $g_sessionData;
-        $session_back = $g_sessionData["default"]["stack"][atkStackID()][atkLevel()-1];
-        $atkorderby = $session_back['atkorderby'];
-
-        $node = &$this->m_node;
-        $node_bk = $node;
-        $num_atts = count($node_bk->m_attribList);
-        $atts = &$node_bk->m_attribList;
-
-        foreach($atts as $name => $object){
-          $att = &$node_bk->getAttribute($name);
-          if(in_array($name, $list_includes))
-            $att->m_flags &= !AF_HIDE_LIST;
-          else
-            $att->addFlag(AF_HIDE_LIST);
-        }
-
-        if (!is_array($actions)) {
-            $actions = $node->defaultActions("export");
-        }
-        $rl = &atknew("atk.recordlist.atkcustomrecordlist");
-        $flags = ($node_bk->hasFlag(NF_MRA) ? RL_MRA : 0) | ($node_bk->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($node_bk->hasFlag(NF_LOCK) ? RL_LOCK : 0);
-        $node_bk->m_postvars = $session_back;
-        $recordset = $node_bk->selectDb($session_back['atkselector'], $atkorderby, "" ,array(), $list_includes, "export");
-        $recordset_new = array();
-
-        foreach($recordset as $row){
-          foreach($row as $name => $value){
-            $value = str_replace("\r\n", "\\n", $value);
-            $value = str_replace("\n", "\\n", $value);
-            $value = str_replace("\t", "\\t", $value);
-            $row[$name] = $value;
-          }
-          $recordset_new[] = $row;
-        }
-
-        $rl->render($node_bk, $recordset_new, "", $enclosure, $enclosure.$delimiter, "\r\n", 1, "", "", array('filename' => 'export_'.$node->m_type), "csv");
-
-        return true;
+      foreach($source as $name => $value)
+      {
+        $pos = strpos($name, 'export_');
+        if (is_integer($pos) and $pos == 0)
+          $list_includes[] = substr($name, strlen('export_'));
       }
+      global $g_sessionData;
+      $session_back = $g_sessionData["default"]["stack"][atkStackID()][atkLevel()-1];
+      $atkorderby = $session_back['atkorderby'];
+
+      $node = &$this->m_node;
+      $node_bk = $node;
+      $num_atts = count($node_bk->m_attribList);
+      $atts = &$node_bk->m_attribList;
+
+      foreach($atts as $name => $object)
+      {
+        $att = &$node_bk->getAttribute($name);
+        if(in_array($name, $list_includes))
+          $att->removeFlag(AF_HIDE_LIST);
+        else
+          $att->addFlag(AF_HIDE_LIST);
+      }
+
+      if (!is_array($actions))
+      {
+          $actions = $node->defaultActions("export");
+      }
+      $rl = &atknew("atk.recordlist.atkcustomrecordlist");
+      $flags = ($node_bk->hasFlag(NF_MRA) ? RL_MRA : 0) | ($node_bk->hasFlag(NF_MRPA) ? RL_MRPA : 0) | ($node_bk->hasFlag(NF_LOCK) ? RL_LOCK : 0);
+      $node_bk->m_postvars = $session_back;
+      $recordset = $node_bk->selectDb($session_back['atkselector'], $atkorderby, "", "", $list_includes, "export");
+      if (method_exists($this->m_node, "assignExportData")) $this->m_node->assignExportData($list_includes, $recordset);
+      $recordset_new = array();
+
+      foreach($recordset as $row)
+      {
+        foreach($row as $name => $value)
+        {
+          $value = str_replace("\r\n", "\\n", $value);
+          $value = str_replace("\n", "\\n", $value);
+          $value = str_replace("\t", "\\t", $value);
+          $row[$name] = $value;
+        }
+        $recordset_new[] = $row;
+      }
+
+      $rl->render($node_bk, $recordset_new, "", $enclosure, $enclosure.$delimiter, "\r\n", 1, "", "", array('filename' => 'export_'.$node->m_type), "csv", $source['generatetitlerow'], true);
+
+      return true;
     }
+  }
 ?>

@@ -22,8 +22,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.24 $
-   * $Id: config.inc.php,v 5.24 2006/03/14 19:40:40 ivo Exp $
+   * @version $Revision: 5.32 $
+   * $Id: config.inc.php,v 5.32 2007/07/05 07:37:08 jvansluijs Exp $
    */
 
   /**
@@ -62,10 +62,12 @@
   // SEVERELY FLAMED!
   // $config_mailreport = "ivo@ibuildings.net";
 
-    // The debug level.
-  // 0 - No debug information
-  // 1 - Print some debug information at the bottom of each screen
-  // 2 - Print debug information, and pause before redirects
+  // The debug level.
+  // -1 - No debug information
+  //  0 - No debug information, but still stored for atk errormails
+  //  1 - Print some debug information at the bottom of each screen
+  //  2 - Print debug information, and pause before redirects
+  //  3 - Like 2, but also adds trace information to each statement
   $config_debug = 0;
 
   // Smart debug parameters. Is used to dynamically enable debugging for
@@ -83,7 +85,7 @@
 
   // The theme defines the layout of your application. You can see which
   // themes there are in the directory atk/themes.
-  $config_defaulttheme = "outlook";
+  $config_defaulttheme = "steelblue";
 
   // The language of the application. You can use any language for which
   // a language file is present in the atk/languages directory.
@@ -94,19 +96,14 @@
   // to change the menu_delimiter to " " (menu_delimiter is what atk
   // puts between menu items).
   $config_menu_pos = "left";
-  $config_menu_delimiter = "<br>";
-  $config_menu_layout = "plain";
+  $config_menu_delimiter = "<br />";
+  $config_menu_layout = "modern";
 
   // If you have a menu at either left or right, you can add an
   // extra topframe by setting the following option to 1.
   // If you set it to 1, you must provide a "top.php" file in
   // your application directory.
   $config_top_frame = 1;
-
-  // This configures whether the action links (edit/delete) in a recordlist
-  // appear to the left or right of the records. If you are crazy, you
-  // might try the option "both".
-  $config_recordlist_orientation = "right";
 
   // Show icons in the recordlist or text?
   $config_recordlist_icons = true;
@@ -148,6 +145,7 @@
   // "pop3"   - users / passwords are stored in the POP3 server
   // "ldap"   - users / passwords are stored in an LDAP server
   // "server" - authentication is done by the webserver (.htaccess)
+  // custom type with a fullclassname like 'module.mymodule.myauth' (syntax similar as atknew or atkimport)
   // if you need to use multiple authentication types list them delimited by comma
   $config_authentication = "none";
 
@@ -204,6 +202,7 @@
 
   // If you use "db" as authentication type, you can set the table and fields
   // from which atk should read the username and password information.
+  $config_auth_usernode    = ""; // module.nodename
   $config_auth_usertable   = "user";
   $config_auth_userfield   = "userid";
   $config_auth_passwordfield = "password";

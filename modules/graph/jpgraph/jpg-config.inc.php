@@ -156,7 +156,7 @@ DEFINE("USE_IMAGE_ERROR_HANDLER",true);
 // occasions when, for example, header files cannot be found and this results
 // in the graph not being created and just a "red-cross" image would be seen.
 // This should be turned off for a production site.
-DEFINE("CATCH_PHPERRMSG",true);
+DEFINE("CATCH_PHPERRMSG",false);
 
 // Determine if the library should also setup the default PHP
 // error handler to generate a graphic error mesage. This is useful
@@ -177,7 +177,7 @@ DEFINE("USE_APPROX_COLORS",true);
 
 // Should usage of deprecated functions and parameters give a fatal error?
 // (Useful to check if code is future proof.)
-DEFINE("ERR_DEPRECATED",true);
+DEFINE("ERR_DEPRECATED",false);
 
 // Should the time taken to generate each picture be branded to the lower
 // left in corner in each generated image? Useful for performace measurements

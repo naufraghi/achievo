@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: class.atkmultiplefileattribute.inc,v 5.2 2005/08/18 17:38:37 boy Exp $
+   * @version $Revision: 5.3 $
+   * $Id: class.atkmultiplefileattribute.inc,v 5.3 2007/04/10 20:06:15 sandy Exp $
    */
   useattrib("atkFileAttribute");
    
@@ -84,7 +84,7 @@
       }
       else
       {
-        return text("no_valid_directory");
+        return atktext("no_valid_directory");
       }
 
       if(count($file_arr)>0)
@@ -177,7 +177,7 @@
         }
         else
         {
-          if(strlen($files[$i])>0) $r .= $files[$i]."(<font color=\"#ff0000\">".text("file_not_exist")."</font><br>)";
+          if(strlen($files[$i])>0) $r .= $files[$i]."(<font color=\"#ff0000\">".atktext("file_not_exist")."</font><br>)";
         }
       }
       return $r;

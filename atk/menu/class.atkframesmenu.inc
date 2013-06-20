@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.11 $
-   * $Id: class.atkframesmenu.inc,v 1.11 2006/05/23 23:53:11 guido Exp $
+   * @version $Revision: 1.14 $
+   * $Id: class.atkframesmenu.inc,v 1.14 2006/06/06 19:31:39 guido Exp $
    */
 
   /**
@@ -28,8 +28,7 @@
     function render()
     {
        global $ATK_VARS,$g_menu, $g_menu_parent;
-       $atkmenutop = $ATK_VARS["atkmenutop"];
-       if($atkmenutop=="") $atkmenutop="main";
+       $atkmenutop = atkArrayNvl($ATK_VARS, "atkmenutop", "main");
        $menu = "<div align='".atkconfig("menu_align", "center")."'>";
        $menu.=$this->getHeader($atkmenutop);
         if (is_array($g_menu[$atkmenutop]))
@@ -63,6 +62,8 @@
             }
 
             $menuitems[$i]["enable"]=$enable;
+            $menuitems[$i]["url"]=$url;
+            $menuitems[$i]['module']=$modname;
 
             /* delimiter ? */
             if ($name == "-") $menu .= $delimiter;
@@ -104,13 +105,16 @@
         $page = &atknew("atk.ui.atkpage");
         $theme = &atkinstance("atk.ui.atktheme");
         $page->register_style($theme->stylePath("style.css"));
+        $menustylepath = $theme->stylePath("menu.css");
+        if (!empty($menustylepath)) $page->register_style($menustylepath);
         $page->register_script(atkconfig("atkroot")."atk/javascript/menuload.js");
 
         $ui = &atkinstance("atk.ui.atkui");
 
         $box = $ui->renderBox(array("title"=>$this->getMenuTranslation($atkmenutop,$modname),
                                                "content"=>$menu,
-                                               "menuitems"=>$menuitems),"menu");
+                                               "menuitems"=>$menuitems,
+                                               ),"menu");
 
         $page->addContent($box);
 

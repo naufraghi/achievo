@@ -3,7 +3,7 @@
   /**
    * This file is part of the Achievo ATK distribution.
    * Detailed copyright and licensing information can be found
-   * in the doc/COPYRIGHT and doc/LICENSE files which should be 
+   * in the doc/COPYRIGHT and doc/LICENSE files which should be
    * included in the distribution.
    *
    * @package atk
@@ -11,13 +11,13 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.11 $
-   * $Id: class.atknodevalidator.inc,v 5.11 2006/01/30 11:03:31 boy Exp $
+   * @version $Revision: 5.25 $
+   * $Id: class.atknodevalidator.inc,v 5.25 2007/05/23 15:21:51 peter Exp $
    */
-   
+
   /**
-   * Validator for records, based on node definition. 
-   * 
+   * Validator for records, based on node definition.
+   *
    * The class takes a node, and based on the attribute definitions,
    * validation can be performed on records.
    *
@@ -25,23 +25,23 @@
    * @package atk
    *
    */
-  class atkNodeValidator 
+  class atkNodeValidator
   {
 
-    /**     
+    /**
      * @var atkNode The node which needs to get validated
      * @access private
      */
     var $m_nodeObj = null;
 
-    /**    
+    /**
      * @var array the record of the node which will get validated
      * @access private
      */
     var $m_record = array();
 
     /**
-     * @var String the mode in which the validate will get runned     
+     * @var String the mode in which the validate will get runned
      * @access private
      */
     var $m_mode = "";
@@ -50,16 +50,16 @@
      * constructor
      *
      */
-    function atkNodeValidator() 
+    function atkNodeValidator()
     {
     }
 
     /**
-     * set the list of fields which will get ignored 
+     * set the list of fields which will get ignored
      * @param array $fieldArr List of fields to ignore during validation
      */
     function setIgnoreList($fieldArr)
-    {	
+    {
       $this->m_ignoreList = $fieldArr;
     }
 
@@ -68,7 +68,7 @@
      * @param String $mode The mode ("edit"/"add")
      */
     function setMode($mode)
-    {	
+    {
       $this->m_mode = $mode;
     }
 
@@ -78,7 +78,7 @@
      * @param atkNode $nodeObj The node for validation
      */
     function setNode(&$nodeObj)
-    {	
+    {
       $this->m_nodeObj = &$nodeObj;
     }
 
@@ -89,7 +89,7 @@
      *                      stored in the record.
      */
     function setRecord(&$record)
-    {	
+    {
       $this->m_record = &$record;
     }
 
@@ -100,7 +100,7 @@
      * @param array $ignoreList Override the ignoreList
      */
     function validate($mode="", $ignoreList=array())
-    {	
+    {
       // check overrides
       if(count($ignoreList))
         $this->setIgnoreList($ignoreList);
@@ -109,58 +109,30 @@
         $this->setMode($mode);
 
        atkdebug("validate() with mode ".$this->m_mode." for node ".$this->m_nodeObj->atkNodeType());
-      
+
       // set the record
       $record = &$this->m_record;
 
-      // First we check if the values for the attributes are correct
-      foreach (array_keys($this->m_nodeObj->m_attribList) as $attribname)
-      {
-        if (!atk_in_array($attribname, $this->m_ignoreList))
-        {
-          $p_attrib = &$this->m_nodeObj->m_attribList[$attribname];
-
-          if (!( $p_attrib->isEmpty($record)))
-          {
-            $funcname = $p_attrib->m_name."_validate";
-            if (method_exists($this->m_nodeObj, $funcname))
-            {
-              $this->m_nodeObj->$funcname($record, $this->m_mode);
-            }
-            else
-            {
-              $p_attrib->validate($record, $this->m_mode);
-            }
-          }
-        }
-      }
-      
-      if(isset($record['atkerror'])&&count($record['atkerror']) > 0)
-      {
-        for ($i = 0, $_i = count($record["atkerror"]); $i < $_i; $i++)
-          $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;        
-        return false;
-      }
-
-      // After the values check, we check the Flags.
+      // Check flags and values
       $db = &$this->m_nodeObj->getDb();
-      foreach (array_keys($this->m_nodeObj->m_attribList) as $attribname)
+      foreach ($this->m_nodeObj->m_attribIndexList as $attribdata)
       {
+        $attribname = $attribdata['name'];
         if (!atk_in_array($attribname, $this->m_ignoreList))
         {
           $p_attrib = &$this->m_nodeObj->m_attribList[$attribname];
 
-          //if(count($record['atkerror']) > 0) return false;
-          //Validate if ne
+          $this->validateAttributeValue($p_attrib, $record);
+          
           if ($p_attrib->hasFlag(AF_PRIMARY) && !$p_attrib->hasFlag(AF_AUTO_INCREMENT))
-          {                        
+          {
             $atkorgkey = $record["atkprimkey"];
             if(($atkorgkey == '' // no orgkey, so adding this record
                 || $atkorgkey != $this->m_nodeObj->primaryKey($record)) // key has changed, so check is necessary
-               &&  count($db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_nodeObj->m_table." WHERE ".$this->m_nodeObj->primaryKey($record)))>0
+                && $this->m_nodeObj->countDb($this->m_nodeObj->primaryKey($record))>0
               )
             {
-              triggerError($record, $attribname, 'error_primarykey_exists', '', $p_attrib->m_tabs[0]);
+              atkTriggerError($record, $p_attrib, 'error_primarykey_exists');
             }
           }
 
@@ -171,28 +143,71 @@
           // validate obligatory fields (but not the auto_increment ones, because they don't have a value yet)
           if ($p_attrib->hasFlag(AF_OBLIGATORY) && !$p_attrib->hasFlag(AF_AUTO_INCREMENT) && $p_attrib->isEmpty($record))
           {
-            triggerError($record, $attribname, 'error_obligatoryfield', '', $p_attrib->m_tabs[0]);
+            atkTriggerError($record, $p_attrib, 'error_obligatoryfield');
           }
           // if flag is primary
-          else if ($p_attrib->hasFlag(AF_UNIQUE) && !$p_attrib->hasFlag(AF_PRIMARY) &&
-                   count($db->getrows("SELECT ".$p_attrib->fieldName()." FROM ".$this->m_nodeObj->m_table." WHERE $attribname='".escapeSQL($p_attrib->value2db($record))."' AND NOT (".$this->m_nodeObj->primaryKey($record).")"))>0
+          else if ($p_attrib->hasFlag(AF_UNIQUE) && !$p_attrib->hasFlag(AF_PRIMARY) && !$p_attrib->isEmpty($record)
+                   && $this->m_nodeObj->countDb($this->m_nodeObj->getTable().".{$attribname}='".$db->escapeSQL($p_attrib->value2db($record))."'".($this->m_mode != 'add' ? " AND NOT (".$this->m_nodeObj->primaryKey($record).")" : ""))>0
                   )
           {
-            triggerError($record, $attribname, 'error_uniquefield', '', $p_attrib->m_tabs[0]);
+            atkTriggerError($record, $p_attrib, 'error_uniquefield');            
           }
         }
       }
+
+      if(isset($record['atkerror'])&&count($record['atkerror']) > 0)
+      {
+        for ($i = 0, $_i = count($record["atkerror"]); $i < $_i; $i++)
+          $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;
+      }      
       
       $this->validateUniqueFieldSets($record);
 
       if (isset($record['atkerror']))
       {
         for ($i = 0, $_i = count($record["atkerror"]); $i < $_i; $i++)
-          $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;        
+          $record["atkerror"][$i]["node"] = $this->m_nodeObj->m_type;
         return false;
       }
-      
+
       return true;
+    }
+
+    /**
+     * Validate attribute value.
+     * 
+     * @param $p_attrib pointer to the attribute
+     * @param $record   record
+     */
+    function validateAttributeValue(&$p_attrib, &$record)
+    {
+      if (!$p_attrib->isEmpty($record))
+      {
+        $funcname = $p_attrib->m_name."_validate";
+        if (method_exists($this->m_nodeObj, $funcname))
+        {
+          $this->m_nodeObj->$funcname($record, $this->m_mode);
+        }
+        else
+        {
+          $p_attrib->validate($record, $this->m_mode);
+        }
+      }    
+    }
+    
+    /**
+     * @deprecated 
+     */
+    function validateAttributes(&$record)
+    {
+      foreach (array_keys($this->m_nodeObj->m_attribList) as $attribname)
+      {
+        if (!atk_in_array($attribname, $this->m_ignoreList))
+        {
+          $p_attrib = &$this->m_nodeObj->m_attribList[$attribname];
+          $this->validateAttributeValue($p_attrib, $record);          
+        }
+      }
     }
 
     /**
@@ -204,47 +219,54 @@
      * @param array $record The record to validate
      */
     function validateUniqueFieldSets(&$record)
-    {	
+    {
       $db = &$this->m_nodeObj->getDb();
+      atkimport('atk.db.atkquery');
       foreach($this->m_nodeObj->m_uniqueFieldSets as $uniqueFieldSet)
       {
-        $whereStr = " WHERE 1 ";
+        $query = &$db->createQuery();
+        $query->addField('*');
+        $query->addTable($this->m_nodeObj->m_table);
+
+        $attribs = array();
         foreach($uniqueFieldSet as $field)
         {
-
-          // manyToOneyRelations could contain multiple values. When calling fetchValue
-          // from this type of array, it will return an key-val array
-          $whereValueMixed = $this->m_nodeObj->m_attribList[$field]->fetchValue($this->m_nodeObj->m_postvars);
-
-          if(is_array($whereValueMixed))
-          {	
-            // add the current attribute itself to the string and remove it 
-            // from the array. 
-            $whereValueStr = "'".escapeSQL(array_shift($whereValueMixed))."'";
-
-            foreach($whereValueMixed as $name => $value)
-              $whereValueStr .= " and ".$name." = '".escapeSQL($value)."'";
-
+          $attrib = &$this->m_nodeObj->m_attribList[$field];
+          if ($attrib)
+          {
+            $attribs[] = &$attrib;
+            
+            if (is_a($attrib, 'atkmanytoonerelation') && count($attrib->m_refKey) > 1)
+            {
+              $attrib->createDestination();
+              foreach ($attrib->m_refKey as $refkey)
+              {
+                $query->addCondition($query->quoteField($refkey)." = '".$db->escapeSQL($record[$attrib->fieldName()][$refkey])."'");
+              }
+            }
+            else if (!$attrib->isNotNullInDb() && $attrib->isEmpty($record))
+            {
+              $query->addCondition($query->quoteField($field)." IS NULL");
+            }
+            else
+            {
+              $query->addCondition($query->quoteField($field)." = '".$attrib->value2db($record)."'");
+            }
           }
-          else          
-            $whereValueStr = "'".escapeSQL($whereValueMixed)."'";
-
-          $whereStr .= "AND ".$field." = ".$whereValueStr." " ;
+          else
+            atkerror("Field $field is mentioned in uniquefieldset but does not exist in ".$this->m_nodeObj->atknodetype());
         }
-        if(count($db->getRows("
-          SELECT 
-            1            
-          FROM
-            ".$this->m_nodeObj->m_table.
-            $whereStr."
-          AND NOT
-            (".$this->m_nodeObj->primaryKey($record).")")
-                )> 0
-          )        
-        {	
-          triggerError($record, $uniqueFieldSet, 'error_uniquefieldset', '', $this->m_nodeObj->m_type);
-        }// end if count(rows)
-      } // end foreach uniqueFieldSet
-    } // end function validate_uniqueFieldSets
-  } // end class validator
+
+        if ($this->m_mode != 'add')
+        {
+          $query->addCondition("NOT (".$this->m_nodeObj->primaryKey($record).")");
+        }
+
+        if (count($db->getRows($query->buildSelect()))> 0)
+        {
+          atkTriggerError($record, $attribs, 'error_uniquefieldset');                      
+        }
+      }
+    }
+  }
 ?>

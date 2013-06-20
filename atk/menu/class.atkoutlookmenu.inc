@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.6 $
-   * $Id: class.atkoutlookmenu.inc,v 5.6 2006/01/16 10:39:33 guido Exp $
+   * @version $Revision: 5.7 $
+   * $Id: class.atkoutlookmenu.inc,v 5.7 2006/10/22 21:08:23 boy Exp $
    */
 
   /**
@@ -92,7 +92,7 @@
     			}
 
     			/* delimiter ? */
-    			if ($g_menu[$atkmenutop][$i]["name"] == "-") $menu .= "<br>";
+    			if ($g_menu[$atkmenutop][$i]["name"] == "-") $menu .= "<br />";
 
     			/* submenu ? */
     			else if (empty($url) && $enable)

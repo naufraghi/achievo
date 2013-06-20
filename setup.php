@@ -62,9 +62,9 @@
    * an existing database.
    *
    * @author Ivo Jansch <ivo@achievo.org>
-   * @version $Revision: 1.17 $
+   * @version $Revision: 1.23 $
    *
-   * $Id: setup.php,v 1.17 2006/04/17 20:50:16 sandy Exp $
+   * $Id: setup.php,v 1.23 2008/01/17 22:56:03 sandy Exp $
    *
    */
 
@@ -221,7 +221,7 @@
   }
 
   // Achievo 1.1 requires a writable temp dir. We must check if we can write.
-  $fp = @fopen("achievotmp/compiled/tpl/setuptest", "w");
+  $fp = fopen("achievotmp/compiled/tpl/setuptest", "w");
   if ($fp==FALSE)
   {
     $errors[] = "The Achievo temporary directory is not writable by the webserver.

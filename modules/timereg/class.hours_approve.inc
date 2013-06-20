@@ -12,8 +12,8 @@
 	 * @copyright (c) 2005 Ibuildings.nl BV
 	 * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
 	 *
-	 * @version $Revision: 1.9 $
-	 * $Id: class.hours_approve.inc,v 1.9 2006/04/17 20:50:22 sandy Exp $
+	 * @version $Revision: 1.20 $
+	 * $Id: class.hours_approve.inc,v 1.20 2008/02/14 13:59:49 guido Exp $
 	 */
 
   /**

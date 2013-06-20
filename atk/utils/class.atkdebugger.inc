@@ -12,8 +12,8 @@
    * @copyright (c)2005 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.15 $
-   * $Id: class.atkdebugger.inc,v 1.15 2006/03/31 14:07:26 boy Exp $
+   * @version $Revision: 1.29 $
+   * $Id: class.atkdebugger.inc,v 1.29 2007/11/20 11:21:38 peter Exp $
    */
 
   /**
@@ -28,17 +28,14 @@
   class atkDebugger
   {
     var $m_isconsole = true;
+    var $m_redirectUrl = null;
 
     function &getInstance()
     {
       static $s_instance = NULL;
       if ($s_instance==NULL)
       {
-        global $g_sessionManager;
-        if (is_object($g_sessionManager)) // don't bother to create if session has not yet been initialised
-        {
-          $s_instance = new atkDebugger();
-        }
+        $s_instance = new atkDebugger();
       }
       return $s_instance;
     }
@@ -68,12 +65,20 @@
 
     function addQuery($query)
     {
-      $instance = &atkDebugger::getInstance();
-      if (is_object($instance))
+      if (atkconfig('debug') > 0)
       {
-        return $instance->_addQuery($query);
+        $instance = &atkDebugger::getInstance();
+        if (is_object($instance))
+        {
+          return $instance->_addQuery($query);
+        }
+        return false;
       }
-      return false;
+      else 
+      {
+        atkdebug($query);
+        return true;
+      }
     }
 
     function _addStatement($txt)
@@ -105,11 +110,16 @@
       return false;
     }
 
-    function consoleLink($text, $action="", $params=array(), $popup=false)
+    function consoleLink($text, $action="", $params=array(), $popup=false, $stackId=NULL)
     {
+      if ($stackId == NULL)
+      {
+        $stackId = atkStackId();
+      }
+
       static $s_first = true;
       $res = "";
-      $url = atkconfig("atkroot").'debugger.php?atkstackid='.atkStackID().'&action='.$action.'&atkprevlevel=0'.$this->urlParams($params);
+      $url = atkconfig("atkroot").'debugger.php?atkstackid='.$stackId.'&action='.$action.'&atkprevlevel='.atkLevel().$this->urlParams($params);
 
       if ($popup)
       {
@@ -146,7 +156,7 @@
       $page = &atkinstance("atk.ui.atkpage");
       $theme = &atkinstance("atk.ui.atktheme");
       $page->register_style($theme->stylePath("debugger.css"));
-      $data = &$this->getDebuggerData();
+      $data = &$this->getDebuggerData(false, $_REQUEST['atkstackid']);
       $res = $this->consoleControls().'<br/><br/>';
       switch ($_REQUEST["action"])
       {
@@ -164,7 +174,7 @@
 
     function consoleControls()
     {
-      return '<div id="console"><table width="100%" border="0"><tr><td align="left">ATK Debug Console</td><td align="right">'.$this->consoleLink('Console index').' | <a href="javascript:window.close()">Close console</a></td></tr></table></div>';
+      return '<div id="console"><table width="100%" border="0"><tr><td align="left">ATK Debug Console</td><td align="right">'.$this->consoleLink('Console index', '', array(), false, $_REQUEST['atkstackid']).' | <a href="javascript:window.close()">Close console</a></td></tr></table></div>';
     }
 
     function queryDetails($queries, $id)
@@ -254,14 +264,19 @@
     }
 
 
-    function &getDebuggerData($clean=false)
+    function &getDebuggerData($clean=false, $stackId=NULL)
     {
+      if ($stackId == NULL)
+      {
+        $stackId = atkStackId();
+      }
+
       global $g_sessionManager;
       if (is_object($g_sessionManager))
       {
         $session = &$g_sessionManager->getSession();
-        if ($clean) $session['debugger'] = array();        
-        $var= &$session["debugger"][atkStackID()];
+        if ($clean) $session['debugger'] = array();
+        $var= &$session["debugger"][$stackId];
         return $var;
       }
       $data = array();
@@ -312,6 +327,171 @@
         return $output;
       }
     }
-  }
 
+    /**
+     * Renders error messages for the user.
+     *
+     * @return string error messages string
+     * @private
+     */
+    function renderPlainErrorMessages()
+    {
+      global $g_error_msg;
+      $output = '<br><div style="font-family: monospace; font-size: 11px; color: #FF0000" align="left">error: '.implode("<br>\nerror: ",$g_error_msg).'</div>';
+      return $output;
+    }
+
+    /**
+     * Render debug block for the current debug information.
+     *
+     * @return string debug block string
+     * @private
+     */
+    function renderDebugBlock($expanded)
+    {
+      global $g_debug_msg, $g_error_msg, $g_startTime;
+
+      $time = strftime("%H:%M:%S", $g_startTime);
+      $duration = sprintf("%02.05f", getmicrotime() - $g_startTime);
+      $usage = function_exists("memory_get_usage") ? sprintf("%02.02f", (memory_get_usage() / 1024 / 1024)) : "? ";
+      $method = $_SERVER['REQUEST_METHOD'];
+      $protocol = empty($_SERVER['HTTPS']) || strtolower($_SERVER['HTTPS']) == 'off' ? 'http' : 'https';
+      $url = $protocol.'://'.$_SERVER['HTTP_HOST'].($_SERVER['SERVER_PORT'] != 80 ? ':'.$_SERVER['SERVER_PORT'] : '').$_SERVER['REQUEST_URI'];
+
+      $label = "[{$time}h / {$duration}s / {$usage}MB] $method $url";
+
+      $output = '
+        <div class="atkDebugBlock'.(count($g_error_msg) > 0 ? " atkDebugBlockContainsErrors" : "").' atkDebug'.($expanded ? 'Expanded' : 'Collapsed').'">
+          <div class="atkDebugToggle" onclick="ATK.Debug.toggle(this)">
+           '.$label.'
+          </div>
+          <div class="atkDebugData">
+            '.(count($g_debug_msg) > 0 ? '<div class="atkDebugLine">'.implode($g_debug_msg, '</div><div class="atkDebugLine">').'</div>' : '').'
+          </div>
+        </div>';
+
+      return $output;
+    }
+
+    /**
+     * Set redirect URL.
+     */
+    function setRedirectUrl($url, $force=false)
+    {
+      // normally we only save the first redirect url, but using the force
+      // parameter you can force setting another redirect url
+      if ($this->m_redirectUrl === null || $force)
+      {
+        $this->m_redirectUrl = $url;
+      }
+    }
+
+    /**
+     * Renders the redirect link if applicable.
+     */
+    function renderRedirectLink()
+    {
+      if ($this->m_redirectUrl == null) return '';
+
+      $output = '
+        <div class="atkDebugRedirect">
+           Non-debug version would have redirected to <a href="'.$this->m_redirectUrl.'">'.$this->m_redirectUrl.'</a>
+        </div>';
+
+      return $output;
+    }
+
+    /**
+     * Renders the debug and error messages to a nice HTML string.
+     *
+     * @return string html string
+     */
+    function renderDebugAndErrorMessages()
+    {
+      global $ATK_VARS, $g_debug_msg, $g_error_msg, $g_startTime;
+
+      // check if this is an Ajax request
+      $isPartial = isset($ATK_VARS['atkpartial']);
+
+      // only display error messages
+      if (count($g_error_msg) > 0 && atkconfig('display_errors') && atkconfig('debug') <= 0 && !$isPartial)
+      {
+        return $this->renderPlainErrorMessages();
+      }
+
+      // no debug messages or error messages to output
+      else if (atkconfig('debug') <= 0 || (count($g_debug_msg) == 0 && count($g_error_msg) == 0))
+      {
+        return '';
+      }
+
+      $expanded = !$isPartial;
+      if ($expanded && @$_COOKIE['atkdebugstate'] == 'collapsed')
+      {
+        $expanded = false;
+      }
+
+      // render debug block
+      $block = $this->renderDebugBlock($expanded);
+
+      if ($isPartial)
+      {
+        atkimport('atk.utils.atkjson');
+
+        $output =
+          '<script type="text/javascript">
+            ATK.Debug.addContent('.atkJSON::encode($block).');
+           </script>';
+      }
+      else
+      {
+        $ui = &atkinstance('atk.ui.atkui');
+        $stylesheet = $ui->stylePath('atkdebug.css');
+        $script = atkconfig('atkroot').'atk/javascript/class.atkdebug.js';
+
+        $redirect = $this->renderRedirectLink();
+
+        $output = '
+          <script type="text/javascript" src="'.$script.'"></script>
+          <script type="text/javascript">
+            ATK.Debug.registerStylesheet("'.$stylesheet.'");
+          </script>
+          <div id="atk_debugging_div">
+            '.$redirect.'
+            '.$block.'
+          </div>';
+      }
+
+      return $output;
+    }
+
+    /**
+     * Gets the microtime
+     * @static
+     * @return int the microtime
+     */
+    function getMicroTime()
+    {
+      list($usec, $sec) = explode(" ",microtime());
+      return ((float)$usec + (float)$sec);
+    }
+
+    function elapsed()
+    {
+      global $g_startTime;
+
+      static $offset=null, $previous=null;
+
+      if ($offset === null)
+      {
+        $offset = $g_startTime;
+        $previous = $offset;
+      }
+
+      $new = atkDebugger::getMicroTime();
+      $res = "+".sprintf("%02.05f",$new-$offset)."s / ".sprintf("%02.05f", $new-$previous)."s";
+      $previous = $new;
+      return $res;
+    }
+  }
 ?>

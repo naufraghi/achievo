@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.3 $
-   * $Id: class.atkmlselectorattribute.inc,v 5.3 2006/05/26 12:54:57 ivo Exp $
+   * @version $Revision: 5.9 $
+   * $Id: class.atkmlselectorattribute.inc,v 5.9 2007/04/10 20:06:15 sandy Exp $
    */
 
   /** @internal include base class */
@@ -43,8 +43,8 @@
 
       /* check config */
       if (!is_array($languages) || sizeof($languages) == 0)
-        return text("multilanguage_error_config");
-
+        return atktext("multilanguage_error_config",$this->m_ownerInstance->m_module,$this->m_ownerInstance->atknodetype());
+  
       /* first selected other language */
       //$formname = $prefix.'[multilanguage_current]';
       $result = '<input id="'.$prefix.'_current" type="hidden" name="'.$formname.'" value="'.($this->m_ownerInstance->m_postvars['atkeditlng']?$this->m_ownerInstance->m_postvars['atkeditlng']:$languages[1]).'">';
@@ -54,7 +54,7 @@
 
       /* options */
       for ($i = 1; $i < sizeof($languages); $i++)
-        $result .= '<option value="'.$languages[$i].'" '.(strtolower($languages[$i])==strtolower($this->m_ownerInstance->m_postvars['atkeditlng'])?'selected':'').'>'.text('language_'.strtolower($languages[$i])).'</option>';
+        $result .= '<option value="'.$languages[$i].'" '.(strtolower($languages[$i])==strtolower($this->m_ownerInstance->m_postvars['atkeditlng'])?'selected':'').'>'.atktext('language_'.strtolower($languages[$i])).'</option>';
 
       /* close */
       $result .= '</select>';
@@ -64,7 +64,7 @@
         $script = "str_languages = new Array();\n";
         for ($i=0, $_i=count($languages); $i<$_i; $i++)
         {
-           $script.= "str_languages['".$languages[$i]."'] = '".text('language_'.strtolower($languages[$i]))."';\n";
+           $script.= "str_languages['".$languages[$i]."'] = '".atktext('language_'.strtolower($languages[$i]))."';\n";
         }
         $page = &atkPage::getInstance();
         $page->register_scriptcode($script);
@@ -159,6 +159,13 @@
     function dbFieldType()
     {
       return "";
+    }
+
+    function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
+    {
+      $lngs = $this->getLanguages();
+      if (count($lngs)<=2) $this->addFlag(AF_HIDE);
+      return parent::addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);
     }
   }
 ?>

@@ -10,8 +10,8 @@
    * @copyright (c) 2005 Ibuildings.nl BV
    * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2
    *
-   * @version $Revision: 1.3 $
-   * $Id: themedef.inc,v 1.3 2006/03/06 22:21:02 sandy Exp $
+   * @version $Revision: 1.4 $
+   * $Id: themedef.inc,v 1.4 2007/05/02 14:21:08 guido Exp $
    */
 
   /**

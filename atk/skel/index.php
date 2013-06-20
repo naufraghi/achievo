@@ -19,8 +19,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.4 $
-   * $Id: index.php,v 5.4 2005/10/24 19:34:56 ivo Exp $
+   * @version $Revision: 5.9 $
+   * $Id: index.php,v 5.9 2007/04/10 20:06:16 sandy Exp $
    */
 
   /**
@@ -28,37 +28,49 @@
    */
   $config_atkroot = "./";
   include_once("atk.inc");
+  atksession();
+  atksecure();
 
+  $theme = &atkinstance('atk.ui.atktheme');
   if (atkconfig("fullscreen"))
   {
     // Fullscreen mode. Use index.php as launcher, and launch app.php fullscreen.
-    atksession();
-    atksecure();
+    
+      atksession();
+      atksecure();
 
-    $page = &atknew("atk.ui.atkpage");
-    $ui = &atkinstance("atk.ui.atkui");
-    $theme = &atkTheme::getInstance();
-    $output = &atkOutput::getInstance();
+      $page = &atknew("atk.ui.atkpage");
+      $ui = &atkinstance("atk.ui.atkui");
+      $theme = &atkTheme::getInstance();
+      $output = &atkOutput::getInstance();
 
-    $page->register_style($theme->stylePath("style.css"));
-    $page->register_script(atkconfig("atkroot")."atk/javascript/launcher.js");
+      $page->register_style($theme->stylePath("style.css"));
+      $page->register_script(atkconfig("atkroot")."atk/javascript/launcher.js");
 
-    $content = '<script language="javascript">atkLaunchApp(); </script>';
-    $content.= '<br><br><a href="#" onClick="atkLaunchApp()">'.text('app_reopen').'</a> &nbsp; '.
-                      '<a href="#" onClick="window.close()">'.text('app_close').'</a><br><br>';
+      $content = '<script language="javascript">atkLaunchApp(); </script>';
+      $content.= '<br><br><a href="#" onClick="atkLaunchApp()">'.atktext('app_reopen').'</a> &nbsp; '.
+      '<a href="#" onClick="window.close()">'.atktext('app_close').'</a><br><br>';
 
-    $box = $ui->renderBox(array("title"=>text("app_launcher"),
-                                              "content"=>$content));
+      $box = $ui->renderBox(array("title"=>atktext("app_launcher"),
+      "content"=>$content));
 
-    $page->addContent($box);
-    $output->output($page->render(text('app_launcher'), true));
+      $page->addContent($box);
+      $output->output($page->render(atktext('app_launcher'), true));
 
-    $output->outputFlush();
+      $output->outputFlush();
   }
   else
   {
-    // Regular mode. app.php can be included directly.
-    include "app.php";
+    if ($theme->getAttribute('useframes',true))
+    {
+      // Regular mode. app.php can be included directly.
+      include "app.php";
+    }
+    else
+    {
+      $indexpage = &atknew('atk.ui.atkindexpage');
+      $indexpage->generate();
+    }
   }
-
+  
 ?>

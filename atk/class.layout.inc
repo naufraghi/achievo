@@ -13,8 +13,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.15 $
-   * $Id: class.layout.inc,v 5.15 2006/01/30 11:03:31 boy Exp $
+   * @version $Revision: 5.16 $
+   * $Id: class.layout.inc,v 5.16 2007/08/29 07:45:52 ivo Exp $
    */
 
   /**
@@ -647,7 +647,7 @@
             if (count($node->m_tabList[$node->m_action]) > 1 &&
                  $tabs != "*" && !atk_in_array($tab, $tabs))
             {
-              $error_tab = ' ('.atktext("error_tab").' '.href($_SERVER["PHP_SELF"]."?atktab=".$tabs[0],atktext("tab_".$tabs[0], "", $node->m_type),SESSION_DEFAULT,true).')';
+              $error_tab = ' ('.atktext("error_tab").' '.atkHref(atkSelf()."?atktab=".$tabs[0],atktext("tab_".$tabs[0], "", $node->m_type),SESSION_DEFAULT,true).')';
             }
             else
             {

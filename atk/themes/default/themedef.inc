@@ -11,8 +11,8 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.9 $
-   * $Id: themedef.inc,v 5.9 2006/05/17 23:19:31 ivo Exp $
+   * @version $Revision: 5.11 $
+   * $Id: themedef.inc,v 5.11 2007/06/27 09:12:48 peter Exp $
    */
 
   /** Theme definition */
@@ -23,5 +23,10 @@
   $theme["ol_menucolor"]="#ffffff";
   $theme["ol_wincolor"]="#eeeee0";
   $theme["ol_background"]="#677EB1";
-
+  
+  $theme["recordlist_orientation"]='left';
+  $theme["recordlist_vorientation"]='top';
+  $theme['recordlist_icons']=true;
+  $theme['dialog_theme_name'] = 'alphacube';
+  $theme['dialog_theme_load'] = true;
 ?>

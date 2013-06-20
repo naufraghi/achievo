@@ -11,8 +11,8 @@
    * @copyright (c)2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.1 $
-   * $Id: class.atkmocknode.inc,v 5.1 2006/01/30 11:03:31 boy Exp $
+   * @version $Revision: 5.3 $
+   * $Id: class.atkmocknode.inc,v 5.3 2006/10/10 12:42:10 peter Exp $
    */
   
   /** @internal include */
@@ -72,8 +72,24 @@
         return $this->m_results["getTabs"]; 
       return parent::getTabs($action);
     }
-          
+
+    function checkTabRights(&$tablist)
+    { 
+      if (isset($this->m_results["checkTabRights"]))
+      {
+        $tablist = $this->m_results["checkTabRights"];
+      }
+      else
+      {
+        parent::checkTabRights($tablist);
+      }
+    }
+    
+    function selectDb($selector="", $order="", $limit="", $excludeList="",$includeList="", $mode="")
+    {
+      if(isset($this->m_results["selectDb"]))
+        return $this->m_results["selectDb"];
+      return parent::selectDb($selector,$order,$limit,$excludelist,$includelist,$mode="");
+    }
   }
-
-
 ?>

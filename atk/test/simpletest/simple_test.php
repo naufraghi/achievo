@@ -3,7 +3,7 @@
      *	Base include file for SimpleTest
      *	@package	SimpleTest
      *	@subpackage	UnitTester
-     *	@version	$Id: simple_test.php,v 1.1 2005/03/24 00:05:34 ivo Exp $
+     *	@version	$Id: simple_test.php,v 1.2 2007/03/23 13:10:12 guido Exp $
      */
 
     /**#@+
@@ -59,7 +59,8 @@
          *    @access public
          */
         function &createInvoker() {
-            return new SimpleErrorTrappingInvoker(new SimpleInvoker($this));
+            $invoker = new SimpleErrorTrappingInvoker(new SimpleInvoker($this));
+            return $invoker;
         }
 
         /**
@@ -71,7 +72,8 @@
          *    @access protected
          */
         function &_createRunner(&$reporter) {
-            return new SimpleRunner($this, $reporter);
+            $runner = new SimpleRunner($this, $reporter);
+            return $runner;
         }
 
         /**

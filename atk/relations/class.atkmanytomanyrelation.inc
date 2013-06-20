@@ -12,8 +12,8 @@
    * @copyright (c)2000-2005 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.9 $
-   * $Id: class.atkmanytomanyrelation.inc,v 5.9 2006/05/12 13:24:43 martin Exp $
+   * @version $Revision: 5.36 $
+   * $Id: class.atkmanytomanyrelation.inc,v 5.36 2007/12/19 10:19:58 sandy Exp $
    */
 
    /** @internal base include */
@@ -39,6 +39,8 @@
     var $m_remoteKey = "";
     var $m_link = "";
     var $m_linkInstance = NULL;
+    var $m_store_deletion_filter = "";
+    var $m_localFilter = NULL;
 
     /**
      * Constructor
@@ -60,7 +62,74 @@
     function atkManyToManyRelation($name, $link, $destination, $flags=0)
     {
       $this->m_link = $link;
-      $this->atkRelation($name, $destination, $flags|AF_CASCADE_DELETE);
+      $this->atkRelation($name, $destination, $flags|AF_CASCADE_DELETE|AF_NO_SORT);
+    }
+
+
+    function _getSelectableRecords($record=array(), $mode="")
+    {
+      $method = $this->fieldName()."_selection";
+      if (method_exists($this->m_ownerInstance, $method))
+        return $this->m_ownerInstance->$method($record, $mode);
+      else return $this->getSelectableRecords($record, $mode);
+    }
+
+    function getSelectableRecords($record=array(), $mode="",$force=false)
+    {
+      static $resultList = array();
+
+      if ($this->createDestination())
+      {
+        $filter = "";
+
+        if ($this->m_destinationFilter!="")
+        {
+          $filter = $this->parseFilter($this->m_destinationFilter, $record);
+          $this->m_destInstance->addFilter($filter);
+        }
+
+        $filterkey = md5($this->m_destInstance->m_type.".".$filter);
+        if (!array_key_exists($filterkey, $resultList))
+        {
+          $resultList[$filterkey] = $this->m_destInstance->selectDb("","","","",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
+        }
+
+        return $resultList[$filterkey];
+      }
+
+      return array();
+    }
+
+    /**
+     * Returns the primary keys of the currently selected records retrieved
+     * from the given record.
+     *
+     * @param array $record current record
+     *
+     * @return array list of selected record keys
+     */
+    function getSelectedRecords($record)
+    {
+      $keys = array();
+
+      if (isset($record[$this->fieldName()]))
+      {
+        for ($i = 0; $i < count($record[$this->fieldName()]); $i++)
+        {
+          if (is_array($record[$this->fieldName()][$i][$this->getRemoteKey()]))
+          {
+            $key = $this->m_destInstance->primaryKey($record[$this->fieldName()][$i][$this->getRemoteKey()]);
+          }
+          else
+          {
+            $key = $this->m_destInstance->primaryKey(array($this->m_destInstance->primaryKeyField()=>$record[$this->fieldName()][$i][$this->getRemoteKey()]));
+          }
+
+          $keys[] = $key;
+        }
+      }
+
+      return $keys;
     }
 
     /**
@@ -119,6 +188,8 @@
      */
     function getRemoteKey()
     {
+      $this->createDestination();
+
       if ($this->m_remoteKey=="")
       {
         list($module, $nodename) = explode(".", $this->m_destination);
@@ -170,29 +241,36 @@
      * @param $record
      * @return a displayable string for this value
      */
-    function display($record)
+    function display($record, $mode="")
     {
-      if ($this->createDestination())
+      if (!in_array($mode, array("csv", "plain"))) { $result = "&nbsp;"; } else { $result=''; }
+      if ($this->createDestination() && atk_value_in_array($record[$this->fieldName()]))
       {
         $recordset = array();
-
-        for ($i=0;$i<count($record[$this->m_name]);$i++)
+        $remotekey = $this->getRemoteKey();
+        for ($i=0;$i<count($record[$this->fieldName()]);$i++)
         {
-          $recordset[] = $record[$this->m_name][$i][$this->getRemoteKey()];
-        }
-
-        if (count($record[$this->m_name])!=0)
-        {
-          $result = "<ul>";
-          for ($i=0;$i<count($recordset);$i++)
+          if(!is_array($record[$this->fieldName()][$i][$remotekey]))
           {
-            $result.="<li>".$this->m_destInstance->descriptor($recordset[$i]);
+            $selector = $this->m_destInstance->m_table.".".$this->m_destInstance->primaryKeyField()."='".$record[$this->fieldName()][$i][$remotekey]."'";
+            list($rec) = $this->m_destInstance->selectDb($selector,"","","",$this->m_destInstance->descriptorFields());
+            $recordset[] = $this->m_destInstance->descriptor($rec);
           }
-          $result.="</ul>";
+          else
+          {
+            $recordset[] = $this->m_destInstance->descriptor($record[$this->fieldName()][$i][$remotekey]);
+          }
         }
-        return $result;
+        if (!in_array($mode, array("csv", "plain")))
+        {
+          $result = "<ul><li>".implode("<li>",$recordset)."</ul>";
+        }
+        else
+        {
+          $result = implode(", ",$recordset);
+        }
       }
-      return "&nbsp;";
+      return $result;
     }
 
     /**
@@ -219,10 +297,35 @@
     {
       if ($this->createLink())
       {
+        $where = $this->_getLoadWhereClause($record);
         $rel = &$this->m_linkInstance;
-        return $rel->selectDb($this->m_linkInstance->m_table.".".$this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'");
+        return $rel->selectDb($where);
       }
       return array();
+    }
+
+    function _getLoadWhereClause($record)
+    {
+      $whereelems = array();
+      $localkey = $this->getLocalKey();
+      if(!is_array($localkey)) $localkey = array($localkey);
+
+      $ownerfields = $this->m_ownerInstance->m_primaryKey;
+
+      for ($i=0, $_i = count($localkey); $i<$_i; $i++)
+      {
+        $primkeyattr = &$this->m_ownerInstance->m_attribList[$ownerfields[$i]];
+
+        if (!$primkeyattr->isEmpty($record))
+        {
+          $whereelems[] = $this->m_linkInstance->m_table.".".$localkey[$i]."='".$primkeyattr->value2db($record)."'";
+        }
+      }
+
+      if ($this->m_localFilter != NULL)
+        $whereelems[] = $this->m_localFilter;
+
+      return "(".implode(") AND (", $whereelems).")";
     }
 
     /**
@@ -233,7 +336,9 @@
       if ($this->createLink())
       {
         $rel = &$this->m_linkInstance;
-        return $rel->deleteDb($this->m_linkInstance->m_table.".".$this->getLocalKey()."=".$record[$this->m_ownerInstance->primaryKeyField()]);
+        $where = $this->_getLoadWhereClause($record);
+        if($where!='')
+          return $rel->deleteDb($where);
       }
       return false;
     }
@@ -257,26 +362,61 @@
           $checked[] = $record[$this->fieldName()][$i][$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()];
         else
           $checked[] = $record[$this->fieldName()][$i][$this->getRemoteKey()];
-
       }
 
       $filter="";
       if(count($checked) > 0)
         $filter = "NOT IN ('".implode("','",$checked)."')";
 
-      if (is_object($rel) && $rel->deleteDb($this->m_linkInstance->m_table.'.'.$this->getLocalKey()."='".$record[$this->m_ownerInstance->primaryKeyField()]."'".($filter!=""?" AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter":"")))
+      $selector = "(".$this->_getLoadWhereClause($record).")".($filter!=""?" AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()." $filter":"");
+
+      //append the store deletion filter (if set)
+      if($this->m_store_deletion_filter!="")
+      {
+        if($selector!="") $selector.= " AND ";
+
+        $selector.= " ".$this->m_store_deletion_filter;
+      }
+
+      if (is_object($rel) && $rel->deleteDb($selector))
       {
         for ($i=0;$i<count($record[$this->fieldName()]);$i++)
         {
           // magical stuff..
-          $newrecord = $this->m_destInstance->initial_values();
-          $newrecord[$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()] = $record[$this->fieldName()][$i][$this->getRemoteKey()];
+          $remKey    = $this->checkKeyDimension($record[$this->fieldName()][$i][$this->getRemoteKey()], $this->m_destInstance->primaryKeyField());
 
-          $newrecord[$this->getLocalKey()][$this->m_ownerInstance->primaryKeyField()] = $record[$this->m_ownerInstance->primaryKeyField()];
+          $newrecord = array_merge($rel->initial_values(), $record[$this->fieldName()][$i]);
+
+          if (is_array($record[$this->fieldName()][$i][$this->getRemoteKey()]))
+          {
+            $newrecord[$this->getRemoteKey()][$this->m_destInstance->primaryKeyField()] = $remKey;
+          }
+          else
+          {
+            $newrecord[$this->getRemoteKey()] = $remKey;
+          }
+          $localKey = $this->getLocalKey();
+          if(is_array($localKey))
+          {
+            for($j=0;$j<count($localKey);$j++)
+            {
+              $locKey    = $this->checkKeyDimension($record[$this->m_ownerInstance->m_primaryKey[$j]]);
+              $newrecord[$localKey[0]][$this->m_ownerInstance->m_primaryKey[$j]] = $locKey;
+            }
+          }
+          else
+          {
+            $locKey    = $this->checkKeyDimension($record[$this->m_ownerInstance->primaryKeyField()]);
+            $newrecord[$localKey][$this->m_ownerInstance->primaryKeyField()] = $locKey;
+          }
 
           // First check if the record does not exist yet.
           /* @var $rel atkNode */
-          $existing = $rel->selectDb($rel->primaryKey($newrecord), "", "", "", $rel->m_primaryKey);
+          $where = $this->_getLoadWhereClause($record).
+                     " AND ".$this->m_linkInstance->m_table.'.'.$this->getRemoteKey()."='".
+                     $remKey."'";
+
+          $existing = $rel->selectDb($where, "", "", "", $rel->m_primaryKey);
           if (!count($existing))
           {
             if (!$rel->addDb($newrecord, true, $mode))
@@ -312,15 +452,24 @@
      */
     function hide($record="", $fieldprefix="")
     {
-      if(is_array($record[$this->fieldName()]))
+      $result = "";
+      if(is_array(atkArrayNvl($record,$this->fieldName())) && $this->createDestination())
       {
-        for ($i=0;$i<count($this->m_values);$i++)
+        for($i=0,$_i=count($record[$this->fieldName()]);$i<$_i;$i++)
         {
-          if(in_array($this->m_values[$i],$record[$this->fieldName()]))
-          $result .= '<input type="hidden" name="'.$fieldprefix.$this->fieldName().'[]"
-                      value="'.$this->m_values[$i].'">';
+          if(atkArrayNvl($record[$this->fieldName()][$i],$this->getLocalKey()))
+            $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().
+                       '['.$i.']['.$this->getLocalKey().']" value="'.
+                       $this->checkKeyDimension($record[$this->fieldName()][$i][$this->getLocalKey()],
+                         $this->m_ownerInstance->primaryKeyField()).'">';
+
+          if(atkArrayNvl($record[$this->fieldName()][$i],$this->getRemoteKey()))
+            $result .= '<input type="hidden" name="'.$fieldprefix.$this->formName().
+                       '['.$i.']['.$this->getRemoteKey().']" value="'.
+                       $this->checkKeyDimension($record[$this->fieldName()][$i][$this->getRemoteKey()],
+                         $this->m_destInstance->primaryKeyField()).'">';
         }
-      } else return parent::hide($record,$fieldprefix);
+      }
       return $result;
     }
 
@@ -336,8 +485,7 @@
       $this->createDestination();
 
       // now select all records
-      $recordset = $this->m_destInstance->selectDb();
-
+      $recordset = $this->m_destInstance->selectDb("","","","*",atk_array_merge($this->m_destInstance->descriptorFields(),$this->m_destInstance->m_primaryKey));
         $result = '<select ';
         if ($extended)
         {
@@ -382,7 +530,7 @@
 
         if (count($value)==1) // exactly one value
         {
-          $query->addSearchCondition($query->exactCondition($this->fieldName().".".$this->getRemoteKey(),escapeSQL($value[0])));
+          $query->addSearchCondition($query->exactCondition($this->fieldName().".".$this->getRemoteKey(),$this->escapeSQL($value[0])));
         }
         else // search for more values using IN()
         {
@@ -391,6 +539,64 @@
       }
     }
 
-  }
+    /**
+     * Checks if a key is not an array
+     * @param $key   field containing the key values
+     * @param $field field to return if an array
+     * @return value of $field
+     */
+    function checkKeyDimension($key, $field="id")
+    {
+      if (is_array($key))
+      {
+        return $key[$field];
+      }
+      return $key;
+    }
 
+    /**
+     * Fetch value. If nothing selected, return empty array instead
+     * of nothing.
+     *
+     * @param array $postvars
+     */
+    function fetchValue($postvars)
+    {
+      $value = parent::fetchValue($postvars);
+      return $value == NULL ? array() : $value;
+    }
+
+    /**
+     * Function adds a custom filter that is used when deleting items during the store() function.
+     *
+     * Example:
+     * Normally the delete function would do something like this:
+     *
+     * DELETE FROM phase WHERE phase.template NOT IN (1,2,3)
+     *
+     * If the template field is NULL, although it is not specified in the NOT IN (1,2,3), it will not be deleted.
+     * An extra check can be added just in case the template value is not NULL but 0 or '' (which would delete the phase).
+     *
+     * @param String $filter The filter that is used when deleting records in the store function.
+     * @return none
+     */
+    function setStoreDeletionFilter($filter)
+    {
+      $this->m_store_deletion_filter = $filter;
+    }
+
+    /**
+     * Local filter is used to only show values that are once selected
+     * that comply with the local filter. A local filter is also automatically
+     * set as store deletion filter.
+     *
+     * @param string $filter filter
+     */
+    function setLocalFilter($filter)
+    {
+      $this->setStoreDeletionFilter($filter);
+      $this->m_localFilter = $filter;
+    }
+
+  }
 ?>

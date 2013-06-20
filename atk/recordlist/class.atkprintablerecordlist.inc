@@ -12,8 +12,8 @@
    * @copyright (c)2000-2004 Ivo Jansch
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.2 $
-   * $Id: class.atkprintablerecordlist.inc,v 5.2 2004/05/31 22:11:11 ivo Exp $
+   * @version $Revision: 5.3 $
+   * $Id: class.atkprintablerecordlist.inc,v 5.3 2007/01/11 22:55:27 ivo Exp $
    */
 
   /** @internal include base class */
@@ -69,7 +69,7 @@
             &&$musthide==false
            )
         {
-          $output.='<td><b>'.text($p_attrib->fieldName(),$this->m_node->m_type).'</b></td>';
+          $output.='<td><b>'.atktext($p_attrib->fieldName(),$this->m_node->m_module, $this->m_node->m_type).'</b></td>';
 
           // the totalisable check..
           if ($p_attrib->hasFlag(AF_TOTAL))

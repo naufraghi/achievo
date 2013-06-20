@@ -11,8 +11,8 @@
    * @copyright (c)2005 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 1.6 $
-   * $Id: class.atktmpfile.inc,v 1.6 2006/01/30 11:03:35 boy Exp $
+   * @version $Revision: 1.10 $
+   * $Id: class.atktmpfile.inc,v 1.10 2007/06/18 14:45:48 peter Exp $
    */
 
   /**
@@ -49,6 +49,16 @@
         return file($this->getPath());
       }
     }
+    
+    function readFile()
+    {
+      if ($this->exists())
+      {
+        if (function_exists("file_get_contents"))
+          return file_get_contents($this->getPath());
+        else return implode(null, $this->read());
+      }
+    }
 
     function writeFile($data)
     {
@@ -62,6 +72,17 @@
       return false;
     }
 
+    /**
+     * Recursively creates the directory structure for this file.
+     */
+    function createDirectoryStructure()
+    {
+      $file = atkconfig("atktempdir").$this->m_filename;
+      $path = dirname($file);
+      useattrib('atkfileattribute');
+      atkFileAttribute::mkdir($path);
+    }
+    
     function writeAsPhp($varname, $data)
     {
       $res = "<?php\n";
@@ -80,6 +101,11 @@
       }
       if (is_null($this->m_fp))
       {
+        if ($mode != 'r' && $mode != 'r+')
+        {
+          $this->createDirectoryStructure();  
+        }
+        
         $this->m_fp = fopen($this->getPath(), $mode);
         $this->m_mode = $mode;
       }
@@ -97,7 +123,23 @@
       {
         fclose($this->m_fp);
         $this->m_mode="";
+        $this->m_fp = null;
       }
+    }
+    
+    /**
+     * Send the file contents directly to the browser.
+     *
+     * @return boolean True if succesful, false on error.
+     */
+    function fpassthru()
+    {
+      if ($this->open("r"))
+      {
+        fpassthru($this->m_fp);      
+        $this->close();
+      }
+      return true;
     }
 
     function remove()

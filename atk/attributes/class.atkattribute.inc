@@ -12,8 +12,8 @@
    * @copyright (c)2000-2006 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.62 $
-   * $Id: class.atkattribute.inc,v 5.62 2006/05/25 12:10:31 ivo Exp $
+   * @version $Revision: 5.115 $
+   * $Id: class.atkattribute.inc,v 5.115 2007/12/31 13:12:20 sandy Exp $
    */
 
   /**
@@ -343,6 +343,20 @@
   define("ADDTOQUERY",4);
 
   /**
+   * Attribute is disable in view mode
+   *
+   * Used now only with atkTabbedPane attribute to disable default display behaviour of attribute
+   */
+  define("DISABLED_VIEW",1);
+
+  /**
+   * Attribute is disable in edit mode
+   *
+   * Used now only with atkTabbedPane attribute to disable default edit behaviour of attribute
+   */
+  define("DISABLED_EDIT",2);
+
+  /**
    * The atkAttribute class represents an attribute of an atkNode.
    * An atkAttribute has a name and a set of parameters that
    * control its behaviour, like whether an atkAttribute
@@ -436,11 +450,25 @@
     var $m_tabs="*";
 
     /**
+     * The section(s) on which the attribute lives.
+     * @access private
+     * @var mixed
+     */
+    var $m_sections="*";
+
+    /**
      * The id of the attribute in the HTML
      * @access private
      * @var String
      */
     var $m_htmlid;
+
+    /**
+     * The css classes of the attribute
+     * @access private
+     * @var sttsy
+     */
+    var $m_cssclasses = array();
 
     /**
      * The label of the attribute.
@@ -458,6 +486,13 @@
      * @var String
      */
     var $m_searchmode = "";
+
+    /**
+     * Wether to force an insert of the attribute
+     * @access private
+     * @var bool
+     */
+    var $m_forceinsert=false;
 
     /**
      * Wether to force an update of the attribute
@@ -480,6 +515,58 @@
      * @var String
      */
     var $m_onchangehandler_init = "";
+
+    /**
+     * Variable to store depended attributes.
+     * @access private
+     * @var Array
+     */
+    var $m_dependees = array();
+
+    /**
+     * Attribute to store disabled modes.
+     * @access private
+     * @var int
+     */
+    var $m_disabledModes = 0;
+
+    /**
+     * Whether to hide initially or not
+     * @access private
+     * @var bool
+     */
+    var $m_initial_hidden = false;
+
+    /**
+     * Storage type.
+     * @access private
+     * @var int
+     * @see setStorageType
+     */
+    var $m_storageType = array();
+
+
+    /**
+     * Load type.
+     * @access private
+     * @var int
+     * @see setLoadType
+     */
+    var $m_loadType = array();
+
+    /**
+     * Initial value.
+     * @access private
+     * @var mixed
+     * @see setInitialValue
+     */
+    var $m_initialValue = NULL;
+
+    /**
+     * Manually painted attribute. Will not be rendered. If this is set to true, you are responsible
+     * for calling the attribute's edit() method to paint it on screen.
+     */
+    var $m_manual_paint = false;
 
     /**
      * Constructor
@@ -506,9 +593,33 @@
     function atkAttribute($name, $flags = 0, $size = 0)
     {
       $this->m_name = $name;
-      $this->m_flags = (double)$flags;
+      $this->setFlags((int)$flags);
       $this->setAttribSize($size);
+
+      // default class
+      $this->addCSSClass(get_class($this));
       atkimport("atk.keyboard.atkkeyboard");
+    }
+
+
+    /**
+     * Returns the owner instance.
+     *
+     * @return atkNode owner instance
+     */
+    function &getOwnerInstance()
+    {
+      return $this->m_ownerInstance;
+    }
+
+    /**
+     * Sets the owner instance.
+     *
+     * @param atkNode $instance
+     */
+    function setOwnerInstance(&$instance)
+    {
+      $this->m_ownerInstance = &$instance;
     }
 
     /**
@@ -540,6 +651,15 @@
     function addFlag($flag)
     {
       $this->m_flags |= $flag;
+      if (hasFlag($flag, AF_HIDE_LIST)&&!$this->hasFlag(AF_PRIMARY)&&is_object($this->m_ownerInstance)&&!in_array($this->fieldName(),$this->m_ownerInstance->m_listExcludes))
+      {
+        $this->m_ownerInstance->m_listExcludes[]=$this->fieldName();
+      }
+      if (hasFlag($flag, AF_HIDE_VIEW)&&!$this->hasFlag(AF_PRIMARY)&&is_object($this->m_ownerInstance)&&!in_array($this->fieldName(),$this->m_ownerInstance->m_viewExcludes))
+      {
+        $this->m_ownerInstance->m_viewExcludes[]=$this->fieldName();
+      }
+      return $this;
     }
 
     /**
@@ -552,7 +672,8 @@
      */
     function setFlags($flags = 0)
     {
-      $this->m_flags = $flags;
+      $this->m_flags = 0;
+      $this->addFlag($flags); // always call addFlag
     }
 
     /**
@@ -566,8 +687,55 @@
     function removeFlag($flag)
     {
       if($this->hasFlag($flag)) $this->m_flags ^= $flag;
+      if ((hasFlag($flag, AF_HIDE_LIST)&&!$this->hasFlag(AF_PRIMARY))&&is_object($this->m_ownerInstance)&&in_array($this->fieldName(),$this->m_ownerInstance->m_listExcludes))
+      {
+        unset($this->m_ownerInstance->m_listExcludes[array_search($this->fieldName(), $this->m_ownerInstance->m_listExcludes)]);
+      }
+      if ((hasFlag($flag, AF_HIDE_VIEW)&&!$this->hasFlag(AF_PRIMARY))&&is_object($this->m_ownerInstance)&&in_array($this->fieldName(),$this->m_ownerInstance->m_viewExcludes))
+      {
+        unset($this->m_ownerInstance->m_viewExcludes[array_search($this->fieldName(), $this->m_ownerInstance->m_viewExcludes)]);
+      }
+      return $this;
     }
 
+    /**
+     * Adds a disabled mode flag to the attribute  (use DISABLED_VIEW and DISABLED_EDIT flags).
+     * @param int $flag The flag to add to the attribute
+     */
+    function addDisabledMode($flag)
+    {
+      $this->m_disabledModes |= $flag;
+    }
+    /**
+     * Check if the attribute is disable in some mode (use DISABLED_VIEW and DISABLED_EDIT flags).
+     * @param int $flag The flag you want to check
+     * @return boolean
+     */
+    function hasDisabledMode($flag)
+    {
+      return (($this->m_disabledModes & $flag) == $flag);
+    }
+    /**
+     * Sets the disabled mode flag of the attribute
+     *
+     * Note that if you assign nothing or 0, this will remove all the flags
+     * from the attribute. You can assign multiple flags by using the pipe
+     * symbol. Setting the flags will overwrite all previous flag-settings.
+     * @param int $flags The flags to be set to the attribute.
+     */
+    function setDisabledModes($flags = 0)
+    {
+      $this->m_disabledModes = $flags;
+    }
+    /**
+     * Removes a disabled mode from the attribute.
+     *
+     * @param int $flag The flag to remove from the attribute
+     */
+    function removeDisabledMode($flag)
+    {
+      if($this->hasDisabledMode($flag)) $this->m_disabledModes ^= $flag;
+    }
     /**
      * Returns the name of the attribute.
      *
@@ -601,7 +769,7 @@
      */
     function isEmpty($record)
     {
-      return (!isset($record[$this->fieldName()])||$record[$this->fieldName()]=="");
+      return (!isset($record[$this->fieldName()])||$record[$this->fieldName()]===""||$record[$this->fieldName()]===NULL);
     }
 
     /**
@@ -620,7 +788,7 @@
     {
       if (is_array($rec)&&isset($rec[$this->fieldName()]))
       {
-        return escapeSQL($rec[$this->fieldName()]);
+        return $this->escapeSQL($rec[$this->fieldName()]);
       }
       return NULL;
     }
@@ -628,7 +796,7 @@
     /**
      * Converts a database value to an internal value.
      *
-     * For the regular atkAttribute, this means stripping slashes.
+     * For the regular atkAttribute
      * Derived attributes may reimplement this for their own conversion.
      * (In which case, the return type might be 'mixed')
      *
@@ -641,9 +809,44 @@
     {
       if (isset($rec[$this->fieldName()]))
       {
-        return stripslashes($rec[$this->fieldName()]);
+        return $rec[$this->fieldName()] === NULL ? NULL : $rec[$this->fieldName()];
       }
       return NULL;
+    }
+
+    /**
+     * Is there a value posted for this attribute?
+     *
+     * @param array $postvars
+     * @return boolean posted?
+     */
+    function isPosted($postvars)
+    {
+      return is_array($postvars)&&isset($postvars[$this->fieldName()]);
+    }
+
+    /**
+     * Set initial value for this attribute.
+     *
+     * NOTE: the initial value only works if there is no initial_values override
+     *       in the node or if the override properly calls parent::initial_values!
+     *
+     * @param mixed $value initial value
+     */
+    function setInitialValue($value)
+    {
+      $this->m_initialValue = $value;
+    }
+
+    /**
+     * Initial value. Returns the initial value for this attribute
+     * which will be used in the add form etc.
+     *
+     * @return mixed initial value for this attribute
+     */
+    function initialValue()
+    {
+      return $this->m_initialValue;
     }
 
     /**
@@ -659,7 +862,7 @@
      */
     function fetchValue($postvars)
     {
-      if (is_array($postvars)&&isset($postvars[$this->fieldName()]))
+      if ($this->isPosted($postvars))
       {
         return $postvars[$this->fieldName()];
       }
@@ -690,9 +893,15 @@
         $onchange = '';
       }
 
-      $result = '<input type="text" id="'.$id.'" name="'.$id.'" class="atkattribute"'.
-                '" value="'.(isset($record[$this->fieldName()])?htmlspecialchars($record[$this->fieldName()]):"").'"'.
-                ($this->m_size > 0 ? ' size="'.$this->m_size.'"' : '').
+      $size = $this->m_size;
+      if ($mode == 'list' && $size > 20)
+        $size = 20;
+
+      $value = (isset($record[$this->fieldName()]) && !is_array($record[$this->fieldName()])?htmlspecialchars($record[$this->fieldName()]):"");
+
+      $result = '<input type="text" id="'.$id.'" name="'.$id.'" '.$this->getCSSClassAttribute().
+                ' value="'.$value.'"'.
+                ($size > 0 ? ' size="'.$size.'"' : '').
                 ($this->m_maxsize > 0 ? ' maxlength="'.$this->m_maxsize.'"' : '').' '.$onchange.' />';
 
       return $result;
@@ -705,8 +914,8 @@
      */
     function addOnChangeHandler($jscode)
     {
-      $this->m_onchangecode[] = $jscode;
-      return true;
+      if (!in_array($jscode, $this->m_onchangecode)) $this->m_onchangecode[] = $jscode;
+      return $this;
     }
 
     /**
@@ -719,11 +928,12 @@
       if (count($this->m_onchangecode))
       {
         $page = &$this->m_ownerInstance->getPage();
-        $page->register_scriptcode("function ".$this->getHtmlId($fieldprefix)."_onChange(el)
-                                    {
-                                      {$this->m_onchangehandler_init}
-                                      ".implode("\n", $this->m_onchangecode)."
-                                    }\n");
+        $page->register_scriptcode("
+    function ".$this->getHtmlId($fieldprefix)."_onChange(el)
+    {
+      {$this->m_onchangehandler_init}
+      ".implode("\n      ", $this->m_onchangecode)."
+    }\n");
       }
     }
 
@@ -739,6 +949,7 @@
      */
     function hide($record="", $fieldprefix="")
     {
+      atkdebug("<h1>HIDE ATTRIBUTE -> {$this->fieldName()}</h1>");
       // the next if-statement is a workaround for derived attributes which do
       // not override the hide() method properly. This will not give them a
       // working hide() functionality but at least it will not give error messages.
@@ -776,6 +987,36 @@
     }
 
     /**
+     * Adds the attribute's view / hide HTML code to the view array.
+     *
+     * This method is called by the node if it wants the data needed to create
+     * a view form.
+     *
+     * This is a framework method, it should never be called directly.
+     *
+     * @param String $mode     the mode ("view")
+     * @param array  $arr      pointer to the view array
+     * @param array  $defaults pointer to the default values array
+     */
+    function addToViewArray($mode, &$arr, &$defaults)
+    {
+      if(!$this->hasFlag(AF_HIDE_VIEW))
+      {
+	    	$entry = array("name" => $this->m_name, "attribute" => &$this);
+
+	      /* label? */
+	      $entry["label"] = $this->getLabel($defaults, $mode);
+	      // on which tab?
+	      $entry["tabs"] = $this->getTabs($mode);
+	      //on which sections?
+	      $entry["sections"] = $this->getSections();
+	      /* the actual edit contents */
+	      $entry["html"] = $this->getView($mode, $defaults);
+	      $arr["fields"][] = $entry;
+      }
+    }
+
+    /**
      * Adds the attribute's edit / hide HTML code to the edit array.
      *
      * This method is called by the node if it wants the data needed to create
@@ -791,28 +1032,41 @@
      */
     function addToEditArray($mode, &$arr, &$defaults, &$error, $fieldprefix)
     {
+      /* Attribute manually paints itself? */
+      if ($this->m_manual_paint) return;
+
+
       /* hide */
       if (($mode=="edit" && $this->hasFlag(AF_HIDE_EDIT)) || ($mode=="add" && $this->hasFlag(AF_HIDE_ADD)))
       {
         /* when adding, there's nothing to hide... */
         if ($mode=="edit" || ($mode=="add" && !$this->isEmpty($defaults)))
           $arr["hide"][] = $this->hide($defaults, $fieldprefix, $mode);
+
       }
 
       /* edit */
       else
       {
+        global $ATK_VARS;
+
+        $this->_registerDependees($mode, $fieldprefix);
+
         $entry = array("name" => $this->m_name, "obligatory" => $this->hasFlag(AF_OBLIGATORY), "attribute" => &$this);
         $entry["id"] = $this->getHtmlId($fieldprefix);
 
         /* label? */
-        $entry["label"] = $this->getLabel($defaults);
+        $entry["label"] = $this->getLabel($defaults, $mode);
         /* error? */
-        $entry["error"] = $this->getError($error);
+        $entry["error"] = $this->getError($error) || (isset($ATK_VARS["atkerrorfields"]) && atk_in_array($entry['id'], $ATK_VARS['atkerrorfields']));
         // on which tab?
-        $entry["tabs"] = $this->m_tabs;
-        /* the actual edit contents */
+        $entry["tabs"] = $this->getTabs($mode);
+        //on which sections?
+        $entry["sections"] = $this->getSections();
+        // the actual edit contents
         $entry["html"] = $this->getEdit($mode, $defaults, $fieldprefix);
+        // initially hidden
+        $entry["initial_hidden"] = $this->isInitialHidden($defaults);
         $arr["fields"][] = $entry;
       }
     }
@@ -824,14 +1078,110 @@
      */
     function setTabs($tabs)
     {
-      if ($tabs==NULL)
+      if (empty($tabs) && isset($this->m_ownerInstance) && is_object($this->m_ownerInstance))
       {
-        $this->m_tabs = array("default");
+        $tabs = array($this->m_ownerInstance->m_default_tab);
+      }
+      else if (empty($tabs))
+      {
+        $tabs = array('default');
+      }
+
+      $this->m_tabs = $tabs;
+    }
+
+    /**
+     * retrieve the tabs for this attribute.
+     *
+     * @return array
+     */
+    function getTabs()
+    {
+      return $this->m_tabs;
+    }
+
+    /**
+     * Put the attribute on one or more tabs.
+     * @param array $tabs An array of tabs on which the attribute should
+     *                    be displayed.
+     */
+    function setSections($sections)
+    {
+      if ($sections==NULL)
+      {
+        $this->m_sections = array();
       }
       else
       {
-        $this->m_tabs = $tabs;
+        $this->m_sections = $sections;
       }
+    }
+
+    /**
+     * retrieve the tabs for this attribute.
+     *
+     * @return array
+     */
+    function getSections()
+    {
+      return $this->m_sections;
+    }
+
+
+    /**
+     * Retrieve the html code for placing this attribute in a view page.
+     *
+     * Method is 'smart', and implements custom override methodes in the node.
+     * (<attributename>_display() methods)
+     *
+     * Framework method, it should not be necessary to call this method
+     * directly.
+     *
+     * @param String $mode The mode ("view")
+     * @param array $defaults The record holding the values for this attribute
+     *
+     * @return String the HTML code for this attribute that can be used in a
+     *                viewpage.
+     */
+    function getView($mode, &$defaults)
+    {
+      $funcname = $this->m_name."_display";
+      if (method_exists($this->m_ownerInstance, $funcname))
+      {
+        $result = $this->m_ownerInstance->$funcname($defaults, $mode);
+      }
+      else
+      {
+        $result = $this->display($defaults, $mode);
+      }
+      return $result;
+    }
+
+    /**
+     * Retrieve the html/javascript code for showing the tooltip for this attribute.
+     *
+     * @return HTML
+     */
+    function getToolTip()
+    {
+  	  $module = $this->getModule();
+  	  if (!$module) $module = "atk";
+
+  	  $node = &$this->m_ownerInstance;
+  	  $ttip = atktext($node->m_type."_".$this->fieldName()."_tooltip", $module, "", "", "", true);
+
+  	  $tooltip = '';
+
+      if ($ttip)
+  	  {
+  	    $theme = &atkinstance("atk.ui.atktheme");
+  	    $tipimg = $theme->imgPath("help.gif");
+
+  	    $onelinetip = preg_replace('/([\r\n])/e',"",$ttip);
+  	    $tooltip = '<img align="top" src="'.$tipimg.'" border="0" alt="'.$onelinetip.'" onClick="javascript:alert(\''.str_replace("\n", '\n', addslashes($ttip)).
+  	    '\')" onMouseOver="javascript:window.status=\''. addslashes($onelinetip).'\';">';
+  	  }
+  	  return $tooltip;
     }
 
     /**
@@ -860,15 +1210,7 @@
       if (($mode=="edit" && $this->hasFlag(AF_READONLY_EDIT)) || ($mode=="add" && $this->hasFlag(AF_READONLY_ADD)))
       {
         $result.= $this->hide($defaults, $fieldprefix);
-        $funcname = $this->m_name."_display";
-        if (method_exists($this->m_ownerInstance, $funcname))
-        {
-          $result.= $this->m_ownerInstance->$funcname($defaults, $mode);
-        }
-        else
-        {
-          $result.= $this->display($defaults, $mode);
-        }
+        $result.= $this->getView($mode, $defaults);
       }
       /* normal */
       else
@@ -933,7 +1275,7 @@
 
         if (!hasFlag($flags, RL_NO_SORT) && !$this->hasFlag(AF_NO_SORT))
         {
-          $arr["heading"][$key]["url"] = $this->listHeaderSortUrl($columnConfig);
+          $arr["heading"][$key]["order"] = $this->listHeaderSortOrder($columnConfig);
         }
 
         if (hasFlag($flags, RL_EXT_SORT))
@@ -942,7 +1284,18 @@
         }
 
         if (!hasFlag($flags, RL_NO_SEARCH) && $this->hasFlag(AF_SEARCHABLE))
-          $arr["search"][$key] = $this->search($atksearch,null,$fieldprefix);
+        {
+          $fn = $this->fieldName()."_search";
+          if (method_exists($this->m_ownerInstance, $fn))
+          {
+            $arr["search"][$key] = $this->m_ownerInstance->$fn($atksearch, false, $fieldprefix);
+          }
+          else
+          {
+            $arr["search"][$key] = $this->search($atksearch, false, $fieldprefix);
+          }
+          $arr["search"][$key].='<input type="hidden" name="atksearchmode['.$this->formName().']" value="'.$this->getSearchMode(false).'">';
+        }
       }
     }
 
@@ -964,7 +1317,12 @@
       {
         /* an <attributename>_display function may be provided in a derived class to display an attribute */
         $function = $this->m_name."_display";
-        if (method_exists($this->m_ownerInstance, $function))
+        if (in_array($this->fieldName(), $this->m_ownerInstance->m_editableListAttributes) && $this->m_ownerInstance->allowed('edit', $arr["rows"][$nr]["record"]))
+        {
+          $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] =
+            $this->getEdit('list', $arr["rows"][$nr]["record"], 'atkrecordlistdata_AE_'.$arr['name'].'_AE_'.$nr.'_AE_');
+        }
+        elseif (method_exists($this->m_ownerInstance, $function))
           $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = $this->m_ownerInstance->$function($arr["rows"][$nr]["record"], "list");
         else $arr["rows"][$nr]["data"][$fieldprefix.$this->fieldName()] = $this->display($arr["rows"][$nr]["record"], "list");
 
@@ -1026,6 +1384,23 @@
     }
 
     /**
+     * Retrieve the default searchmode of an attribute
+     *
+     * @param boolean $extended Whether extended search is being used
+     * @return String the default searchmode for this attribute.
+     */
+    function getSearchMode($extended=false)
+    {
+      $searchmode = $this->m_ownerInstance->getSearchMode();
+
+      if (is_array($searchmode))
+      {
+        return $searchmode[$this->fieldName()];
+      }
+      return $searchmode;
+    }
+
+    /**
      * Creates a smart search condition for a given search value, and adds it
      * to the query that will be used for performing the actual search.
      *
@@ -1064,6 +1439,13 @@
      */
     function searchCondition(&$query, $table, $value, $searchmode)
     {
+      /** @todo Move this to a higher level */
+      if (strpos($value, "*")!==false && strlen($value)>1)
+      {
+      	// auto wildcard detection
+      	$searchmode = "wildcard";
+      }
+
       $searchCondition = &$this->getSearchCondition($query, $table, $value, $searchmode);
       if ($searchCondition)
       {
@@ -1097,9 +1479,9 @@
       if ($this->m_searchmode) $searchmode = $this->m_searchmode;
 
       $func = $searchmode."Condition";
-      if (method_exists($query,$func) && $value)
+      if (method_exists($query,$func) && ($value || ($value == 0)))
       {
-        return $query->$func($table.".".$this->fieldName(),escapeSQL($value));
+        return $query->$func($table.".".$this->fieldName(),$this->escapeSQL($value));
       }
       else
       {
@@ -1165,6 +1547,20 @@
     }
 
     /**
+     * Checks if this attribute is really not null in the database.
+     * This method does not look at the AF_OBLIGATORY flag, it only
+     * checks in the database if the attribute's column is really not null.
+     *
+     * @return boolean attribute's database column not null?
+     */
+    function isNotNullInDb()
+    {
+      $db = &$this->getDb();
+      $meta = $db->tableMeta($this->m_ownerInstance->m_table);
+      return hasFlag($meta[$this->fieldName()]['flags'], MF_NOT_NULL);
+    }
+
+    /**
      * Adds this attribute to database queries.
      *
      * Database queries (select, insert and update) are passed to this method
@@ -1193,7 +1589,16 @@
     function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec="", $level, $mode)
     {
       if ($mode == "add" || $mode == "update")
-        $query->addField($this->fieldName(),$this->value2db($rec),"","",!$this->hasFlag(AF_NO_QUOTES),true);
+      {
+        if ($this->isEmpty($rec) && !$this->hasFlag(AF_OBLIGATORY) && !$this->isNotNullInDb())
+        {
+          $query->addField($this->fieldName(),'NULL',"","",false,true);
+        }
+        else
+        {
+          $query->addField($this->fieldName(),$this->value2db($rec),"","",!$this->hasFlag(AF_NO_QUOTES),true);
+        }
+      }
       else
         $query->addField($this->fieldName(),"",$tablename,$fieldaliasprefix,!$this->hasFlag(AF_NO_QUOTES),true);
     }
@@ -1251,7 +1656,6 @@
      */
     function fetchMeta($metadata)
     {
-
       $attribname = strtolower($this->fieldName());
       // Only use meta info if size is not already set manual. (constructor or setAttribSize)
       // If both are set, use the smallest value.
@@ -1284,6 +1688,17 @@
     }
 
     /**
+     * This function is called at the end of the node's init method.
+     *
+     * The regular atkAttribute has no implementation for this method, but
+     * derived attributes may override this method to perform custom
+     * initialization.
+     */
+    function postInit()
+    {
+    }
+
+    /**
      * This function is called to compare if two records are considered equal
      * by this attribute.
      *
@@ -1301,20 +1716,22 @@
     }
 
     /**
-     * This function is called by the framework to determine if the attribute
-     * needs to be saved to the database in an updateDb call.
-     *
-     * The regular atkAttribute returns false if AF_READONLY_EDIT or
-     * AF_HIDE_EDIT are set, but derived attributes may override this
-     * behavior.
-     *
-     * @param array $record The record that is going to be saved.
-     * @return boolean True if this attribute should participate in the update
-     *                 query; false if not.
+     * Used to force an attribute to update with every addDb() call
+     * @param bool $force Wether or not to force the attribute to insert
      */
-    function needsUpdate($record)
+    function setForceInsert($force)
     {
-      return ((!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT)) || $this->m_forceupdate);
+      $this->m_forceinsert = $force;
+      return $this;
+    }
+
+    /**
+     * Getter for wether or not an attribute is forced to insert
+     * @return bool Wether or not an attribute is forced to insert
+     */
+    function getForceInsert()
+    {
+      return $this->m_forceinsert;
     }
 
     /**
@@ -1324,6 +1741,7 @@
     function setForceUpdate($force)
     {
       $this->m_forceupdate = $force;
+      return $this;
     }
 
     /**
@@ -1352,12 +1770,30 @@
     {
       return (!$this->hasFlag(AF_HIDE_ADD) ||
               $this->hasFlag(AF_AUTO_INCREMENT) ||
-              !$this->isEmpty($record));
+              !$this->isEmpty($record) ||
+              $this->m_forceinsert);
 
       // If we are set to hide_add, we will only insert into the
       // db if a value has been set (for example by an initial_values
       // method). Also, autoincrement fields might be hidden, and their
       // value is still empty, but they do need to be inserted lateron.
+    }
+
+    /**
+     * This function is called by the framework to determine if the attribute
+     * needs to be saved to the database in an updateDb call.
+     *
+     * The regular atkAttribute returns false if AF_READONLY_EDIT or
+     * AF_HIDE_EDIT are set, but derived attributes may override this
+     * behavior.
+     *
+     * @param array $record The record that is going to be saved.
+     * @return boolean True if this attribute should participate in the update
+     *                 query; false if not.
+     */
+    function needsUpdate($record)
+    {
+      return ((!$this->hasFlag(AF_READONLY_EDIT) && !$this->hasFlag(AF_HIDE_EDIT)) || $this->m_forceupdate);
     }
 
     /**
@@ -1535,7 +1971,7 @@
      *                empty string if the label should be blank, or NULL if no
      *                label at all should be displayed.
      */
-    function getLabel($record = array())
+    function getLabel($record = array(), $mode='')
     {
       if ($this->hasFlag(AF_NOLABEL)) return "AF_NO_LABEL";
       else if ($this->hasFlag(AF_BLANKLABEL)) return NULL;
@@ -1562,6 +1998,19 @@
       return (hasFlag($storagetype, POSTSTORE)
               ||hasFlag($storagetype, PRESTORE)
               );
+    }
+
+    /**
+     * Sets the storage type.
+     *
+     * @param int $type Bitmask containg information about storage requirements.
+     * @param string $mode The storage mode ("add", "update" or null for all)
+     *
+     * @see storageType
+     */
+    function setStorageType($type, $mode=null)
+    {
+      $this->m_storageType[$mode] = $type;
     }
 
     /*
@@ -1593,11 +2042,29 @@
      */
     function storageType($mode)
     {
+      if (isset($this->m_storageType[$mode]) && $this->m_storageType[$mode] !== null)
+        return $this->m_storageType[$mode];
+      else if (isset($this->m_storageType[null]) && $this->m_storageType[null] !== null)
+        return $this->m_storageType[null];
       // Default backwardscompatible behaviour:
-      if (method_exists($this,"store"))
+      else if (method_exists($this,"store"))
         return POSTSTORE;
       else
         return ADDTOQUERY;
+    }
+
+
+    /**
+     * Sets the load type.
+     *
+     * @param int $type Bitmask containg information about load requirements.
+     * @param string $mode The load mode ("view", "admin" etc. or null for all)
+     *
+     * @see loadType
+     */
+    function setLoadType($type, $mode=null)
+    {
+      $this->m_loadType[$mode] = $type;
     }
 
     /*
@@ -1629,8 +2096,12 @@
      */
     function loadType($mode, $searching=false)
     {
+      if (isset($this->m_loadType[$mode]) && $this->m_loadType[$mode] !== null)
+        return $this->m_loadType[$mode];
+      else if (isset($this->m_loadType[null]) && $this->m_loadType[null] !== null)
+        return $this->m_loadType[null];
       // Default backwardscompatible behaviour:
-      if (method_exists($this,"load"))
+      else if (method_exists($this,"load"))
         return POSTLOAD;
       else
         return ADDTOQUERY;
@@ -1692,7 +2163,7 @@
      */
     function showOnTab($tab)
     {
-      return ($this->m_tabs == "*" || atk_in_array($tab, $this->m_tabs));
+      return ($this->getTabs() == "*" || atk_in_array($tab, $this->getTabs()));
     }
 
     /**
@@ -1754,7 +2225,7 @@
       $funcname = $this->m_name."_search";
 
       if (method_exists($node,$funcname))
-      $field["widget"] = $node->$funcname($defaults, $fieldprefix);
+      $field["widget"] = $node->$funcname($defaults, true, $fieldprefix);
       else
       {
         $field["widget"] = $this->search($defaults, true, $fieldprefix); // second param indicates extended search.
@@ -1785,19 +2256,8 @@
         $field["searchmode"] = $sel;
       }
 
-
       // set "label" value:
-      if ($this->hasFlag(AF_NOLABEL)==false)
-      {
-        if ($this->hasFlag(AF_BLANKLABEL))
-        $field['label'] = "";
-        else
-        $field['label'] = $this->label($record);
-      }
-      else
-      {
-        $field['line'] = $field['widget'];
-      }
+      $field['label'] = $this->label($record);
 
       // add $field to fields array
       $fields[] = $field;
@@ -1805,13 +2265,8 @@
 
     function extendedSort(&$columnConfig)
     {
-      $specificOptions = $this->sortOptions($columnConfig);
-      if ($specificOptions!="")
-      {
-        $res.= $specificOptions;
-      }
-      $res.= ' '.$this->sortOrder($columnConfig);
-      return $res;
+      $result = $this->sortOptions($columnConfig).' '.$this->sortOrder($columnConfig);
+      return $result;
     }
 
     /**
@@ -1823,7 +2278,7 @@
       {
         // if we are not the sumcolumn itself, but there are totalcolumns present, we can perform subtotalling
         $cmd = ($columnConfig->hasSubTotal($this->fieldName())?"unsubtotal":"subtotal");
-        return href('dispatch.php?'.$columnConfig->getUrlCommand($this->fieldName(), $cmd), atktext("column_".$cmd)).' ';
+        return href(getDispatchFile().'?'.$columnConfig->getUrlCommand($this->fieldName(), $cmd), atktext("column_".$cmd)).' ';
       }
       return "";
     }
@@ -1837,7 +2292,7 @@
       if ($currentOrder>0)
       {
         $direction = ($columnConfig->getSortDirection($this->fieldName())=="desc" ? "asc":"desc");
-        $res= href('dispatch.php?'.$columnConfig->getUrlCommand($fieldname, $direction), atktext("column_".$direction)).' ';
+        $res= href(getDispatchFile().'?'.$columnConfig->getUrlCommand($fieldname, $direction), atktext("column_".$direction)).' ';
       }
 
       $res.= '<select name="atkcolcmd[][setorder]['.$fieldname.']">';
@@ -1852,10 +2307,8 @@
       return $res;
     }
 
-    function listHeaderSortUrl(&$columnConfig)
+    function listHeaderSortOrder(&$columnConfig)
     {
-      global $ATK_VARS;
-
       $order = $this->fieldName();
 
       if (isset($columnConfig->m_colcfg[$order]))
@@ -1864,9 +2317,7 @@
         if ($direction=="asc") $order.=" desc";
       }
 
-      //if ($columnConfig->getDirection($order) != "asc") $order .= " ASC";
-
-      return session_url($_SERVER["PHP_SELF"].'?atknodetype='.$ATK_VARS["atknodetype"].'&atkaction='.$ATK_VARS["atkaction"].'&atkorderby='.rawurlencode($order));
+      return $order;
     }
 
     function getOrderByStatement()
@@ -1874,12 +2325,212 @@
       return $this->m_ownerInstance->m_table.".".$this->fieldName();
     }
 
- /**
+    /**
      * Translate using the owner instance's module and type.
      */
     function text($string)
     {
-      return $this->m_ownerInstance->text($string, $this->getModule());
+      if (is_object($this->m_ownerInstance))
+        return $this->m_ownerInstance->text($string, $this->getModule());
+      else
+        return atktext($string, $this->getModule());
+    }
+
+    /**
+     * Get database instance for this attribute. Will return the owner
+     * instance database instance unless the owner instance is not set
+     * in which case the default instance will be returned.
+     *
+     * @return atkDb database instance
+     */
+    function &getDb()
+    {
+      if (is_object($this->m_ownerInstance))
+        return $this->m_ownerInstance->getDb();
+      else return atkGetDb();
+    }
+
+    /**
+     * Escape string for use in a query.
+     *
+     * @param string value value to escape
+     * @param boolean escape wildcards too?
+     */
+    function escapeSQL($value, $wildcards=false)
+    {
+      $db = &$this->getDb();
+      return $db->escapeSQL($value, $wildcards);
+    }
+
+    /**
+     * Handle partial.
+     *
+     * @param $partial partial name
+     * @param $mode    add/edit mode
+     */
+    function partial($partial, $mode)
+    {
+      $method = "partial_{$partial}";
+
+      if (!method_exists($this, $method))
+      {
+        return '<span style="color: red; font-weight: bold">Invalid partial!</span>';
+      }
+
+      return $this->$method($mode);
+    }
+
+    /**
+     * Refreshes the add/edit field for this attribute.
+     *
+     * @param $mode add/edit mode
+     */
+    function partial_refresh($mode)
+    {
+      $record = $this->m_ownerInstance->updateRecord();
+      $fieldprefix = $this->m_ownerInstance->m_postvars['atkfieldprefix'];
+      $this->_registerDependees($mode, $fieldprefix);
+
+      $arr = array('fields' => array());
+      $defaults = &$record;
+      $error = array();
+
+      $this->addToEditArray($mode, $arr, $defaults, $error, $fieldprefix);
+
+      $script = '';
+      atkimport('atk.utils.atkjson');
+      foreach ($arr['fields'] as $field)
+      {
+        //atkJSON::encode expect string in in ASCII or UTF-8 format, so convert data to UTF-8
+        $value = atk_iconv(atktext("charset"),"UTF-8",$field['html']);
+        $script .= "\$('".str_replace('.', '_', $this->m_ownerInstance->atkNodeType().'_'.$field['id'])."').innerHTML = ".atkJSON::encode($value).";\r\n";
+      }
+
+      $this->_registerDependees($mode, $fieldprefix);
+
+      return '<script type="text/javascript">'.$script.'</script>';
+    }
+
+    /**
+     * Add dependee.
+     */
+    function addDependee($attribName)
+    {
+      if(!in_array($attribName, $this->m_dependees)) $this->m_dependees[] = $attribName;
+      return $this;
+    }
+
+    /**
+     * Get dependees.
+     */
+    function getDependees()
+    {
+      return $this->m_dependees;
+    }
+
+    /**
+     * Register change handlers for dependees.
+     */
+    function _registerDependees($mode="", $fieldprefix="")
+    {
+      if(!empty($this->m_dependees))
+      {
+        $page = &$this->m_ownerInstance->getPage();
+        $page->register_script(atkconfig('atkroot').'atk/javascript/class.atkattribute.js');
+
+        foreach ($this->m_dependees as $attribName)
+        {
+          $url = addslashes(partial_url($this->m_ownerInstance->atkNodeType(), $mode == "add" ? "add" : "edit", "attribute.$attribName.refresh", array("atkfieldprefix" => $fieldprefix)));
+
+          $code = "ATK.Attribute.refresh('$url');";
+          $this->addOnChangeHandler($code);
+
+          $isPartial = $this->m_ownerInstance->m_partial != NULL;
+          if (!$isPartial)
+          {
+            $code = "ATK.Attribute.refresh('$url', true);";
+          }
+
+          // only register the initial refresh on attribute load if this attribute
+          // itself doesn't depend on any other attribute or this is a partial request
+          if ($isPartial || !$this->isDepending())
+          {
+            $page->register_loadscript($code);
+          }
+        }
+      }
+    }
+
+    /**
+     * Check whatever this attribute depends on other attributes.
+     *
+     * @return this attribute depends on other attribute(s)?
+     */
+    function isDepending()
+    {
+      foreach (array_keys($this->m_ownerInstance->m_attribList) as $attrName)
+      {
+        $attr = &$this->m_ownerInstance->getAttribute($attrName);
+        if (in_array($this->fieldName(), $attr->getDependees()))
+          return true;
+      }
+
+      return false;
+    }
+
+    function getCSSClasses()
+    {
+      return $this->m_cssclasses;
+    }
+
+    function addCSSClass($classname)
+    {
+      if (!in_array($classname, $this->m_cssclasses)) $this->m_cssclasses[] = $classname;
+    }
+
+    function getCSSClassAttribute($additionalclasses = array())
+    {
+      $classes = array_merge($this->getCSSClasses(), is_array($additionalclasses) ? $additionalclasses : array($additionalclasses));
+      return 'class="'.implode(" ", $classes).'"';
+    }
+
+    /**
+     * Set whether initially hidden or not
+     *
+     * @param boolean $bool
+     */
+    function setInitialHidden($bool)
+    {
+      $this->m_initial_hidden = $bool;
+    }
+
+    /**
+     * check whether initially hidden or not
+     *
+     * @param array the record
+     *
+     * @return initially hidden
+     */
+    function isInitialHidden($record)
+    {
+      return $this->m_initial_hidden;
+    }
+
+    function setManualPaint($bool)
+    {
+      $this->m_manual_paint = $bool;
+    }
+
+    function isManualPaint() { return $this->m_manual_paint; }
+
+    /**
+     * String representation for this attribute (PHP5 only).
+     *
+     * @return string attribute name prefixed with node type
+     */
+    function __toString()
+    {
+      return $this->m_ownerInstance->atkNodeType()."::".$this->fieldName();
     }
   }
 ?>

@@ -12,15 +12,15 @@
    * @copyright (c)2000-2004 Ibuildings.nl BV
    * @license http://www.achievo.org/atk/licensing ATK Open Source License
    *
-   * @version $Revision: 5.22 $
-   * $Id: class.atkadminhandler.inc,v 5.22 2006/05/25 01:43:59 guido Exp $
+   * @version $Revision: 5.36 $
+   * $Id: class.atkadminhandler.inc,v 5.36 2007/10/12 10:00:02 peter Exp $
    */
 
   /**
    * Handler for the 'admin' action of a node. It displays a recordlist with
    * existing records, and links to view/edit/delete them (or custom actions
    * if present), and an embedded addform or a link to an addpage (depending
-   * on the presence of the NF_ADD_LINK flag).
+   * on the presence of the NF_ADD_LINK or NF_ADD_DIALOG flag).
    *
    * @author Ivo Jansch <ivo@achievo.org>
    * @package atk
@@ -31,24 +31,54 @@
 
   class atkAdminHandler extends atkActionHandler
   {
+    var $m_actionSessionStatus = SESSION_NESTED;
+
     /**
      * The action method
      */
     function action_admin()
     {
+      if (isset($this->m_partial) && $this->m_partial!="")
+      {
+        $this->partial($this->m_partial);
+        return;
+      }      
+      
       $page = &$this->getPage();
+      $res = $this->renderAdminPage();
+      $page->addContent($this->m_node->renderActionPage("admin", $res));
+    }
 
+    /**
+     * Sets the action session status for actions in the recordlist.
+     * (Defaults to SESSION_NESTED).
+     */
+    function setActionSessionStatus($sessionStatus)
+    {
+      $this->m_actionSessionStatus = $sessionStatus;
+    }
+
+    /**
+     * Render the adminpage, including addpage if necessary
+     *
+     * @param array $record
+     * @return array with result of adminPage and addPage
+     */
+    function renderAdminPage()
+    {
       $res = array();
       if ($this->m_node->hasFlag(NF_NO_ADD)==false&&$this->m_node->allowed("add"))
       {
-        if (!$this->m_node->hasFlag(NF_ADD_LINK)) // otherwise, in adminPage, an add link will be added.
+        if (!$this->m_node->hasFlag(NF_ADD_LINK) && !$this->m_node->hasFlag(NF_ADD_DIALOG)) // otherwise, in adminPage, an add link will be added.
         {
-          $res[]=$this->invoke("addPage");
+          // we could get here because of a reject.
+          $record = $this->getRejectInfo();
+
+          $res[]=$this->invoke("addPage", $record);
         }
       }
       $res[] = $this->invoke("adminPage");
-
-      $page->addContent($this->m_node->renderActionPage("admin", $res));
+      return $res;
     }
 
     /**
@@ -58,12 +88,13 @@
      *
      * @return String A box containing the add page.
      */
-    function addPage()
+    function addPage($record=NULL)
     {
       // Reuse the atkAddHandler for the addPage.
-      $handler = atknew("atk.handlers.atkaddhandler");
+      $handler = $this->m_node->getHandler("add");
       $handler->setNode($this->m_node);
-      return $handler->invoke("addPage");
+      $handler->setReturnBehaviour(ATK_ACTION_STAY); // have the save action stay on the admin page
+      return $handler->invoke("addPage", $record);
     }
 
     /**
@@ -79,12 +110,37 @@
      */
     function adminPage($actions="")
     {
+      $ui = &$this->getUi();
+      
+      $vars = array("title"=>$this->m_node->actionTitle('admin'),
+                    "content"=>$this->renderAdminList());
+      
+      if ($this->getRenderMode() == 'dialog')
+      {
+        $output = $ui->renderDialog($vars);
+      }
+      else 
+      {
+        $output = $ui->renderBox($vars);
+      }
+      
+      return $output;
+    }
+
+    /**
+     * Renders the recordlist for the admin mode
+     *
+     * @param Array $actions An array with the actions for the admin mode
+     * @return String The HTML for the admin recordlist
+     */
+    function renderAdminList($actions="")
+    {
       $node = &$this->m_node;
       $node->addStyle("style.css");
 
       $recordlistcache = $this->getRecordlistCache();
       $cached = "";
-      if ($this->m_node->hasFlag(NF_CACHE_RECORDLIST) && $recordlistcache)
+      if ($node->hasFlag(NF_CACHE_RECORDLIST) && $recordlistcache)
       {
         $cached = $recordlistcache->getCache();
       }
@@ -96,6 +152,7 @@
       }
 
       $ui = &$this->getUi();
+      $output = "";
       if (is_object($ui))
       {
         $params = array();
@@ -135,7 +192,7 @@
           for ($i = 0, $_i = count($node->m_search_action); $i < $_i; $i++)
             if ($node->allowed($node->m_search_action[$i], $recordset[$i]))
             {
-              $node->redirect(session_url($_SERVER["PHP_SELF"].'?atknodetype='.$node->atkNodeType().
+              $node->redirect(atkSessionManager::sessionUrl(atkSelf().'?atknodetype='.$node->atkNodeType().
                               '&atkaction='.$node->m_search_action[$i].
                               '&atkselector='.rawurlencode($node->primaryKey($recordset[0])),
                                SESSION_REPLACE));
@@ -154,12 +211,12 @@
           $params["index"] = $navigator->buildIndex($node, (count($recordset)>0?$recordset[0][$node->m_index]:""));
         }
 
-        $navigation = $navigator->getNavigationUrls($this->m_node, "admin");
+        $navigation = $navigator->getNavigationUrls($node, "admin");
 
         if ($navigation)
         {
           if (isset($params["index"])) $params["index"].="<br />";
-          $params["navbar"] = $navigator->buildNavigation($this->m_node, "admin", $navigation);
+          $params["navbar"] = $navigator->buildNavigation($node, "admin", $navigation);
         }
 
         if(!is_array($actions))
@@ -167,6 +224,7 @@
           $actions = $node->defaultActions("admin");
         }
         $recordlist = &atknew("atk.recordlist.atkrecordlist");
+        $recordlist->setActionSessionStatus($this->m_actionSessionStatus);
         $flags = atkRecordList::convertFlags($node->getFlags());
         $params["list"] = $recordlist->render($node, $recordset, $actions, $flags, "", "", $navigation);
 
@@ -174,13 +232,10 @@
 
         $output = $ui->renderList("admin", $params);
 
-        $output = $ui->renderBox(array("title"=>$node->actionTitle('admin'),
-                                    "content"=>$output));
-        if ($this->m_node->hasFlag(NF_CACHE_RECORDLIST)) $recordlistcache->writeCache($output, $recordlist->m_actionloader);
-      }
-      else
-      {
-        atkerror("Failed to create ui object");
+        if ($node->hasFlag(NF_CACHE_RECORDLIST))
+        {
+          $recordlistcache->writeCache($output, $recordlist->m_actionloader);
+        }
       }
       return $output;
     }
@@ -235,18 +290,42 @@
 
     function getAddLink()
     {
-      if ($this->m_node->hasFlag(NF_ADD_LINK) && !$this->m_node->hasFlag(NF_NO_ADD) && $this->m_node->allowed("add"))
-      {
-        $addurl = $_SERVER["PHP_SELF"].'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add';
-        $label = atktext("link_".$this->m_node->m_type."_add", $this->m_node->m_module, "", "", "", true);
+			if (!$this->m_node->hasFlag(NF_NO_ADD) && $this->m_node->allowed("add"))
+			{
+				$label = atktext("link_".$this->m_node->m_type."_add", $this->m_node->m_module, "", "", "", true);
         if (empty($label))
         {
           // generic text
           $label = atktext(getNodeType($this->m_node->m_type),$this->m_node->m_module,$this->m_node->m_type)." ".atktext("add","atk","");
         }
-        return href($addurl,$label,SESSION_NESTED);
-      }
-      return "";
+
+        atkimport('atk.handlers.atkaddorcopyhandler');
+        $add = $this->m_node->hasFlag(NF_ADD_DIALOG);
+        $addorcopy = $this->m_node->hasFlag(NF_ADDORCOPY_DIALOG) &&
+                     atkAddOrCopyHandler::hasCopyableRecords($this->m_node);
+
+
+        if ($add || $addorcopy)
+				{
+				  $action = $this->m_node->hasFlag(NF_ADDORCOPY_DIALOG) ? 'addorcopy' : 'add';
+
+					atkimport('atk.ui.atkdialog');
+					$dialog = new atkDialog($this->m_node->atkNodeType(), $action, 'dialog');
+					$onClick = $dialog->getCall();
+
+					return '
+			      <a href="javascript:void(0)" onclick="'.$onClick.'; return false;" class="valignMiddle">'.$label.'</a>
+			    ';
+				}
+				elseif ($this->m_node->hasFlag(NF_ADD_LINK))
+				{
+					$addurl = atkSelf().'?atknodetype='.$this->m_node->atknodetype().'&atkaction=add';
+	        return atkHref($addurl,$label,SESSION_NESTED);
+				}
+
+			}
+
+			return "";
     }
 
     function getHeaderLinks()
@@ -260,6 +339,34 @@
       if ($exportlink!="") $links[] = $exportlink;
       return implode(" | ", $links);
     }
-  }
+    
+    /**
+     * Dialog handler.
+     */
+    function partial_dialog()
+    {
+      $this->setRenderMode('dialog');
+      $result = $this->renderAdminPage();
+      return $this->m_node->renderActionPage("admin", $result);
+    }
+    
+    /**
+     * Attribute handler.
+     *
+     * @param string $partial full partial
+     */
+    function partial_attribute($partial)
+    {
+      list($type, $attribute, $partial) = explode('.', $partial);
 
+      $attr = &$this->m_node->getAttribute($attribute);
+      if ($attr == NULL)
+      {
+        atkerror("Unknown / invalid attribute '$attribute' for node '".$this->m_node->atkNodeType()."'");
+        return '';
+      }
+
+      return $attr->partial($partial, 'admin');
+    }
+  }
 ?>
