@@ -291,6 +291,24 @@ ATK.DateAttribute = {
   },
 
   /**
+   * Modify a date adding or subtracting given values.
+   */
+	modifyValue: function(name, value) {
+		var current_value = ATK.DateAttribute.getValue(name);
+		var current_day = new Date(current_value['year'], current_value['month']-1, current_value['day']);
+		for (var x in value) {
+			if (x == 'year')
+				current_day.setYear(current_day.getFullYear() + parseInt(value[x]));
+			else if (x == 'month')
+				current_day.setMonth(current_day.getMonth() + parseInt(value[x]));
+			else if (x == 'day')
+				current_day.setDate(current_day.getDate() + parseInt(value[x]));
+		}
+		current_value = {year: current_day.getFullYear(), month: current_day.getMonth()+1, day: current_day.getDate()};
+		ATK.DateAttribute.setValue(name, current_value);
+	},
+
+  /**
    * Refresh.
    */
   refresh: function(name) {

@@ -9,6 +9,15 @@
 
 useattrib("atkdateattribute");
 
+
+function get_IVA($date)
+{
+  if ($date >= "2011-09-17")
+    return 0.21;
+  else
+    return 0.2;
+}
+
 function str_number_format($var, $digits)
 {
     if (is_numeric($var))
@@ -24,10 +33,12 @@ function startswith($text, $prefix)
 
 //Supporto per la colorazione alternata delle righe
 $_flipflop = true;
-function flipflop()
+function flipflop($step=true)
 {
     global $_flipflop;
-    $_flipflop = !$_flipflop;
+    if ($step) {
+      $_flipflop = !$_flipflop;
+    }
     return $_flipflop;
 }
 
@@ -57,7 +68,7 @@ class timesummary extends atkNode
 
         /* Accetta una data in ingresso oppure imposta l'intervallo all'ultimo mese appena concluso*/
         $last_month_start  = mktime(0, 0, 0, date("m")-1, 1, date("Y"));
-        $last_month_end = mktime(0, 0, 0, date("m"), 0, date("Y"));
+        $this_month_start = mktime(0, 0, 0, date("m"), 1, date("Y"));
         $date_start = $this->m_postvars['date_start'];
         $date_end = $this->m_postvars['date_end'];
         if ($date_start == "")
@@ -65,7 +76,7 @@ class timesummary extends atkNode
         else
             $date_start = sprintf("%04d",$date_start["year"])."-".sprintf("%02d",$date_start["month"])."-".sprintf("%02d",$date_start["day"]);
         if ($date_end == "")
-            $date_end = date("Y-m-d", $last_month_end);
+            $date_end = date("Y-m-d", $this_month_start);
         else
             $date_end = sprintf("%04d",$date_end["year"])."-".sprintf("%02d",$date_end["month"])."-".sprintf("%02d",$date_end["day"]);
 
@@ -95,7 +106,7 @@ class timesummary extends atkNode
         $filter = "
                 WHERE
                     activitydate >= '$date_start' AND
-                    activitydate <= '$date_end'";
+                    activitydate < '$date_end'";
         $filter_nopay = "
                 AND NOT (
                     project.name = '__dipendenti' AND
@@ -119,7 +130,7 @@ class timesummary extends atkNode
         atkdebug("timesummary Action search");
 
         $results = $this->get_timesummary();
-        echo make_xml("timesummary", "$date_start<=D<=$date_end", $results['rows'], $bodykey="remark");
+        echo make_xml("timesummary", "$date_start<=D<$date_end", $results['rows'], $bodykey="remark");
         exit;
     }
 
@@ -132,7 +143,8 @@ class timesummary extends atkNode
         $content .= session_form();
 
         $results = $this->get_timesummary();
-        $title = "TimeSummary: ".$results["date_start"]." - ".$results["date_end"];
+        $title = "TimeSummary: ".$results["date_start"]." - ".$results["date_end"]." (escluso)";
+        $IVA = get_IVA($results["date_end"]);
 
         $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
         $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
@@ -141,11 +153,14 @@ class timesummary extends atkNode
         $_enddate = array("date_end" => $enddateatt->dateArray($results["date_end"]));
 
         $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate);
+        $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
+        $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'-1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'-1\'})" value="Mese-" />';
         $content .= '<input type="submit" value="'.atktext("refresh").'">';
         $content .= "<h2>$title</h2>\n";
         $content .= "<p>Le ore segnate come malattia/ferie non vengono conteggiate.</p>\n";
 
         // Tabelle persone
+        $_last_user = "";
         $content .= "<table><tr><td>";
             // Tabella ore lavorate per progetto
             $content .= "<table border='1'>\n";
@@ -198,7 +213,11 @@ class timesummary extends atkNode
                     $persone[$r['userid']]['euro'] = "Manca euro/h";
                 }
 
-                if (flipflop()) {
+                if ($_last_user != $r['userid']) {
+                  $_last_user = $r['userid'];
+                  flipflop();
+                }
+                if (flipflop(false)) {
                     $content .= "<tr>";
                 } else {
                     $content .= "<tr style='background: #DDDDC0'>";
@@ -213,7 +232,7 @@ class timesummary extends atkNode
         $content .= "</td><td>";
             // Tabella ore per persona
             $content .= "<table border='1'><tr><th>Totale persona</th><th>ore</th><th>euro/ora</th>";
-            $content .= "<th>euro</th><th>IVA</th><th>Ivato</th><th>Modificato</th></tr>";
+            $content .= "<th>euro</th><th>IVA (".str_number_format(100*$IVA, 0)."%)</th><th>Ivato</th><th>Modificato</th></tr>";
             $totale_ore_develer = 0;
             foreach ($persone as $key => $pers)
             {
@@ -222,11 +241,11 @@ class timesummary extends atkNode
                 else
                     $content .= "<tr style='background: #DDDDC0'>";
                 $content .= "<th>$key</th>";
-                $content .= "<td align='right'>".str_number_format($pers['ore'], 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro_ora'], 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro'], 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro']*0.2, 2)."</td>";
-                $content .= "<td align='right'>".str_number_format($pers['euro']*1.2, 2)."</td>";
+                $content .= "<td align='right'>".str_number_format($pers['ore'], 2)."</td>";           // ore
+                $content .= "<td align='right'>".str_number_format($pers['euro_ora'], 2)."</td>";      // euro/ora
+                $content .= "<td align='right'>".str_number_format($pers['euro'], 2)."</td>";          // euro
+                $content .= "<td align='right'>".str_number_format($pers['euro']*$IVA, 2)."</td>";     // IVA
+                $content .= "<td align='right'>".str_number_format($pers['euro']*(1+$IVA), 2)."</td>"; // ivato
                 $content .= "<td>".$pers['lastmod']."</td>";
                 $content .= "</tr>\n";
                 $totale_ore_develer += $pers['ore'];

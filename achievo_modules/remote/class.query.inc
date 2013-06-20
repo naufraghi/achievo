@@ -17,8 +17,8 @@ function isTime($time)
         return false;
 
     if (!is_null($m) and ctype_digit($m))
-	if ($m < 0 or $m >= 60)   
-	    return false;
+        if ($m < 0 or $m >= 60)
+            return false;
 
     if ($h < 0)
         return false;
@@ -41,7 +41,7 @@ function smartLike($field, $s)
     {
         $like .= "$field LIKE '$sep$s%'";
         if ($sep != end($separators))
-	    $like .= " OR "; 
+            $like .= " OR "; 
     }
 
     return $like;
@@ -108,7 +108,7 @@ class query extends atkNode
                     $remark = join(" ", array_slice($tokens, $prj_len + $phase_len + $activity_len + 1));
 
                     // Filter out some invalid record to reduce the sql query
-		    if ($hours and !isTime($hours))
+                    if ($hours and !isTime($hours))
                         continue;
 
                     $guesses[] = array (
