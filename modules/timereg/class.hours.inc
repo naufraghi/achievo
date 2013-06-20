@@ -111,7 +111,7 @@ class to_date extends atkDateAttribute
 {
   function to_date()
   {
-    $this->atkDateAttribute("todate", "","", 0, date("Ymd"), AF_NO_LABEL|AF_HIDE);
+    $this->atkDateAttribute("todate", "","", 0, atkConfig("timereg_allowfuture", false) ? 0 : date("Ymd"), AF_NO_LABEL|AF_HIDE);
   }
 
   function load() { return array();}
@@ -563,8 +563,8 @@ class hours extends atkNode
       $today = date('Y-m-d');
 
       $ui = &$this->getUi();
-      $tplvars = array( 'yesterdayurl'=>session_url('dispatch.php?viewuser='.$this->m_user.'&viewdate='.$yesterday),
-                        'weekviewurl'=>session_url('dispatch.php?viewuser='.$this->m_user.'&viewdate='.$this->m_viewdate.'&weekview=1'),
+      $tplvars = array( 'yesterdayurl'=>session_url(dispatch_url($this->atknodetype(),$this->m_action,array("viewuser"=>$this->m_user,"viewdate"=>$yesterday))),
+                        'weekviewurl'=>session_url(dispatch_url($this->atknodetype(),$this->m_action,array("viewuser"=>$this->m_user,"viewdate"=>$yesterday,"weekview"=>1))),
                         'sessionform'=>session_form(),
                         'userselect'=>$this->getUserSelect(),
                         'datejumper'=>$this->getDateJumper(),
@@ -575,8 +575,8 @@ class hours extends atkNode
       if ($this->m_viewdate<date('Y-m-d'))
       {
         // If current is not today we can also move forward
-        $tplvars['tomorrowurl'] = session_url('dispatch.php?viewuser='.$this->m_user.'&viewdate='.$tomorrow);
-        $tplvars['todayurl'] = session_url('dispatch.php?viewuser='.$this->m_user.'&viewdate='.$today);
+        $tplvars['tomorrowurl'] = session_url(dispatch_url($this->atknodetype(),$this->m_action,array("viewuser"=>$this->m_user,"viewdate"=>$tomorrow)));
+        $tplvars['todayurl'] = session_url(dispatch_url($this->atknodetype(),$this->m_action,array("viewuser"=>$this->m_user,"viewdate"=>$today)));
       }
       $res = $ui->render($ui->templatePath('hours_adminheader.tpl', 'timereg'),$tplvars);
     }
@@ -589,8 +589,7 @@ class hours extends atkNode
     {
       $balancenode = &atkGetNode("timereg.overtime_balance");
       $balance = $balancenode->getBalance(date("Y-m-d", adodb_mktime(0,0,0,substr($this->m_viewdate,5,2),substr($this->m_viewdate,8,2),substr($this->m_viewdate,0,4))), $this->m_user);
-
-      $tplvars = array( 'scheduleurl'=>session_url('dispatch.php?atknodetype=scheduler.scheduler&viewdate='.$this->m_viewdate.'&view=day&atkaction=admin',SESSION_NESTED),
+      $tplvars = array( 'scheduleurl'=>session_url(dispatch_url("scheduler.scheduler","admin",array("view"=>"day","viewdata"=>$this->m_viewdate)),SESSION_NESTED),
                         'balance'=>time_format((60*$balance["balance"]),true),
                        );
       $ui = &$this->getUi();
@@ -602,7 +601,7 @@ class hours extends atkNode
   function getDateJumper()
   {
     $dummy_rec = array("viewdate"=>$this->getInitialDate());
-    $datebox = new atkDateAttribute("viewdate","","",0, date("Ymd"),AF_OBLIGATORY);
+    $datebox = new atkDateAttribute("viewdate","","",0, atkConfig("timereg_allowfuture", false) ? 0 : date("Ymd"),AF_OBLIGATORY);
     return $datebox->edit($dummy_rec);
   }
 
@@ -715,6 +714,7 @@ class hours extends atkNode
 
     $table = &atknew("atk.utils.atktablerenderer");
 
+
     $weekdata[0][] = atktext("project")." - ".atktext("phase");
     for ($i=1;$i<=7;$i++)
     {
@@ -726,7 +726,7 @@ class hours extends atkNode
           $lockicon = Locking::getLockIcon($weekdates[$i]['lock'], "11");
         }
 
-        $url = 'dispatch.php?viewdate='.$weekdates[$i]['date']."&weekview=0";
+        $url = dispatch_url($this->atknodetype(),$this->m_action,array("viewdate"=>$weekdates[$i]['date'],"weekview"=>0));
         $weekdata[0][] = href($url,$weekdates[$i]['day']).$lockicon.'<br>
                               ('.substr($weekdates[$i]['date'],5,2).
                               '-'.substr($weekdates[$i]['date'],8,2).')';
@@ -785,6 +785,7 @@ class hours extends atkNode
   function weekviewHeader($weekdates, $viewtime)
   {
     $userid           = $this->m_user;
+    $user             = &atkGetUser();
     $record["userid"] = $userid;
     $att = &$this->getAttribute("userid");
     $att->populate($record);
@@ -797,31 +798,32 @@ class hours extends atkNode
     }
 
     $ui = &$this->getUi();
+    atkimport("modules.scheduler.utils.weeknumber");
     $tplvars = array( 'session_form'=>session_form(),
-                      'prevweekurl'=>session_url('dispatch.php?weekview=1&viewdate='.$weekdates[0]['date']),
-                      'thisweekurl'=>session_url('dispatch.php?weekview=1&viewdate='.date("Y-m-d")),
-                      'dayviewurl'=>session_url('dispatch.php?weekview=0&viewdate='.date("Y-m-d")),
+                      'prevweekurl'=>session_url(dispatch_url($this->atknodetype(),$this->m_action,array("weekview"=>1,"viewdate"=>$weekdates[0]['date']))),
+                      'thisweekurl'=>session_url(dispatch_url($this->atknodetype(),$this->m_action,array("weekview"=>1,"viewdate"=>date("Y-m-d")))),
+                      'dayviewurl'=>session_url(dispatch_url($this->atknodetype(),$this->m_action,array("weekview"=>0,"viewdate"=>date("Y-m-d")))),
                       'datejumper'=>$this->getDateJumper(),
                       'curuser'=>$record["userid"],
-                      'curdate'=>adodb_date('W, Y',$viewtime),
+                      'curdate'=>weeknumber::getWeeknumber($viewtime,atkconfig("startday",1),atkconfig("firstweekcontains",4)).", ".date("Y",$viewtime),
                       'lockicon'=>Locking::getLockIcon($locks),
                       'locktext'=>($locks > 0 && $locks < 7) ? atktext("locked_partially") : null
                      );
     if ($weekdates[8]['date'] <= date("Y-m-d"))
     {
-      $tplvars['nextweekurl']=session_url('dispatch.php?weekview=1&viewdate='.$weekdates[8]['date']);
+      $tplvars['nextweekurl']=session_url(dispatch_url($this->atknodetype(),$this->m_action,array("weekview"=>1,"viewdate"=>$weekdates[8]['date'])));
     }
     if ($this->m_lockmode == "week")
     {
       if ($this->m_lock=="individual" && $this->allowed("unlock"))
       {
-        $tplvars['unlockurl']=session_url('dispatch.php?atkaction=unlock&userid='.$userid.'&viewdate='.$this->m_viewdate, SESSION_NESTED);
+        $tplvars['unlockurl']=session_url(dispatch_url($this->atknodetype(),"unlock",array("userid"=>$userid,"viewdate"=>$this->m_viewdate)),SESSION_NESTED);
       }
       // users may only lock weeks that are not already locked. they must have the proper permission
       // and, if configured, they may only lock a week once they have booked all their hours.
       else if ($this->m_lock=="" && $this->allowed("lock") && (atkconfig("timereg_incompleteweeklock") || $this->weekComplete($userid, $this->m_viewdate)))
       {
-        $tplvars['lockurl']=session_url('dispatch.php?atkaction=lock&userid='.$userid.'&viewdate='.$this->m_viewdate, SESSION_NESTED);
+        $tplvars['lockurl']=session_url(dispatch_url($this->atknodetype(),"lock",array("userid"=>$userid,"viewdate"=>$this->m_viewdate)), SESSION_NESTED);
       }
     }
 
@@ -835,7 +837,7 @@ class hours extends atkNode
    */
   function weekviewFooter($weekdates, $viewtime)
   {
-    $tplvars = array( 'scheduleurl'=>session_url('dispatch.php?atknodetype=scheduler.scheduler&viewdate='.$this->m_viewdate.'&view=week&atkaction=admin',SESSION_NESTED),
+    $tplvars = array( 'scheduleurl'=>session_url(dispatch_url("scheduler.scheduler","admin",array("viewdate"=>$this->m_viewdate,"view"=>"week")),SESSION_NESTED),
                       'balance'=>false,
                      );
     $ui = &$this->getUi();
@@ -1145,7 +1147,7 @@ class hours extends atkNode
       if ($this->m_insertmode=="multi")
       {
         $res = $this->m_attribList["activitydate"]->edit($record, $prefix, $mode);
-        $toDate = new atkDateAttribute("todate", "","", 0, date("Ymd"), AF_OBLIGATORY);
+        $toDate = new atkDateAttribute("todate", "","", 0, atkConfig("timereg_allowfuture", false) ? 0 : date("Ymd"), AF_OBLIGATORY);
 
         $res.= " ".atktext("uptoandincluding")." ".$toDate->edit($record, $prefix, $mode);
         $res.= '<input type="hidden" name="'.$prefix.'activitydate[multi]" value="1">';
@@ -1157,7 +1159,7 @@ class hours extends atkNode
         $newmode = "multi";
       }
 
-      $res.= " ".href("dispatch.php?atknodetype=".$this->atkNodeType()."&atkaction=".$this->m_action."&insertmode=".$newmode,
+      $res.= " ".href(dispatch_url($this->atkNodeType(),$this->m_action,array("insertmode"=>$newmode)),
                       atktext("insert_".$newmode, $this->m_module, $this->m_type),
                       SESSION_DEFAULT,
                       true);

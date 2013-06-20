@@ -27,7 +27,11 @@
       global $ATK_VARS, $g_sessionManager;
 
       $this->atkNode($name,$flags|NF_EDITAFTERADD|NF_IMPORT);
-
+      if($name=="project")
+      {
+        $listener = &atknew("modules.crm.listeners.eventlistener");
+        $this->addListener($listener);
+      }
       $this->add(new atkNumberAttribute("id",AF_AUTOKEY));
 
       $this->add(new atkAttribute("abbreviation", AF_SEARCHABLE|AF_UNIQUE, 10));
@@ -38,7 +42,7 @@
 
       $this->add(new atkManyToOneRelation("contract_id","organization.contracts",AF_HIDE_ADD|AF_HIDE_LIST));
       $this->add(new atkTextAttribute("description",TEXT_LARGE, AF_HIDE_LIST|AF_HIDE_ADD));
-      $this->add(new atkAttribute("quotation_number", AF_HIDE_LIST));
+      $this->add(new atkAttribute("quotation_number", AF_HIDE_LIST|AF_HIDE_ADD));
       $this->add(new atkNumberAttribute("fixed_price",AF_HIDE_LIST|AF_HIDE_ADD, 13, 2), "finance");
 
       // If we are in project administration mode, we show all projects. Otherwise, we only
@@ -209,6 +213,13 @@
         return $record["name"];
       else
         return sprintf("%s: %s", $record["abbreviation"], $record["name"]);
+    }
+    
+    function postDelete($record)
+    {
+      $eventlog = &atkGetNode("crm.eventlog");
+      $eventlog->delete_event_history($this->atknodetype(),$record["atkprimkey"]);
+      return true;
     }
 
     function getInitialProjectcode()
@@ -770,13 +781,13 @@
 
       if ($view=="active")
       {
-        return atktext("onlyactiverecordsareshown")." ".href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
-                    '&view=nonactive', atktext('clicktoviewarchive', $this->m_module, $this->m_type))."<br>";
+        return atktext("onlyactiverecordsareshown")." ".href(dispatch_url($this->atknodetype(),$this->m_action,array("view"=>"nonactive")),
+                                                        atktext('clicktoviewarchive', $this->m_module, $this->m_type))."<br>";
       }
       else
       {
-        return atktext("youareinthearchive")." ".href('dispatch.php?atknodetype='.$this->atkNodeType().'&atkaction='.$this->m_action.
-                    '&view=active', atktext('clicktoviewactiverecords', $this->m_module, $this->m_type))."<br>";
+        return atktext("youareinthearchive")." ".href(dispatch_url($this->atknodetype(),$this->m_action,array("view"=>"active")), 
+                                                     atktext('clicktoviewactiverecords', $this->m_module, $this->m_type))."<br>";
       }
     }
 
