@@ -97,7 +97,8 @@ class timesummary extends atkNode
                     person.userid,
                     project.name AS prj,
                     sum(hours.time)/60.0 as ore,
-                    max(entrydate) as lastmod
+                    max(entrydate) as lastmod,
+                    (phase.name != 'non billable') as billable
                 FROM hours
                     JOIN person ON hours.userid = person.id
                     JOIN phase ON hours.phaseid = phase.id
@@ -114,8 +115,8 @@ class timesummary extends atkNode
                 )";
         if (!$this->allowed("any_user")) $filter.= " AND hours.userid ='$userid' ";
         $groupby = "
-                GROUP BY lower(person.userid), lower(prj)
-                ORDER BY lower(person.userid), lower(prj)";
+                GROUP BY lower(person.userid), lower(prj), billable
+                ORDER BY lower(person.userid), lower(prj), billable";
 
         $sql = $select . $filter . $filter_nopay . $groupby;
 
@@ -160,7 +161,6 @@ class timesummary extends atkNode
         $content .= "<p>Le ore segnate come malattia/ferie non vengono conteggiate.</p>\n";
 
         // Tabelle persone
-        $_last_user = "";
         $content .= "<table><tr><td>";
             // Tabella ore lavorate per progetto
             $content .= "<table border='1'>\n";
@@ -168,10 +168,14 @@ class timesummary extends atkNode
             $progetti = array();
             $gprogetti = array();
             $persone = array();
+            $userid_progetti = array();
             foreach ($results['rows'] as $key => $r)
             {
+                if (!array_key_exists($r['userid'].$r['prj'], $userid_progetti)) {
+                    $userid_progetti[$r['userid'].$r['prj']] = array('userid' => $r['userid'], 'prj' => $r['prj'], 'ore' => 0.0, 'euro' => 0.0);
+                }
                 if (!array_key_exists($r['prj'], $progetti)) {
-                    $progetti[$r['prj']] = array("ore" => 0.0, "euro" => 0.0);
+                    $progetti[$r['prj']] = array("ore" => 0.0, "euro" => 0.0, "non-billable" => 0.0);
                 }
                 $r['gprj'] = project_group($r['prj']);
                 if (!array_key_exists($r['gprj'], $gprogetti)) {
@@ -181,7 +185,11 @@ class timesummary extends atkNode
                     $persone[$r['userid']] = array("ore" => 0.0, "euro" => 0.0, "euro_ora" => 0.0, "lastmod" => "0000-00-00");
                 }
                 $progetti[$r['prj']]['ore'] += $r['ore'];
+                if (!$r['billable']) {
+                    $progetti[$r['prj']]['non-billable'] += $r['ore'];
+                }
                 $progetti[$r['prj']]['lastmod'] = max($progetti[$r['prj']]['lastmod'], $r['lastmod']);
+                $userid_progetti[$r['userid'].$r['prj']]['ore'] += $r['ore'];
                 $gprogetti[$r['gprj']]['ore'] += $r['ore'];
                 $gprogetti[$r['gprj']]['lastmod'] = max($gprogetti[$r['gprj']]['lastmod'], $r['lastmod']);
                 $persone[$r['userid']]['ore'] += $r['ore'];
@@ -197,6 +205,11 @@ class timesummary extends atkNode
                     $persone[$r['userid']]['euro_ora'] = "Manca euro/h";
                 }
 
+                if (is_numeric($userid_progetti[$r['userid'].$r['prj']]['euro']) and is_numeric($r['euro'])) {
+                    $userid_progetti[$r['userid'].$r['prj']]['euro'] += $r['euro'];
+                } else {
+                    $userid_progetti[$r['userid'].$r['prj']]['euro'] = "Manca euro/h";
+                }
                 if (is_numeric($progetti[$r['prj']]['euro']) and is_numeric($r['euro'])) {
                     $progetti[$r['prj']]['euro'] += $r['euro'];
                 } else {
@@ -212,7 +225,10 @@ class timesummary extends atkNode
                 } else {
                     $persone[$r['userid']]['euro'] = "Manca euro/h";
                 }
-
+            }
+            $_last_user = "";
+            foreach($userid_progetti as $key => $r)
+            {
                 if ($_last_user != $r['userid']) {
                   $_last_user = $r['userid'];
                   flipflop();
@@ -258,7 +274,7 @@ class timesummary extends atkNode
         // Tabelle progetti
         $content .= "<table><tr><td>";
             // Tabella ore per progetto
-            $content .= "<table border='1'><tr><th>Totale progetto</th><th>Ore</th><th>Euro</th><th>Modificato</th></tr>";
+            $content .= "<table border='1'><tr><th>Totale progetto</th><th>Ore (b)</th><th>Ore (nb)</th><th>Ore (tot)</th><th>Euro</th><th>Modificato</th></tr>";
             uksort($progetti, "strcasecmp"); //Ordina per chiave, le persone sono già ordinate
             foreach ($progetti as $key => $prj)
             {
@@ -266,7 +282,10 @@ class timesummary extends atkNode
                     $content .= "<tr>";
                 else
                     $content .= "<tr style='background: #DDDDC0'>";
-                $content .= "<th>$key</th><td align='right'>".str_number_format($prj['ore'], 2)."</td>";
+                $content .= "<th>$key</th>"; // Nome progetto
+                $content .= "<td align='right'>".str_number_format($prj['ore'] - $prj['non-billable'], 2)."</td>";
+                $content .= "<td align='right'>".str_number_format($prj['non-billable'], 2)."</td>";
+                $content .= "<td align='right'>".str_number_format($prj['ore'], 2)."</td>";
                 $content .= "<td align='right'>".str_number_format($prj['euro'], 2)."</td>";
                 $content .= "<td>".$prj['lastmod']."</td>";
                 $content .= "</tr>\n";

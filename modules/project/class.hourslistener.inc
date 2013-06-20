@@ -70,6 +70,35 @@
     }
 
     /**
+     * Determines whether a phase is inside the planning or not
+     *
+     * @param array $phase Phase record for which the planned hours should be evaluated
+     * @return boolean True if the phase is overtime, false if not
+     */
+    function isPhaseOvertime($phase)
+    {
+      //return false;
+      $hours_planning = null;
+      if ($phase["initial_planning"]>0) {
+        $hours_planning = $phase["initial_planning"];
+      }
+      if ($phase["current_planning"]>0) {
+        $hours_planning = $phase["current_planning"];
+      }
+      if ($hours_planning == null) {
+        return false;
+      }
+
+      $HOURS_BEFORE = 8;
+      if($phase["spend_hours"]*60 > $hours_planning-(60*$HOURS_BEFORE))
+      {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    /**
      * Converts a date array into a user-friendly string
      *
      * @param array $arrdate Array containing a day, month and year element
@@ -123,8 +152,11 @@
       // Is the phase not started yet?
       $phasenotstarted = !$this->isPhaseStarted($phaserecords[0]);
 
+      // Is the phase overtime?
+      $phaseovertime = $this->isPhaseOvertime($phaserecords[0]);
+
       // If there is a reason to send a mail (the deliverable is not complete when adding the
-      if ($deliverableincomplete || $phasenotstarted)
+      if ($deliverableincomplete || $phasenotstarted || $phaseovertime)
       {
 
         // Get the project and throw an error if not found
@@ -144,6 +176,7 @@
           atkerror("Cannot find employee who registered the hours.");
           return false;
         }
+        $to_employee = $employeerecords[0]["email"];
 
         // Try to find the projectcoordinator and exit (with debug messag) if not found
         $coordinatorrecords = $employeenode->selectDb("person.id='".$projectrecords[0]["coordinator"]["id"]."'");
@@ -155,7 +188,7 @@
 
         // Initialize the subject and recipient for the mail
         $subject = sprintf(atktext("problems_occured_while_registering_hours_on_phase_%s", "project"), $phaserecords[0]["name"]);
-        $to = $coordinatorrecords[0]["email"];
+        $to_coordinator = $coordinatorrecords[0]["email"];
 
         // Compose the body of the mail
         $translatedline = atktext("the_following_problems_occured_while_employee_%s_registered_time_on_phase_%s_of_project_%s", "project");
@@ -177,8 +210,19 @@
           $body.= atktext("enddate", "project") . ": " . $this->arr2str($phaserecords[0]["enddate"]) . "\r\n";
         }
 
+        if ($phaseovertime)
+        {
+          $body.= atktext("the_phase_is_almost_overtime", "project") . ":\r\n";
+          $body.= atktext("name", "project") . ": " . $phaserecords[0]["name"] . "\r\n";
+          $body.= atktext("initial_planning", "project") . ": " . $phaserecords[0]["initial_planning"]/60 ." ". atktext("hours", "project") . "\r\n";
+          $body.= atktext("current_planning", "project") . ": " . $phaserecords[0]["current_planning"]/60 ." ". atktext("hours", "project") . "\r\n";
+          $body.= atktext("spend_hours", "project") . ": " . $phaserecords[0]["spend_hours"] ." ". atktext("hours", "project") . "\r\n";
+        }
+
         // Send the mail
-        usermail($to, $subject, $body);
+        usermail($to_employee, $subject, $body);
+        usermail($to_coordinator, $subject, $body);
+        usermail(atkconfig("mail_administrative_staff"), $subject, $body);
       }
       
       return true;

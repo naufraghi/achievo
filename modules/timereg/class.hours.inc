@@ -16,6 +16,7 @@ atkimport("module.timereg.locking");
 atkimport("module.timereg.timeregutils");
 atkimport("module.project.utils.projectutils");
 atkimport("modules.utils.dateutil");
+atkimport("modules.scheduler.scheduler_holidays");
 
 /**
  * Converts the starttime - endtime notation to a duration notation
@@ -155,6 +156,7 @@ class hours extends atkNode
     $this->m_viewdate = $this->processGlobalVar("viewdate");
     $this->m_user = $this->processGlobalVar("viewuser");
     $this->m_lockmode = atkConfig::get("timereg", "lockmode", "week");
+    $this->holidays_node = &atkGetNode("scheduler.scheduler_holidays");
 
     if (is_array($this->m_viewdate)) // if set by the date jumper, viewdate is an array.
     {
@@ -643,10 +645,10 @@ class hours extends atkNode
       $filterArr[] = "role='employee'";
       $filter = implode(" AND ",$filterArr);
 
-      //Init order by
+      // Init order by
       $orderby = $this->viewuserOrderBy();
 
-      //Init desc fields
+      // Init desc fields
       $empNode = &atkGetNode("employee.employeeselector");
       $fieldsArr = $empNode->descriptorFields();
       if(!in_array("id", $fieldsArr)) $fieldsArr[] = "id";
@@ -665,7 +667,7 @@ class hours extends atkNode
     }
     return $res;
   }
-  
+
     /**
      * Check rights for an hours record
      *
@@ -678,7 +680,7 @@ class hours extends atkNode
         atk_var_dump($record, "Allowed: ".$action);
         if(is_array($record))
         {
-            if($record['userid']['id'] == atkGetUserId() || 
+            if($record['userid']['id'] == atkGetUserId() ||
                   parent::allowed('any_user')) {
               atkdebug('ALLOWED');
               return true;
@@ -768,6 +770,12 @@ class hours extends atkNode
     $weekdata[0][] = atktext("project")." - ".atktext("phase");
     for ($i=1;$i<=7;$i++)
     {
+      $dayofweek = '('.substr($weekdates[$i]['date'],5,2).'-'.substr($weekdates[$i]['date'],8,2).')';
+      if ( $this->holidays_node->isHoliday($weekdates[$i]['date']) ) {
+        $holidayinfo = $this->holidays_node->getHolidayInfo($weekdates[$i]['date']);
+        $holidayname = htmlentities($holidayinfo[0]['name']);
+        $dayofweek = "<strike title='$holidayname'>$dayofweek</strike>";
+      }
       if ($weekdates[$i]['date'] <= date("Y-m-d") || atkConfig::get("timereg","timereg_allowfuture", false))
       {
         // Individual lock icons for each locked day
@@ -777,15 +785,11 @@ class hours extends atkNode
         }
 
         $url = dispatch_url($this->atknodetype(),$this->m_action,array("viewdate"=>$weekdates[$i]['date'],"weekview"=>0));
-        $weekdata[0][] = href($url,$weekdates[$i]['day']).$lockicon.'<br>
-                              ('.substr($weekdates[$i]['date'],5,2).
-                              '-'.substr($weekdates[$i]['date'],8,2).')';
+        $weekdata[0][] = href($url,$weekdates[$i]['day']).$lockicon.'<br>'.$dayofweek;
       }
       else
       {
-        $weekdata[0][] = $weekdates[$i]['day'].'<br>('.
-                         substr($weekdates[$i]['date'],5,2).'-'.
-                         substr($weekdates[$i]['date'],8,2).')';
+        $weekdata[0][] = $weekdates[$i]['day'].'<br>'.$dayofweek;
       }
       $table->setColAlignment($i, TBL_CENTER);
     }
@@ -879,6 +883,16 @@ class hours extends atkNode
       // users may only lock weeks that are not already locked. they must have the proper permission
       // and, if configured, they may only lock a week once they have booked all their hours.
       else if ($this->m_lock=="" && $this->allowed("lock") && (atkconfig::get("timereg","timereg_incompleteweeklock") || $this->weekComplete($userid, $this->m_viewdate)))
+      {
+        $tplvars['lockurl']=session_url(dispatch_url($this->atknodetype(),"lock",array("userid"=>$userid,"viewdate"=>$this->m_viewdate)), SESSION_NESTED);
+      }
+    } else if ($this->m_lockmode == "month") {
+      atkdebug('Locking: '.$this->m_lock);
+      if ($this->m_lock=="individual" && $this->allowed("unlock"))
+      {
+        $tplvars['unlockurl']=session_url(dispatch_url($this->atknodetype(),"unlock",array("userid"=>$userid,"viewdate"=>$this->m_viewdate)),SESSION_NESTED);
+      }
+      else if ($this->m_lock=="" && $this->allowed("lock"))
       {
         $tplvars['lockurl']=session_url(dispatch_url($this->atknodetype(),"lock",array("userid"=>$userid,"viewdate"=>$this->m_viewdate)), SESSION_NESTED);
       }
@@ -996,9 +1010,12 @@ class hours extends atkNode
   }
 
 
-  function action_lock(&$handler)
+  function action_lock(&$handler, $viewdate=null)
   {
-    $period = Locking::getPeriod($this->m_viewdate);
+    if ($viewdate == null) {
+      $viewdate = $this->m_viewdate;
+    }
+    $period = Locking::getPeriod($viewdate);
 
     if (atkconfig::get("timereg","lock_period_approval_required",false))
     {
@@ -1011,9 +1028,11 @@ class hours extends atkNode
   }
 
 
-  function action_unlock(&$handler)
+  function action_unlock(&$handler, $viewdate=null)
   {
-    $viewdate = $this->m_postvars["viewdate"];
+    if ($viewdate == null) {
+      $viewdate = $this->m_postvars["viewdate"];
+    }
     Locking::unlockPeriod(Locking::getPeriod($viewdate));
     $this->redirect();
   }

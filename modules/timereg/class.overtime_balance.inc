@@ -40,8 +40,8 @@
       $this->atkNode("overtime_balance");
       $this->add(new atkNumberAttribute("id",AF_AUTOKEY));
       $this->add(new atkManyToOneRelation("userid", "employee.employeeselector", AF_OBLIGATORY|AF_SEARCHABLE|AF_READONLY));
-      $this->add(new atkDateAttribute("day","","", 0, date("Y-m-d"), AF_SEARCHABLE|AF_OBLIGATORY));
-      $this->add(new atkNumberAttribute("balance", AF_OBLIGATORY, 10,2));
+      $this->add(new atkDateAttribute("day","","", 0, date("Y-m-d"), AF_SEARCHABLE|AF_OBLIGATORY|AF_READONLY));
+      $this->add(new atkNumberAttribute("balance", AF_OBLIGATORY, 10, 2));
       $this->add(new manualAttribute("manual", AF_HIDE, 1, 0));
       $this->add(new atkTextAttribute("remark"));
 
@@ -146,8 +146,11 @@
      * @param int $userid User id
      * @return int
      */
-    function getBalance($day, $userid)
+    function getBalance($day, $userid, $reset_cache=false)
     {
+      if ($reset_cache) {
+          $this->deleteBalance($userid, $day);
+      }
       $node = &atkGetNode("timereg.overtime_balance");
       $result = $node->selectDb("day <= '$day' AND userid.id = '$userid'", "day DESC", 1);
 
@@ -236,6 +239,7 @@ $this->debuglog(array("function"=>"addOvertimeBalance","userid"=>$userid, "day"=
       // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
       $newid = $db->nextid("overtime_balance");
+      $balance = number_format($balance, 2);
       $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
                   VALUES ('$newid', '$userid', '$day', '$balance', 0)");
     }
@@ -249,7 +253,8 @@ $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"
       */
       // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
-      $sql = "UPDATE overtime_balance SET balance = $balance WHERE userid = '$userid' AND day = '$day'";
+      $balance = number_format($balance, 2);
+      $sql = "UPDATE overtime_balance SET balance = '$balance' WHERE userid = '$userid' AND day = '$day'";
       $db->query($sql);
     }
 
@@ -258,7 +263,7 @@ $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"
       return atkArrayNvl($this->getPercentages(), $id, 100);
     }
 
-    function updateOvertimeBalance($userid, $day, $balance)
+    function updateOvertimeBalance($userid, $day, $balance, $manual=0)
     {
 $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
       /*
@@ -268,16 +273,18 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       // if (strftime("%w", dateutil::str2stamp($day)) != 0) return;
       $db = &atkGetDb();
       $recs = $db->getrows("SELECT id FROM overtime_balance WHERE userid = '$userid' AND day = '$day'");
+      $balance = number_format($balance, 2);
       if (!count($recs))
       {
         $newid = $db->nextid("overtime_balance");
         $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
-                  VALUES ('$newid', '$userid', '$day', '$balance', 0)");
+                    VALUES ('$newid', '$userid', '$day', '$balance', $manual)");
         return $newid;
       }
       else
       {
-        $db->query("UPDATE overtime_balance SET balance = $balance WHERE userid = '$userid' AND day = '$day'");
+        $db->query("UPDATE overtime_balance SET balance = '$balance', manual = $manual
+                    WHERE userid = '$userid' AND day = '$day'");
         return $recs[0]["id"];
       }
     }
@@ -307,12 +314,12 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
     function getUserHours($begin, $end, $userid)
     {
       $db = &atkGetDb();
-      // Modificata query per escludere dalla banca ore le ore di ferie.
+      // Modificata query per escludere dalla banca ore le ore di d20.
       //$sql = "SELECT * FROM hours WHERE userid = '$userid' AND activitydate >= '$begin' AND activitydate <= '$end'";
       $sql = "SELECT hours.* FROM hours JOIN activity a ON activityid = a.id
                                         JOIN phase ph ON phaseid = ph.id
                                         JOIN project p on ph.projectid = p.id
-            WHERE NOT (p.name = '__dipendenti' AND ph.name = 'ferie')
+            WHERE NOT (p.name LIKE 'd20_%')
                   AND userid = '$userid'
                   AND activitydate >= '$begin' AND activitydate <= '$end'";
 
@@ -408,7 +415,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       {
         $contracts = $user_contracts[$userid];
       }
-      
+
       $workday_array = array();
       foreach ($contracts as $contract)
       {
@@ -421,7 +428,7 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
 
         // Convert the contract start and enddate to "yyyymmdd" format so we can use it in calculations
         $contractstartdate = dateutil::str2str($contract["startdate"]);
-        if ( is_null($contracts[$i]["enddate"]) ) {
+        if ( is_null($contract["enddate"]) ) {
           $contractenddate = $enddate;
         } else {
           $contractenddate = dateutil::str2str($contract["enddate"]);
@@ -487,5 +494,4 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       }
     }
   }
-
 ?>

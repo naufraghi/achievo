@@ -43,11 +43,14 @@ GROUP BY userid, firstname, lastname, activitydate, time_contract
 useattrib("atkdateattribute");
 atkImport("modules.scheduler.scheduler_holidays");
 atkImport("modules.reports.weekreport");
+atkimport("module.timereg.locking");
+
+setlocale(LC_ALL, 'it_IT');
 
 function str_number_format($var, $digits)
 {
     if (is_numeric($var))
-        return number_format($var, $digits, ",", ".");
+        return number_format($var, $digits, ",", "");
     else
         return $var;
 }
@@ -78,9 +81,9 @@ function get_days_array($date_start, $date_end)
     return $days;
 }
 
-function float2str($float)
+function float2str($float, $show_zero=true)
 {
-    return str_number_format($float, 2);
+    return ($float or $show_zero) ? str_number_format($float, 2) : "";
 }
 
 function format_date($date)
@@ -91,7 +94,7 @@ function format_date($date)
 class timebalance extends atkNode
 {
     var $m_user = "";
-    
+
     function timebalance()
     {
         $this->atkNode("timebalance");
@@ -100,7 +103,10 @@ class timebalance extends atkNode
         $this->weekreport_node = &atkGetNode("reports.weekreport");
         $this->m_user = $this->processGlobalVar("userid");
         atkdebug("DEBUG: m_user = ".$this->m_user);
-        if($this->m_user=="") $this->m_user = $this->getInitialUser();
+        if($this->m_user=="" or (!$this->allowed("any_user"))) $this->m_user = $this->getInitialUser();
+        $this->m_date_start = $this->processGlobalVar("date_start");
+        $this->m_date_end = $this->processGlobalVar("date_end");
+        $this->m_securityMap["bancaore"] = "add";
     }
 
     function getInitialUser() {
@@ -118,23 +124,27 @@ class timebalance extends atkNode
       return $session[$sessionvarid];
     }
 
-    function get_timesummary()
+    function get_timesummary($userid)
     {
-        $userid = $this->m_user;
         $db = &atkGetDb();
 
-        /* Accetta una data in ingresso oppure imposta l'intervallo all'ultimo mese appena concluso*/
+        // Accetta una data in ingresso oppure imposta `date_start` all'inizio
+        // dell'ultimo mese appena concluso
         $last_month_start = mktime(0, 0, 0, date("m")-1, 1, date("Y"));
-        $last_month_end = mktime(0, 0, 0, date("m"), 1, date("Y"));
-        $date_start = $this->m_postvars['date_start'];
-        $date_end = $this->m_postvars['date_end'];
+        $date_start = $this->m_date_start;
         if ($date_start == "")
             $date_start = date("Y-m-d", $last_month_start);
-        else
+        else if (is_array($date_start))
             $date_start = sprintf("%04d",$date_start["year"])."-".sprintf("%02d",$date_start["month"])."-".sprintf("%02d",$date_start["day"]);
-        if ($date_end == "")
-            $date_end = date("Y-m-d", $last_month_end);
-        else
+        // Se non definito imposta `date_end` al primo giorno del mese
+        // successivo a `date_start`
+        $date_end = $this->m_date_end;
+        $last_month_end = mktime(0, 0, 0, date("m"), 1, date("Y"));
+        if ($date_end == "") {
+            $date_end = date_create($date_start);
+            $date_end->modify("+1 month");
+            $date_end = format_date($date_end);
+        } else if (is_array($date_end))
             $date_end = sprintf("%04d",$date_end["year"])."-".sprintf("%02d",$date_end["month"])."-".sprintf("%02d",$date_end["day"]);
 
         if ( $userid != 'all' )
@@ -150,7 +160,9 @@ class timebalance extends atkNode
                     hours.activitydate, hours.time/60 AS time_spent,
                     (project.name = '__dipendenti' AND phase.name = 'malattia') AS malattia,
                     (project.name = '__dipendenti' AND phase.name = 'ferie') AS ferie,
-                    (project.name = '__dipendenti' AND LOWER(phase.name) LIKE 'permessi%') AS permessi,
+                    (project.name = '__dipendenti' AND phase.name = 'allattamento') AS allattamento,
+                    (project.name = '__dipendenti' AND phase.name = 'donazioni_sangue') AS donazioni_sangue,
+                    (project.name = '__dipendenti' AND LOWER(phase.name) LIKE 'permessi%') AS permessi_certificati,
                     (project.name LIKE 'd20_%') AS d20
                 FROM hours
                     JOIN person ON hours.userid = person.id
@@ -164,14 +176,17 @@ class timebalance extends atkNode
 
         $select = "
 SELECT id, userid, firstname, lastname, activitydate, SUM(time_worked) as time_worked,
-       SUM(time_malattia) as time_malattia, SUM(time_ferie) as time_ferie, SUM(time_permessi) as time_permessi,
+       SUM(time_malattia) as time_malattia, SUM(time_ferie) as time_ferie, SUM(time_permessi_certificati) as time_permessi_certificati,
+       SUM(time_allattamento) as time_allattamento, SUM(time_donazioni_sangue) as time_donazioni_sangue,
        SUM(time_d20) as time_d20, (SUM(time_worked) >= 5) as tickets
     FROM (
         SELECT id, userid, firstname, lastname, activitydate,
-            (NOT (malattia OR ferie OR permessi OR d20)) * time_spent AS time_worked,
+            (NOT (malattia OR ferie OR allattamento OR donazioni_sangue OR permessi_certificati OR d20)) * time_spent AS time_worked,
             malattia * time_spent AS time_malattia,
             ferie * time_spent AS time_ferie,
-            permessi * time_spent AS time_permessi,
+            allattamento * time_spent AS time_allattamento,
+            donazioni_sangue * time_spent AS time_donazioni_sangue,
+            permessi_certificati * time_spent AS time_permessi_certificati,
             d20 * time_spent AS time_d20
         FROM (
             $ore_registrate
@@ -179,229 +194,504 @@ SELECT id, userid, firstname, lastname, activitydate, SUM(time_worked) as time_w
     ) AS parts
 GROUP BY id, userid, firstname, lastname, activitydate;
 ";
-        if ( $userid != 'all' ) {
-            $rows = $db->getRows($select);
-        } else {
-            $rows = array();
-        }
+        $rows = $db->getRows($select);
         return array("date_start" => $date_start,
                      "date_end" => $date_end,
                      "rows" => $rows);
     }
 
-    function action_report()
+    function get_hours_table($userid, &$timesummary=null, $export=false)
     {
-        $userid = $this->m_user;
-        $ui = &$this->getUi();
-        $page = &$this->getPage();
-        $this->addStyle("style.css");
+        if (!$timesummary) {
+            $timesummary = $this->get_timesummary($userid);
+        }
         $content = '<form action="dispatch.php" method="get" name="entryform">';
-        $content .= session_form();
+        $title = "TimeBalance: ".$timesummary["date_start"]." - ".$timesummary["date_end"]." (escluso)";
 
-        $results = $this->get_timesummary();
-        $title = "TimeBalance: ".$results["date_start"]." - ".$results["date_end"]." (escluso)";
+        if (!$export) {
+            $this->addStyle("style.css");
+            $content .= session_form();
 
-        $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
-        $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
+            $startdateatt = new atkDateAttribute("date_start", "F d Y", "d F Y",0 , 0, AF_OBLIGATORY);
+            $enddateatt = new atkDateAttribute("date_end", "F d Y", "d F Y", 0, 0, AF_OBLIGATORY);
 
-        $_startdate = array("date_start" => $startdateatt->dateArray($results["date_start"]));
-        $_enddate = array("date_end" => $enddateatt->dateArray($results["date_end"]));
+            $_startdate = array("date_start" => $startdateatt->dateArray($timesummary["date_start"]));
+            $_enddate = array("date_end" => $enddateatt->dateArray($timesummary["date_end"]));
 
-        $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate)."<br>\n";
-        $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
-        $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'-1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'-1\'})" value="Mese-" />';
-        $weekreport = &atkGetNode("reports.weekreport");
-        $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="userid").'</SELECT>';
-        $content .= '<input type="submit" value="'.atktext("refresh").'">';
-        $content .= "<h2>$title</h2>\n";
-
-        // Prepara dati in struttura 3d
-        $daykeys = array_map("format_date", get_days_array($results["date_start"], $results["date_end"]));
-        // FIXME: rotto se userid == all
-        $workdays = $this->overtime_node->enumWorkingDays($results["date_start"], $results["date_end"], $userid, 'Y-m-d');
-        atkdebug("workdays: ".var_export($workdays, 1));
-        $alldays = array();
-        foreach ($daykeys as $day) {
-            $alldays[$day] = array('time_contract' => floatval($workdays[$day]),
-                                   'time_worked' => 0.0,
-                                   'time_malattia' => 0.0,
-                                   'time_ferie' => 0.0,
-                                   'time_permessi' => 0.0,
-                                   'time_d20' => 0.0,
-                                   'tickets' => 0);
+            $content .= "Da ".$startdateatt->edit($_startdate)." a ".$enddateatt->edit($_enddate)."<br>\n";
+            $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'+1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'+1\'})" value="Mese+" />';
+            $content .= '<input type="button" onclick="ATK.DateAttribute.modifyValue(\'date_start\', {month: \'-1\'}); ATK.DateAttribute.modifyValue(\'date_end\', {month: \'-1\'})" value="Mese-" />';
+            $weekreport = &atkGetNode("reports.weekreport");
+            if ($this->allowed("any_user")) $content .= 'User: <SELECT name="userid">'.$weekreport->get_employees($userid, $key="lastname").'</SELECT>';
+            $content .= '<input type="submit" value="'.atktext("refresh").'">';
+            $content .= '</form>';
+            $content .= "<h2>$title</h2>\n";
         }
-        $time_balance = array();
-        $userinfo = $this->weekreport_node->get_employee($userid);
-        $time_balance[$userinfo['userid']] = array('id' => $userinfo['id'],
-                                                   'fullname' => $userinfo['firstname']." ".$userinfo['lastname'],
-                                                   'activity' => $alldays,
-                                                   'tot_contract' => 0.0,
-                                                   'tot_registro' => 0.0,
-                                                   'tot_worked' => 0.0,
-                                                   'tot_malattia' => 0.0,
-                                                   'tot_ferie' => 0.0,
-                                                   'tot_permessi' => 0.0,
-                                                   'tot_d20' => 0.0,
-                                                   'tot_tickets' => 0,
-                                                  );
-        foreach ($results['rows'] as $key => $r)
-        {
-            $activitydate = array('time_worked' => floatval($r['time_worked']),
-                                  'time_malattia' => floatval($r['time_malattia']),
-                                  'time_ferie' => floatval($r['time_ferie']),
-                                  'time_permessi' => floatval($r['time_permessi']),
-                                  'time_d20' => floatval($r['time_d20']),
-                                  'tickets' => intval($r['tickets']));
-            $activitydate = array_merge($time_balance[$r['userid']]['activity'][$r['activitydate']], $activitydate);
 
-            $time_balance[$r['userid']]['activity'][$r['activitydate']] = $activitydate;
-            $time_balance[$r['userid']]['tot_worked'] += $activitydate['time_worked'];
-            $time_balance[$r['userid']]['tot_malattia'] += $activitydate['time_malattia'];
-            $time_balance[$r['userid']]['tot_ferie'] += $activitydate['time_ferie'];
-            $time_balance[$r['userid']]['tot_permessi'] += $activitydate['time_permessi'];
-            $time_balance[$r['userid']]['tot_d20'] += $activitydate['time_d20'];
-            $time_balance[$r['userid']]['tot_tickets'] += $activitydate['tickets'];
-
-            $time_balance[$r['userid']]['activity'][$r['activitydate']]['totale_parziale_worked'] = $time_balance[$r['userid']]['tot_worked'];
-            atkdebug("TimeBalance loop: ".var_export($r, 1));
-        }
-        atkdebug("TimeBalance: ".var_export($time_balance, 1));
-        // Tabelle banca ore
-        $banca_head = "<tr><th>User</th><th>Nome</th><th>Giorno</th><th>Ore previste</th><th>Ore registro</th>
-                           <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Permessi</th><th>Develer20</th><th>Tickets</th>
-                           </tr>\n";
-        foreach ($time_balance as $userid => $userdata)
-        {
-            $content .= "<h3>$userid - ".$userdata['fullname']."</h3>\n";
-            $content .= "<table border='1'>\n";
-            $content .= $banca_head;
-
-            /*
-            Affinche' il conteggio degli straordinari funzioni correttamente
-            e' necessario che:
-             * il giorno in cui si calcola il credito/debito di ore all'inizio
-             del range selezionato sia l'ultimo del mese precedente.
-             * il giorno in cui si calcola il credito/debito di ore alla fine
-             del bilancio sia l'ultimo del mese in corso.
-
-            Pertanto i valori di date_start e date_end sono modificati per
-            rispecchiare queste specifiche.
-
-            NOTE: queste modifica ha come requisito l'eliminazione dei check
-            inseriti da lmancini nella revisione r28891. Questo potrebbe
-            portare a malfunzionamenti. Ergo, prima di inserire le modifiche
-            sull'achievo in produzione sarebbe raccomandabile il testarlo. A
-            fondo.
-            */
-            $tmp_d = date_create($results["date_start"]);
-            $tmp_d->modify("-1 day");
-            $tmp_d = format_date($tmp_d);
-            $userdata['date_start']['balance'] = $this->overtime_node->getBalance($tmp_d, $userdata['id']);
-
-            $tmp_d = date_create($results["date_end"]);
-            $tmp_d->modify("-1 day");
-            $tmp_d = format_date($tmp_d);
-            $userdata['date_end']['balance'] = $this->overtime_node->getBalance($tmp_d, $userdata['id']);
-
-            $banca_ore = $userdata['date_start']['balance']['balance'] + $userdata['tot_worked'];
-
-            foreach ($userdata['activity'] as $date => $activity)
+        if ($userid!="all") {
+            // Prepara dati in struttura 3d
+            $daykeys = array_map("format_date", get_days_array($timesummary["date_start"], $timesummary["date_end"]));
+            $workdays = $this->overtime_node->enumWorkingDays($timesummary["date_start"], $timesummary["date_end"], $userid, 'Y-m-d');
+            atkdebug("workdays: ".var_export($workdays, 1));
+            $alldays = array();
+            foreach ($daykeys as $day) {
+                $alldays[$day] = array('time_contract' => floatval($workdays[$day]),
+                                       'time_worked' => 0.0,
+                                       'time_malattia' => 0.0,
+                                       'time_ferie' => 0.0,
+                                       'time_permessi_certificati' => 0.0,
+                                       'time_allattamento' => 0.0,
+                                       'time_donazioni_sangue' => 0.0,
+                                       'time_d20' => 0.0,
+                                       'tickets' => 0,
+                                       'lavoro' => false);
+            }
+            $time_balance = array();
+            $userinfo = $this->weekreport_node->get_employee($userid);
+            $time_balance[$userinfo['userid']] = array('id' => $userinfo['id'],
+                                                       'fullname' => $userinfo['lastname']." ".$userinfo['firstname'],
+                                                       'activity' => $alldays,
+                                                       'tot_contract' => 0.0,
+                                                       'tot_registro' => 0.0,
+                                                       'tot_worked' => 0.0,
+                                                       'tot_malattia' => 0.0,
+                                                       'tot_ferie' => 0.0,
+                                                       'tot_permessi_certificati' => 0.0,
+                                                       'tot_allattamento' => 0.0,
+                                                       'tot_donazioni_sangue' => 0.0,
+                                                       'tot_d20' => 0.0,
+                                                       'tot_tickets' => 0,
+                                                      );
+            foreach ($timesummary['rows'] as $key => $r)
             {
-                $bgcolor = flipflop("#9999FF", "#BBBBFF");
+                $activitydate = array('time_worked' => floatval($r['time_worked']),
+                                      'time_malattia' => floatval($r['time_malattia']),
+                                      'time_ferie' => floatval($r['time_ferie']),
+                                      'time_permessi_certificati' => floatval($r['time_permessi_certificati']),
+                                      'time_allattamento' => floatval($r['time_allattamento']),
+                                      'time_donazioni_sangue' => floatval($r['time_donazioni_sangue']),
+                                      'time_d20' => floatval($r['time_d20']),
+                                      'tickets' => intval($r['tickets']),
+                                      'lavoro' => true);
+                $activitydate = array_merge($time_balance[$r['userid']]['activity'][$r['activitydate']], $activitydate);
 
-                $abstime = strtotime($date);
+                $time_balance[$r['userid']]['activity'][$r['activitydate']] = $activitydate;
+                $time_balance[$r['userid']]['tot_worked'] += $activitydate['time_worked'];
+                $time_balance[$r['userid']]['tot_malattia'] += $activitydate['time_malattia'];
+                $time_balance[$r['userid']]['tot_ferie'] += $activitydate['time_ferie'];
+                $time_balance[$r['userid']]['tot_permessi_certificati'] += $activitydate['time_permessi_certificati'];
+                $time_balance[$r['userid']]['tot_allattamento'] += $activitydate['time_allattamento'];
+                $time_balance[$r['userid']]['tot_donazioni_sangue'] += $activitydate['time_donazioni_sangue'];
+                $time_balance[$r['userid']]['tot_d20'] += $activitydate['time_d20'];
+                $time_balance[$r['userid']]['tot_tickets'] += $activitydate['tickets'];
 
-                $content .= "<tr style='background: $bgcolor'>";
-                $content .= "<td>$userid</td>";
-                $content .= "<td>".$userdata['fullname']."</td>";
-                if ( $this->holidays_node->isHoliday($date) ) {
-                    $content .= "<td><b><i>".strftime("%Y-%m-%d %a", $abstime)."</i></b></td>";
-                } elseif ( !($activity['time_contract'] > 0) ) {
-                    $content .= "<td><strike>".strftime("%Y-%m-%d %a", $abstime)."</strike></td>";
-                } else {
-                    $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
-                }
-                if ( $activity['time_contract'] > 0 ) {
-                    $userdata['tot_contract'] += $activity['time_contract'];
-                    $content .= "<td align='right' title='".float2str($userdata['tot_contract'])."'>".float2str($activity['time_contract'])."</td>";
-                    if ($banca_ore > 0) {
-                        $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_permessi'];
-                        $ore_registro = min($ore_registro, $banca_ore);
+                $time_balance[$r['userid']]['activity'][$r['activitydate']]['totale_parziale_worked'] = $time_balance[$r['userid']]['tot_worked'];
+                atkdebug("TimeBalance loop: ".var_export($r, 1));
+            }
+            atkdebug("TimeBalance: ".var_export($time_balance, 1));
+            return array("content" => $content,
+                         "time_balance" => $time_balance,
+                         "title" => $title,
+                         "timesummary" => &$timesummary);
+        } else {
+            return array("content" => $content,
+                         "title" => $title,
+                         "timesummary" => &$timesummary);
+        }
+    }
+
+    function action_report(&$handler, $userid=null, &$timesummary=null, $export=false)
+    {
+        if (!$userid) {
+            $userid = $this->m_user;
+        }
+        if (!$timesummary) {
+            $timesummary = $this->get_timesummary($userid);
+        }
+        $hours_table = $this->get_hours_table($userid, $timesummary, $export);
+        $content = $hours_table['content'];
+        $timesummary = $hours_table['timesummary'];
+
+        if ($userid!="all") {
+            // Tabelle banca ore
+            $banca_head = "<tr><th>User</th><th>Nome</th><th>Giorno</th><th>Ore previste</th><th>Ore registro</th>
+                <th>Ore lavorate</th><th>Malattia</th><th>Ferie</th><th>Permessi Certificati</th>
+                <th>Allattamento</th><th>Donazioni</th><th>Develer20</th><th>Tickets</th>
+                               </tr>\n";
+            foreach ($hours_table['time_balance'] as $iuserid => &$userdata)
+            {
+                $content .= "<h3>$iuserid - ".$userdata['fullname']."</h3>\n";
+                $content .= "<table border='1'>\n";
+                $content .= $banca_head;
+
+                /*
+                Affinche' il conteggio degli straordinari funzioni correttamente
+                e' necessario che:
+                 * il giorno in cui si calcola il credito/debito di ore all'inizio
+                 del range selezionato sia l'ultimo del mese precedente.
+                 * il giorno in cui si calcola il credito/debito di ore alla fine
+                 del bilancio sia l'ultimo del mese in corso.
+
+                Pertanto i valori di date_start e date_end sono modificati per
+                rispecchiare queste specifiche.
+
+                NOTE: queste modifica ha come requisito l'eliminazione dei check
+                inseriti da lmancini nella revisione r28891. Questo potrebbe
+                portare a malfunzionamenti. Ergo, prima di inserire le modifiche
+                sull'achievo in produzione sarebbe raccomandabile il testarlo. A
+                fondo.
+                */
+                $date_start = date_create($timesummary["date_start"]);
+                $date_start->modify("-1 day");
+                $date_start = format_date($date_start);
+                $userdata['date_start']['balance'] = $this->overtime_node->getBalance($date_start, $userdata['id'], true);
+
+                $date_end = date_create($timesummary["date_end"]);
+                $date_end->modify("-1 day");
+                $date_end = format_date($date_end);
+                $userdata['date_end']['balance'] = $this->overtime_node->getBalance($date_end, $userdata['id']);
+
+                $banca_ore = $userdata['date_start']['balance']['balance'] + $userdata['tot_worked'];
+
+                foreach ($userdata['activity'] as $date => &$activity)
+                {
+                    $holiday = $this->holidays_node->isHoliday($date);
+                    if ( $holiday ) {
+                        $bgcolor = "#CCBBFF";
                     } else {
-                        $ore_registro = 0.0;
+                        $bgcolor = flipflop("#9999FF", "#BBBBFF");
                     }
-                    $banca_ore -= $ore_registro;
-                    $content .= "<td align='right'>".float2str($ore_registro)."</td>";
-                    $userdata['tot_registro'] += $ore_registro;
+                    $abstime = strtotime($date);
+
+                    $content .= "<tr style='background: $bgcolor'>";
+                    $content .= "<td>$iuserid</td>";
+                    $content .= "<td>".$userdata['fullname']."</td>";
+                    if ( $this->holidays_node->isHoliday($date) ) {
+                        $content .= "<td><b><i>".strftime("%Y-%m-%d %a", $abstime)."</i></b></td>";
+                    } elseif ( !($activity['time_contract'] > 0) ) {
+                        $content .= "<td><strike>".strftime("%Y-%m-%d %a", $abstime)."</strike></td>";
+                    } else {
+                        $content .= "<td>".strftime("%Y-%m-%d %a", $abstime)."</td>";
+                    }
+                    if ( $activity['lavoro'] or ($activity['time_contract'] > 0) ) {
+                        $userdata['tot_contract'] += $activity['time_contract'];
+                        $content .= "<td align='right' title='".float2str($userdata['tot_contract'])."'>".float2str($activity['time_contract'])."</td>";
+                        if ($banca_ore > 0) {
+                            $ore_registro = $activity['time_contract'] - $activity['time_malattia'] - $activity['time_ferie']
+                                            - $activity['time_permessi_certificati'] - $activity['time_allattamento'] - $activity['time_donazioni_sangue'];
+                            $ore_registro = max(min($ore_registro, $banca_ore), 0);
+                        } else {
+                            $ore_registro = 0.0;
+                        }
+                        $banca_ore -= $ore_registro;
+                        $content .= "<td align='right'>".float2str($ore_registro)."</td>";
+                        $activity['time_registro'] = $ore_registro;
+                        $userdata['tot_registro'] += $ore_registro;
+                    } else {
+                        $content .= "<td align='right'>&nbsp</td>"; // time_contract
+                        $content .= "<td align='right'>&nbsp</td>"; // ore_registro
+                    }
+                    if ( $activity['lavoro'] or ($activity['time_contract'] > 0) )
+                    {
+                        $time_other = $activity['time_malattia'] + $activity['time_ferie'] + $activity['time_permessi_certificati'] +
+                                      $activity['time_allattamento'] + $activity['time_donazioni_sangue'];
+                        if ( $holiday and ($time_other>0) ) {$style="color: red";} else {$style="";}
+                        $content .= "<td align='right' style='$style' title='".float2str($activity['totale_parziale_worked'])."'>".float2str($activity['time_worked'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_malattia'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_ferie'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_permessi_certificati'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_allattamento'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_donazioni_sangue'])."</td>";
+                        $content .= "<td align='right' style='$style'>".float2str($activity['time_d20'])."</td>";
+                        $content .= "<td align='right' style='$style'>".$activity['tickets']."</td>";
+                    }
+                    else
+                    {
+                        $content .= "<td align='right'>&nbsp</td>";
+                        $content .= "<td align='right'>&nbsp</td>";
+                        $content .= "<td align='right'>&nbsp</td>";
+                        $content .= "<td align='right'>&nbsp</td>";
+                        $content .= "<td align='right'>&nbsp</td>";
+                        $content .= "<td align='right'>&nbsp</td>";
+                        $content .= "<td align='right'>&nbsp</td>";
+                        $content .= "<td align='right'>&nbsp</td>";
+                    }
+                    $content .= "</tr>\n";
+                } // fine loop su tutti i giorni selezionati
+                $content .= $banca_head;
+                $content .= "<tr><td>$iuserid</td><td>".$userdata['fullname']."</td><th>Totale</th>";
+                $content .= "<th align='right'>".float2str($userdata['tot_contract'])."</th>";
+                $content .= "<th align='right'>".float2str($userdata['tot_registro'])."</th>";
+                $overtime_balance = $userdata['date_start']['balance']['balance'] + $userdata['tot_worked'] - $userdata['tot_registro'];
+                $content .= "<th align='right' title='banca ore: ".float2str($overtime_balance)."'>";
+                    $content .= float2str($userdata['tot_worked'])."</th>";
+                if ($overtime_balance > 0) {
+                    $userdata['overtime_balance'] = $overtime_balance;
                 } else {
-                    $content .= "<td align='right'>&nbsp</td>"; // time_contract
-                    $content .= "<td align='right'>&nbsp</td>"; // ore_registro
+                    $userdata['overtime_balance'] = 0.0;
                 }
-                if ( $activity['time_contract'] > 0 )
-                {
-                    $content .= "<td align='right' title='".float2str($activity['totale_parziale_worked'])."'>".float2str($activity['time_worked'])."</td>";
-                    $content .= "<td align='right'>".float2str($activity['time_malattia'])."</td>";
-                    $content .= "<td align='right'>".float2str($activity['time_ferie'])."</td>";
-                    $content .= "<td align='right'>".float2str($activity['time_permessi'])."</td>";
-                    $content .= "<td align='right'>".float2str($activity['time_d20'])."</td>";
-                    $content .= "<td align='right'>".$activity['tickets']."</td>";
-                }
-                else
-                {
-                    $content .= "<td align='right'>&nbsp</td>";
-                    $content .= "<td align='right'>&nbsp</td>";
-                    $content .= "<td align='right'>&nbsp</td>";
-                    $content .= "<td align='right'>&nbsp</td>";
-                    $content .= "<td align='right'>&nbsp</td>";
-                    $content .= "<td align='right'>&nbsp</td>";
-                }
+                $content .= "<th align='right'>".float2str($userdata['tot_malattia'])."</th>";
+                $content .= "<th align='right'>".float2str($userdata['tot_ferie'])."</th>";
+                $content .= "<th align='right'>".float2str($userdata['tot_permessi_certificati'])."</th>";
+                $content .= "<th align='right'>".float2str($userdata['tot_allattamento'])."</th>";
+                $content .= "<th align='right'>".float2str($userdata['tot_donazioni_sangue'])."</th>";
+                $content .= "<th align='right' title='".float2str($userdata['tot_d20'])."'>";
+                    $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</th>";
+                $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
                 $content .= "</tr>\n";
-            } // fine loop su tutti i giorni selezionati
-            $content .= $banca_head;
-            $content .= "<tr><td>$userid</td><td>".$userdata['fullname']."</td><th>Totale</th>";
-            $content .= "<th align='right'>".float2str($userdata['tot_contract'])."</th>";
-            $content .= "<th align='right'>".float2str($userdata['tot_registro'])."</th>";
-            $content .= "<th align='right' title='".float2str($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
-                $content .= float2str($userdata['tot_worked'])."</th>";
-            $content .= "<th align='right'>".float2str($userdata['tot_malattia'])."</th>";
-            $content .= "<th align='right'>".float2str($userdata['tot_ferie'])."</th>";
-            $content .= "<th align='right'>".float2str($userdata['tot_permessi'])."</th>";
-            $content .= "<th align='right' title='".float2str($userdata['tot_d20'])."'>";
-                $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</th>";
-            $content .= "<th align='right'>".$userdata['tot_tickets']."</th>";
-            $content .= "</tr>\n";
-            $content .= "<tr><td colspan='11'>$title<dl>\n";
-            $content .= "<b>$userid:</b> ".$userdata['fullname']."<br>";
-            $content .= "<b>Banca ore al ".$results["date_start"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_start'])."<br>";
-            /*
-            Aggiunto link per permettere di modificare il quantitativo di ore
-            presenti in banca ore dopo aver stabilito con il dipendente quante
-            di queste devono essere pagate come straordinari e quante messe da
-            parte.
-            */
-            $content .= "<b>Banca ore al ".$results["date_end"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_end'])."<br>";
-            $content .= "<b>Ore Previste:</b> ".float2str($userdata['tot_contract'])."<br>";
-            $content .= "<b>Ore Registro:</b> ".float2str($userdata['tot_registro'])."<br>";
-            $content .= "<b>Ore Lavorate:</b> <a title='".float2str($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
-                $content .= float2str($userdata['tot_worked'])."</a><br>";
-            $content .= "<b>Malattia:</b> ".float2str($userdata['tot_malattia'])."<br>";
-            $content .= "<b>Ferie:</b> ".float2str($userdata['tot_ferie'])."<br>";
-            $content .= "<b>Permessi:</b> ".float2str($userdata['tot_permessi'])."<br>";
-            $content .= "<b>Develer20:</b> <a title='".float2str($userdata['tot_d20'])."'>";
-                $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a><br>";
-            $content .= "<b>Tickets:</b> ".$userdata['tot_tickets']."<br>";
-            
-            $content .= "</dl></td></tr>\n";
-            $content .= "</table>\n";
+                $content .= "<tr><td colspan='13'>$title<dl>\n";
+                $content .= "<b>$iuserid:</b> ".$userdata['fullname']."<br>";
+                $content .= "<b>Banca ore al ".$timesummary["date_start"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_start'])."<br>";
+                /*
+                Aggiunto link per permettere di modificare il quantitativo di ore
+                presenti in banca ore dopo aver stabilito con il dipendente quante
+                di queste devono essere pagate come straordinari e quante messe da
+                parte.
+                */
+                $content .= "<b>Banca ore al ".$timesummary["date_end"].":</b> ".$this->overtime_node->getOvertimeLink($userdata['date_end'])."<br>";
+                atkdebug("userdata['overtime_balance']=".$userdata['overtime_balance']);
+                atkdebug("userdata['date_end']['balance']['balance']=".$userdata['date_end']['balance']['balance']);
+                $userdata['straordinari'] = max($userdata['overtime_balance'] - max($userdata['date_end']['balance']['balance'], 0.0), 0.0);
+                $content .= "<b>Straordinari:</b> ".float2str($userdata['straordinari'])."<br>";
+                $content .= "<b>Ore Previste:</b> ".float2str($userdata['tot_contract'])."<br>";
+                $content .= "<b>Ore Registro:</b> ".float2str($userdata['tot_registro'])."<br>";
+                $content .= "<b>Ore Lavorate:</b> <a title='".float2str($userdata['tot_worked'] - $userdata['tot_registro'])."'>";
+                    $content .= float2str($userdata['tot_worked'])."</a><br>";
+                $content .= "<b>Malattia:</b> ".float2str($userdata['tot_malattia'])."<br>";
+                $content .= "<b>Ferie:</b> ".float2str($userdata['tot_ferie'])."<br>";
+                $content .= "<b>Permessi certificati:</b> ".float2str($userdata['tot_permessi_certificati'])."<br>";
+                $content .= "<b>Allattamento:</b> ".float2str($userdata['tot_allattamento'])."<br>";
+                $content .= "<b>Donazioni sangue:</b> ".float2str($userdata['tot_donazioni_sangue'])."<br>";
+                $content .= "<b>Develer20:</b> <a title='".float2str($userdata['tot_d20'])."'>";
+                    $content .= float2str(min($userdata['tot_d20'], $userdata['tot_worked']*0.2))."</a><br>";
+                $content .= "<b>Tickets:</b> ".$userdata['tot_tickets']."<br>";
+
+                $lock_type = Locking::getLockType($userdata['id'], $date_end);
+                if ($lock_type === "")
+                {
+                    $content .= '<div class="atkmessages_general"><form action="dispatch.php" method="get" name="entryform">';
+                    if ($userdata['date_end']['balance']['balance'] > 0)
+                    {
+                        $content .= 'In banca ore ci sono '.$userdata['date_end']['balance']['balance'].' ore';
+                        $content .= '<button name="option" type="submit" value="store">'.atktext("Conferma mese e lascia tutto in banca ore").'</button>';
+                        $content .= '<button name="option" type="submit" value="empty">'.atktext("Conferma mese e riscatta tutte le ore").'</button>';
+                    } else if ($userdata['date_end']['balance']['balance'] < 0) {
+                        $content .= 'Banca ore in negativo, le ore mancanti verranno prese dalle ferie';
+                        $content .= '<button name="option" type="submit" value="empty">'.atktext("Conferma mese").'</button>';
+                    } else {
+                        $content .= 'Banca ore in pari';
+                        $content .= '<button name="option" type="submit" value="empty">'.atktext("Conferma mese").'</button>';
+                    }
+                    $content .= '<input type="hidden" name="userid" value="'.$userdata['id'].'">';
+                    $content .= '<input type="hidden" name="balance_date" value="'.$date_end.'">';
+                    $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
+                    $content .= '<input type="hidden" name="atkaction" value="bancaore">';
+                    $content .= '</form></div>';
+                } else {
+                    $content .= "<div class='atkmessages_success'>Mese confermato, chiedere ad un admin di sbloccarlo se ci sono errori da correggere.</div>";
+                }
+
+                $content .= "</dl></td></tr>\n";
+                $content .= "</table>\n";
+            }
+        } else {
+            $content .= "<p><i>Sono stati selezionati tutti gli utenti, e' possibile solo scaricare il foglio di calcolo.</i></p>";
         }
 
         $content .= "<p>Pagina creata il ".date_create()->format("Y-m-d")."</p>\n";
-        $content .= '<input type="submit" value="'.atktext("refresh").'">';
-        $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
-        $content .= '<input type="hidden" name="atkaction" value="report">';
 
+        $content .= '<form action="dispatch.php" method="get" name="entryform">';
+        $content .= '<input type="submit" value="'.atktext("Esporta").'">';
+        $content .= '<input type="hidden" name="date_start" value="'.$timesummary["date_start"].'">';
+        $content .= '<input type="hidden" name="atknodetype" value="'.$this->atkNodeType().'">';
+        $content .= '<input type="hidden" name="atkaction" value="export">';
         $content .= '</form>';
-        $page->addContent($ui->renderBox(array("title"=>$title,"content"=>$content)));
+
+        if (!$export) {
+            $page = &$this->getPage();
+            $ui = &$this->getUi();
+            $page->addContent($ui->renderBox(array("title"=>$hours_table['title'], "content"=>$content)));
+        } else {
+            $content = null;
+            return $hours_table;
+        }
+
+    }
+    function action_export(&$handler)
+    {
+        include "excel_xml.php";
+        $userid = $this->m_user;
+
+        $exporter = &atknew("atk.utils.atkfileexport");
+        $timesummary = $this->get_timesummary($userid);
+        $report_time = strtotime($timesummary["date_start"]);
+
+        $date_start = $timesummary["date_start"];
+
+        if ($userid=="all") {
+            $db = &atkGetDb();
+            $select = "
+                SELECT DISTINCT usercontract.userid FROM usercontract
+                    JOIN person ON usercontract.userid = person.id
+                WHERE startdate <= '$date_start'
+                    AND '$date_start' < enddate
+                    AND description NOT LIKE '%NO PRESENZE%'
+                ORDER BY ABS(person.initials)
+            ";
+            $users = array();
+            foreach($db->getRows($select) as $r) {
+                $users[] = $r['userid'];
+            }
+        } else {
+            $users = array($userid);
+        }
+
+        $excel = new excel_xml();
+        $title_style = array(
+            'bold'       => 1,
+            'size'       => '14'
+        );
+        $header_style = array(
+            'bold'       => 1,
+        );
+        $excel->add_style('title', $title_style);
+        $excel->add_style('header', $header_style);
+        $excel->add_row(explode(";", ";DEVELER SRL Registro presenze Anno ".strftime("%Y", $report_time)." mese di ".strftime("%B", $report_time)."|30"), 'title');
+        $header = true;
+        function fformat($number) {
+            return number_format($number, 2, $dec_point='.', $thousands_sep='');
+        }
+        function coalesce($value) {
+            return "IF($value, ($value), \"\")";
+        }
+        function if_working($time_contract, $value) {
+            return "IF(R[-1]C=$time_contract, ($value), \"\")";
+        }
+        $buoni_pasto = array();
+        foreach ($users as $iuserid) {
+            $hours_table = $this->action_report($handler, $iuserid, $timesummary, true);
+            foreach ($hours_table['time_balance'] as $username => $userdata)
+            {
+                if ($userdata['id'] != $iuserid)
+                    continue;
+
+                if ($header) {
+                    $totali = ";Totali;";
+                }
+
+                $buoni_pasto[$userdata['fullname']] = $userdata['tot_tickets'];
+
+                $ore_ordinarie = "";
+                $straordinarie = "";
+                $ferie = "";
+                $permessi_certificati = "";
+                $allattamento = "";
+                $donazioni_sangue = "";
+                $malattia = "";
+                $userdata['tot_missing'] = 0.0;
+
+                $sum_rows = 2;
+                if ($userdata['tot_allattamento'] > 0)
+                    $sum_rows++;
+                if ($userdata['tot_permessi_certificati'] > 0)
+                    $sum_rows++;
+                if ($userdata['tot_donazioni_sangue'] > 0)
+                    $sum_rows++;
+
+                $counter = -1;
+                $straordinari_step = max(1, round($userdata['straordinari']/15));
+                foreach ($userdata['activity'] as $date => $activity)
+                {
+                    $counter++;
+                    if ($header) {
+                        $abstime = strtotime($date);
+                        $totali .= strftime(";%d %a", $abstime);
+                    }
+                    $value = fformat($activity['time_registro']);
+                    $ore_ordinarie .= ";-1=".coalesce(fformat($activity['time_registro']));
+                    $ore_mancanti = $activity['time_contract'] - $activity['time_registro'] - $activity['time_malattia'] - $activity['time_ferie']
+                                    - $activity['time_permessi_certificati'] - $activity['time_allattamento'] - $activity['time_donazioni_sangue'];
+                    if ($ore_mancanti > 0) {
+                        $activity['time_missing'] = $ore_mancanti;
+                        $userdata['tot_missing'] += $ore_mancanti;
+                    } else {
+                        $activity['time_missing'] = 0.0;
+                    }
+                    if ($counter == 0) {
+                        $straordinarie .= ";-1=".if_working($activity['time_contract'], "IF(RC[-2]>=$straordinari_step, $straordinari_step, ".coalesce('RC[-2]').")");
+                    } else {
+                        $col_tot = -2 - $counter;
+                        $col_first = -$counter;
+                        $value = "MAX(0, RC[$col_tot]-SUM(RC[$col_first]:RC[-1]))";
+                        $straordinarie .= ";-1=".if_working($activity['time_contract'], "IF($value>=$straordinari_step, $straordinari_step, ".coalesce($value).")");
+                    }
+                    $ferie .= ";-1=".coalesce(fformat($activity['time_ferie'])."+".fformat($activity['time_missing']));
+                    $permessi_certificati .= ";-1=".coalesce(fformat($activity['time_permessi_certificati']));
+                    $allattamento .= ";-1=".coalesce(fformat($activity['time_allattamento']));
+                    $donazioni_sangue .= ";-1=".coalesce(fformat($activity['time_donazioni_sangue']));
+                    $malattia .= ";-1=".coalesce(fformat($activity['time_malattia']));
+                }
+                if ($header) {
+                    $excel->add_row(explode(";", $totali), 'header');
+                    $header = false;
+                } else {
+                    $excel->add_row("");
+                }
+
+                $head_ore_ordinarie = "*".$userdata['fullname']."*;-1=SUM(RC[2]:RC[33]);Ore ordinarie";
+                $head_straordinarie = "*-1*=SUM(R[-1]C[1]:R[$sum_rows]C[1]);".fformat($userdata['straordinari']);
+                $head_straordinarie .= ";=IF(RC[-1]=SUM(RC[1]:RC[32]),\"Straordinarie\",CONCATENATE(\"!!! differenza = \",SUM(RC[1]:RC[32])-RC[-1]))";
+                $head_ferie = "Ore previste;-1=SUM(RC[2]:RC[33]);Ferie/Permessi";
+                $head_malattia = fformat($userdata['tot_contract']).";-1=SUM(RC[2]:RC[33]);Malattia";
+                $head_permessi_certificati = ";-1=SUM(RC[2]:RC[33]);Permessi Certificati";
+                $head_allattamento = ";-1=SUM(RC[2]:RC[33]);Allattamento";
+                $head_donazioni_sangue = ";-1=SUM(RC[2]:RC[33]);Donazioni sangue";
+
+                $excel->add_row(explode(";", $head_ore_ordinarie.$ore_ordinarie));
+                $excel->add_row(explode(";", $head_straordinarie.$straordinarie));
+                $excel->add_row(explode(";", $head_ferie.$ferie));
+                $excel->add_row(explode(";", $head_malattia.$malattia));
+                if ($userdata['tot_allattamento'] > 0)
+                    $excel->add_row(explode(";", $head_allattamento.$allattamento));
+                if ($userdata['tot_permessi_certificati'] > 0)
+                    $excel->add_row(explode(";", $head_permessi_certificati.$permessi_certificati));
+                if ($userdata['tot_donazioni_sangue'] > 0)
+                    $excel->add_row(explode(";", $head_donazioni_sangue.$donazioni_sangue));
+            }
+        }
+
+        $excel->add_row("");
+        $excel->add_row("*Buoni Pasto*");
+        ksort($buoni_pasto);
+        foreach ($buoni_pasto as $fullname => $buoni_pasto_user) {
+            $excel->add_row(array($fullname, $buoni_pasto_user));
+        }
+
+        $excel->create_worksheet('Develer srl');
+        $xml = $excel->generate();
+        if ($userid == "all")
+            $exporter->export($xml, strftime("Develer-%Y-%B", $report_time), "xls");
+        else
+            $exporter->export($xml, strftime("Develer-%Y-%B-$username", $report_time), "xls");
+    }
+    function action_bancaore(&$handler)
+    {
+        $userid = $this->m_postvars['userid'];
+        $option = $this->m_postvars['option'];
+        $balance_date = $this->m_postvars['balance_date'];
+        if ($option == 'store') {
+            $balance_record = $this->overtime_node->getBalance($balance_date, $userid);
+            $balance = max(0.0, $balance_record['balance']);
+        } else if ($option == 'empty') {
+            $balance = 0.0;
+        } else {
+            atkdebug("action_bancaore: option=$option non supportata");
+            return;
+        }
+        atkdebug("action_bancaore: $userid $option $balance_date $balance");
+        $this->overtime_node->updateOvertimeBalance($userid, $balance_date, $balance, $manual=1);
+        Locking::lockPeriod(Locking::getPeriod($balance_date), $approved=null, $userid=$userid);
+        $this->redirect(dispatch_url("internal.timebalance", "report"));
     }
 }
 ?>

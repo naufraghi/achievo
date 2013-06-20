@@ -1,0 +1,9 @@
+
+# /
+/achievotmp
+/*.swp
+
+# /achievo_modules/
+
+# /achievo_modules/remote/
+/achievo_modules/remote/.*.swp

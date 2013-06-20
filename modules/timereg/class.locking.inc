@@ -79,11 +79,14 @@ class Locking {
    * @param String $period  The period we wish to lock
    * @param int $approved   Sets period to approved. 1 = true, 0 = false
   **/
-  function lockPeriod($period, $approved=null)
+  function lockPeriod($period, $approved=null, $userid=null)
   {
 
     $record = array();
-    $record["userid"]["id"] = atkArrayNvl(getUser(), "id");
+    if ($userid == null)
+        $record["userid"]["id"] = atkArrayNvl(getUser(), "id");
+    else
+        $record["userid"]["id"] = $userid;
     $record["period"] = $period;
     $record["approved"] = $approved;
     $locknode = &atkGetNode("timereg.hours_lock");
