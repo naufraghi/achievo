@@ -120,6 +120,26 @@
     }
   }
 
+  class creditorViewAttribute extends atkAttribute {
+
+    /**
+     * Make sure the value is not stored. (always calculated on the fly)
+     * @access private
+     * @return int
+     */
+    function storageType() { return NOSTORE; }
+
+    function addToQuery(&$query, $tablename="", $fieldaliasprefix="", $rec="", $level, $mode)
+    {
+      $query->addJoin("organization", "creditor_id", "userid.creditor_id = creditor_id.id", true);
+      $query->addField("name","","creditor_id","creditor_",!$this->hasFlag(AF_NO_QUOTES),true);
+    }
+    function db2value($record)
+    {
+      return atkArrayNvl($record, "creditor_name");
+    }
+  }
+
   class hoursurvey extends atkNode
   {
     function hoursurvey()
@@ -163,6 +183,7 @@
       $organizationid =     (!empty($organizationpair)) ? atkArrayNvl(decodeKeyValuePair($organizationpair), "organization.id", "") : "";
       $department_name =    $g_sessionManager->pageVar("departmentid");
       $functionlevelswitch =$g_sessionManager->pageVar("functionlevelswitch");
+      $creditor_id =        $g_sessionManager->pageVar("creditor_id");
       $outputType =         atkArrayNvl($this->m_postvars, "outputType", "");
 
       $externalHourSurveyColumns = atkHarvestModules("getHourSurveyColumns", "", true);
@@ -193,7 +214,8 @@
       // Hack: make sure the activities, which are populated by the project/phase column, are properly loaded.
       $hoursnode->add(new sortableActivity());
       $hoursnode->add(new functionLevelAttribute("functionlevel"));
-      $hoursnode->add(new billingTypeViewAttribute("billing_projecttypeid"));
+      if(moduleExists("billing")) $hoursnode->add(new billingTypeViewAttribute("billing_projecttypeid"));
+      $hoursnode->add(new creditorViewAttribute("creditor_id", AF_FORCE_LOAD));
 
 
       $columnConfig = &$hoursnode->getColumnConfig();
@@ -301,6 +323,7 @@
       // TODO FIXME: AF_HIDE_LIST, AF_HIDE_EDIT etc are not implemented cleanly.
       // workarounds like these should not be necessary.
       $hoursnode->m_attribList["activitydate"]->m_flags = ($hoursnode->m_attribList["activitydate"]->m_flags&(~AF_HIDE_LIST));
+      $hoursnode->m_attribList["userid"]->m_flags = ($hoursnode->m_attribList["userid"]->m_flags&(~AF_HIDE_LIST));
 
 
       if ($outputType==0)
@@ -379,6 +402,9 @@
         $this->_addOr($data);
 
         $data[] = array(atkText("department","project").':','<SELECT name="departmentid">'.$this->get_departments($department_name).'</SELECT>');
+        $this->_addOr($data);
+
+        $data[] = array(atkText("creditor_id","employee").':','<SELECT name="creditor_id">'.$this->get_creditors($creditor_id).'</SELECT>');
 
         $data[] = array("<hr>");
 
@@ -564,6 +590,7 @@
       //if(!empty($customerid)&&$customerid!="") $filter.= " AND B.customer=".$customerid;
       if($department_name && $department_name != "all") $filter.=" AND userid.department='".escapeSQL($department_name)."'";
       if($functionlevelswitch && $functionlevelswitch != "all") $filter.=" AND userid.functionlevel='$functionlevelswitch'";
+      if(!empty($creditor_id) && ($creditor_id != "all")) $filter.=" AND creditor_id.id='$creditor_id'";
 
       foreach ($externalHourSurveyColumns as $module => $attrlist)
       {
@@ -577,10 +604,6 @@
           }
         }
       }
-
-      // employee table is not yet added to the query. Force that by adding a manytoonerel,
-      // so we display a users name.
-      $hoursnode->add(new atkManyToOneRelation("userid", "employee.employee"));
 
       // organization and person_organization tables are not yet added to the query.
       // Since this is a many:many thing between projects and organizations, with the
@@ -689,6 +712,26 @@
         $depcode .= "<OPTION VALUE='".$onedep['id']."'$sel>".$onedep['name']."</OPTION>";
       }
       return $depcode;
+    }
+
+    function get_creditors($creditor_id)
+    {
+      $db = &atkGetDB();
+
+      $sql = "SELECT organization.id,organization.name,count(organization.id) AS cnt
+              FROM person
+              INNER JOIN organization ON person.creditor_id = organization.id
+              WHERE person.role='employee'
+              GROUP BY organization.id";
+
+      $records = $db->getrows($sql);
+      $creditorscode = "<OPTION VALUE='all'>".atktext('allcreditors')."</OPTION>";
+      foreach ($records as $creditor)
+      {
+        $sel = $creditor['id'] == $creditor_id ? " SELECTED" : "";
+        $creditorscode .= "<OPTION VALUE='".$creditor['id']."'$sel>".$creditor['name']."</OPTION>";
+      }
+      return $creditorscode;
     }
 
     function get_employees($user_id)

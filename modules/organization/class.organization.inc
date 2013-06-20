@@ -68,13 +68,15 @@ class organization extends atkNode
     $this->add(new atkTextAttribute("remark", TEXT_LARGE, AF_HIDE_LIST|AF_HIDE_ADD));
     $this->add(new atkOneToManyRelation("contactperson","organization.contact","company",AF_HIDE_LIST),"contacts");
     $this->add(new atkOneToManyRelation("contracts","organization.contracts","customer",AF_HIDE_LIST),"contracts");
-    $this->add(new atkParserAttribute("projects", "see_below", AF_HIDE_LIST|AF_HIDE_ADD),"active_projects");
+    $projectRelatie = new atkOneToManyRelation("projects", "project.project", "customer");
+    $projectRelatie->addDestinationFilter("project.status='active'");
+    $this->add($projectRelatie,"active_projects");
     $this->add(new atkParserAttribute("archivedprojects", "see_below", AF_HIDE_LIST|AF_HIDE_ADD),"archived_projects");
 
 
     $this->add(new atkParserAttribute("vcard", href("?atkaction=vcard&id=[id]", atktext("vcard"), SESSION_NESTED), AF_NO_LABEL|AF_HIDE_ADD), NULL, 10000);
 
-    $this->add(new atkDocumentAttribute("document"));
+    $this->add(new atkDocumentAttribute("document",AF_HIDE_LIST));
 
     $this->m_securityMap["vcard"] = "view";
     $this->m_securityMap["export"] = "view";
@@ -173,7 +175,7 @@ class organization extends atkNode
 
   function descriptor_def()
   {
-    return "[name], [city]";
+    return "[name], [city] ([organizationcode])";
   }
 
   function archivedprojects_edit($record)
@@ -184,16 +186,6 @@ class organization extends atkNode
   function archivedprojects_display($record)
   {
     return $this->showProjects($record,"view","archived");
-  }
-
-  function projects_edit($record)
-  {
-    return $this->showProjects($record, "relation");
-  }
-
-  function projects_display($record)
-  {
-    return $this->showProjects($record, "view");
   }
 
   function showProjects($record, $mode,$status="active")

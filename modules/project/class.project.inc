@@ -27,7 +27,7 @@
 
       $this->add(new atkNumberAttribute("id",AF_AUTOKEY));
 
-      $this->add(new atkAttribute("abbreviation", AF_SEARCHABLE, 10));
+      $this->add(new atkAttribute("abbreviation", AF_SEARCHABLE|AF_UNIQUE, 10));
       $this->add(new atkAttribute("name",AF_UNIQUE|AF_OBLIGATORY|AF_SEARCHABLE, 50));
 
       $attr = &$this->add(new atkManyToOneRelation("coordinator","employee.employee",AF_SEARCHABLE|AF_HIDE_ADD|AF_RELATION_AUTOLINK));
@@ -60,11 +60,15 @@
       {
         $flags = 0;
       }
-
+      
       // Add the organization relation
       $this->add(new atkManyToOneRelation("customer", "organization.organization", AF_HIDE_LIST|AF_RELATION_AUTOLINK|AF_HIDE_ADD|AF_SEARCHABLE), "", 500);
 
       $this->add(new atkOneToManyRelation("contacts","project.project_personcontact", "projectid", AF_HIDE_LIST|AF_HIDE_ADD|$flags));
+      
+      $this->add(new atkAttribute("quotation_number",AF_HIDE_LIST));
+
+      
       $this->add(new atkOneToManyRelation("members","project.project_personemployee", "projectid", AF_HIDE_LIST), "planning");
       $this->add(new atkDummyAttribute("hint", atktext("project_member_fuzzyhint"), AF_HIDE_LIST|AF_HIDE_VIEW|AF_HIDE_ADD), "planning");
       $this->add(new atkFuzzySearchAttribute("member_add", "employee.employee", "storeMembers", "multiselect", AF_HIDE_ADD|AF_BLANK_LABEL), "planning");
@@ -195,14 +199,16 @@
 
     function initial_values()
     {
-      $projectnumbermodule = atkConfig("projectnumbermodule");
+      $projectnumbermodule = atkConfig('projectnumbermodule');
       if (!empty($projectnumbermodule))
       {
+        atkdebug("Getting alternative project code.");
         $numberingmodule = &getModule($projectnumbermodule);
         $initialprojectcode = $numberingmodule->getInitialProjectcode();
       }
       else
       {
+        atkdebug("Getting projectcode.");
         $initialprojectcode = $this->getInitialProjectcode();
       }
 
@@ -273,6 +279,76 @@
     function action_billing(&$handler)
     {
       include_once moduleDir("finance").'projectbilling.inc';
+    }
+    
+    /**
+     * One line description of the function
+     *
+     * Full description of the function
+     *
+     * @param type name description
+     * @return type description
+     */
+    function postAdd($rec)
+    {
+      $skell = atkconfig('project_dir_skell');
+      $dest = atkconfig('project_dir_destination');
+      
+    	if ($skell != '' && $dest != '' && is_dir($skell))
+    	{
+    	  atkdebug("Copying skell: $skell to destination: $dest started.");
+    	  atkimport("atk.utils.atkfileutils");    	  
+    	  
+    	  
+    	  if (!is_dir($dest))
+    	  {
+    	    atkdebug("Destination isn't a existing directory. First create the destination.");    	    
+    	    $succes = atkFileUtils::atkCreateDest("$dest");
+    	  }
+    	  else 
+    	  {
+    	    atkdebug("Destination is a existing directory.");
+    	    $succes = true;
+    	  }
+    	  
+    	  if (atkFileUtils::atkCopyDirRec($skell, $dest, $rec['abbreviation']) && $succes)
+    	  {
+    	    atkdebug("The skell is copied to the destination.");
+    	    
+    	    $mailer = &atknew('atk.utils.atkmailer');
+    	    
+    	    $body = sprintf(atktext("project_body"), $rec['abbreviation'], getcwd()."/".$dest."/".$rec['abbreviation']);
+
+    	    switch (atkconfig("project_formatmail"))
+    	    {
+    	      default:
+
+    	        break;
+
+    	      case 'html':
+    	        $mailer->isHTML(true);
+    	        break;
+
+    	      case 'htmlplain':
+    	        $mailer->isHTML(true);
+    	        $mailer->AltBody = strip_tags($body, '<a>');
+    	        break;
+    	    }
+
+    	    $mailer->From = atkconfig("project_from");
+    	    $mailer->FromName = atkconfig("project_from_name");
+    	    $mailer->AddAddress(atkconfig("project_sendto"));
+    	    $mailer->Subject = atktext("project_subject").$rec['abbreviation'];
+    	    $mailer->Body = $body;
+    	    atk_var_dump($mailer->Send(), "Mail send to ".atkconfig("project_sendto")."?");    	    
+    	  }
+    	  else 
+    	    atkerror("No write permisson on destination: ".$dest);
+    	}
+    	else 
+    	  atkdebug("Configs are empty or skell isn't a directory.");
+    	  
+    	return true;
     }
 
     function postDel($rec)
