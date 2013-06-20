@@ -6,6 +6,7 @@
   useattrib("atkdateattribute");
   useattrib("timereg.manualattribute");
   useattrib("atknumberattribute");
+  atkImport("modules.utils.dateutil");
 
   class overtime_balance extends atkNode
   {
@@ -22,23 +23,24 @@
       $this->setTable("overtime_balance", "overtime_balance");
       $this->m_securityMap["add"] = "edit";
       $this->m_securityMap["save"] = "edit";
+      $this->scheduler_holidays = &atkGetNode("scheduler.scheduler_holidays");
     }
 
     function postUpdate($rec)
     {
-      $this->deleteBalance($rec["userid"]["id"], date("Y-m-d", adodb_mktime(0,0,0,$rec["day"]["month"],$rec["day"]["day"],$rec["day"]["year"])));
+      $this->deleteBalance($rec["userid"]["id"], dateutil::arr2str($rec["day"], "Y-m-d"));
       return true;
     }
 
     function postAdd($rec)
     {
-      $this->deleteBalance($rec["userid"]["id"], date("Y-m-d", adodb_mktime(0,0,0,$rec["day"]["month"],$rec["day"]["day"],$rec["day"]["year"])));
+      $this->deleteBalance($rec["userid"]["id"], dateutil::arr2str($rec["day"], "Y-m-d"));
       return true;
     }
 
     function postDel($rec)
     {
-      $this->deleteBalance($rec["userid"]["id"], date("Y-m-d", adodb_mktime(0,0,0,$rec["day"]["month"],$rec["day"]["day"],$rec["day"]["year"])));
+      $this->deleteBalance($rec["userid"]["id"], dateutil::arr2str($rec["day"], "Y-m-d"));
       return true;
     }
 
@@ -47,14 +49,14 @@
       if ($rec["balance"]["balance"] != atktext("not_inserted")) $res = time_format(60*$rec["balance"]["balance"], true);
       else $res = $rec["balance"]["balance"];
 
-      $manual = $this->getLatestManualCorrection($rec["balance"]["userid"]["id"], 0, date("Y-m-d", adodb_mktime(0,0,0,$rec["balance"]["day"]["month"],$rec["balance"]["day"]["day"],$rec["balance"]["day"]["year"])));
+      $manual = $this->getLatestManualCorrection($rec["balance"]["userid"]["id"], 0, dateutil::arr2str($rec["balance"]["day"], "Y-m-d"));
       $manualid = $manual["id"];
       if ($manual != 0)
       {
         // check if this manualcorrection was made in the current week
-        $enddate = date("Y-m-d", adodb_mktime(0,0,0,$rec["balance"]["day"]["month"],$rec["balance"]["day"]["day"],$rec["balance"]["day"]["year"]));
+        $enddate = dateutil::arr2str($rec["balance"]["day"], "Y-m-d");
         $startdate = startOfWeek($enddate);
-        $manualdate = date("Y-m-d", adodb_mktime(0,0,0,$manual["day"]["month"],$manual["day"]["day"],$manual["day"]["year"]));
+        $manualdate = dateutil::arr2str($manual["day"], "Y-m-d");
         if ($manualdate <= $enddate && $manualdate >= $startdate) $manual = 1;
         else $manual = 0;
       }
@@ -71,7 +73,11 @@
         }
         else
         {
-          $url = dispatch_url("timereg.overtime_balance", "add", array("userid[id]"=>$rec["balance"]["userid"]["id"], "day[day]"=>$rec["balance"]["day"]["day"], "day[month]"=>$rec["balance"]["day"]["month"], "day[year]"=>$rec["balance"]["day"]["year"], "balance"=>"0.00"));
+          $url = dispatch_url("timereg.overtime_balance", "add", array("userid[id]"=>$rec["balance"]["userid"]["id"],
+                                                                       "day[day]"=>$rec["balance"]["day"]["day"],
+                                                                       "day[month]"=>$rec["balance"]["day"]["month"],
+                                                                       "day[year]"=>$rec["balance"]["day"]["year"],
+                                                                       "balance"=>"0.00"));
         }
         $res = href($url, $res, SESSION_NESTED);
       }
@@ -111,12 +117,13 @@
           $result[0] = $this->getDummyBalance($date, $userid, 0);
         }
       }
-      $endtime = adodb_mktime(0,0,0,$result[0]["day"]["month"],$result[0]["day"]["day"],$result[0]["day"]["year"]);
-      $starttime = adodb_mktime(0,0,0,substr($day,5,2),substr($day,8,2),substr($day,0,4));
+      $endtime = dateUtil::arr2stamp($result[0]["day"]);
+      $starttime = dateUtil::str2stamp($day);
       if ($endtime < $starttime)
       {
         //recalculate
-        return $this->recalculateBalance(date("Y-m-d", adodb_mktime(0,0,0,$result[0]["day"]["month"],$result[0]["day"]["day"]+1,$result[0]["day"]["year"])), $day, $userid, $result[0]["balance"]);
+        $dayafter = adodb_mktime(0,0,0,$result[0]["day"]["month"],$result[0]["day"]["day"]+1,$result[0]["day"]["year"]);
+        return $this->recalculateBalance(date("Y-m-d", $dayafter), $day, $userid, $result[0]["balance"]);
       }
       else if (count($result)) return $result[0];
 
@@ -126,9 +133,7 @@
     {
       if ($balance === "") $res["balance"] = atktext("not_inserted"); else $res["balance"] = $balance;
       $res["userid"]["id"] = $userid;
-      $res["day"]["day"] = substr($day,8,2);
-      $res["day"]["month"] = substr($day,5,2);
-      $res["day"]["year"] = substr($day,0,4);
+      $res["day"] = dateutil::str2arr($day);
       if ($id != 0) $res["id"] = $id;
       $res["manual"] = 0;
       return $res;
@@ -159,7 +164,7 @@
     function addOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"addOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
-      if (strftime("%w", adodb_mktime(0,0,0,substr($day,5,2),substr($day,8,2),substr($day,0,4))) != 0) return;
+      if ( (strftime("%w", dateutil::str2stamp($day)) != 0) && (dateutil::str2str($day, 'd') != 1) ) return;
       $db = &atkGetDb();
       $newid = $db->nextid("overtime_balance");
       $db->query("INSERT INTO overtime_balance (id, userid, day, balance, manual)
@@ -169,7 +174,7 @@ $this->debuglog(array("function"=>"addOvertimeBalance","userid"=>$userid, "day"=
     function saveOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
-      if (strftime("%w", adodb_mktime(0,0,0,substr($day,5,2),substr($day,8,2),substr($day,0,4))) != 0) return;
+      if ( (strftime("%w", dateutil::str2stamp($day)) != 0) && (dateutil::str2str($day, 'd') != 1) ) return;
       $db = &atkGetDb();
       $sql = "UPDATE overtime_balance SET balance = $balance WHERE userid = '$userid' AND day = '$day'";
       $db->query($sql);
@@ -183,7 +188,7 @@ $this->debuglog(array("function"=>"saveOvertimeBalance","userid"=>$userid, "day"
     function updateOvertimeBalance($userid, $day, $balance)
     {
 $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "day"=>$day, "balance"=>$balance));
-      if (strftime("%w", adodb_mktime(0,0,0,substr($day,5,2),substr($day,8,2),substr($day,0,4))) != 0) return;
+      if ( (strftime("%w", dateutil::str2stamp($day)) != 0) && (dateutil::str2str($day, 'd') != 1) ) return;
       $db = &atkGetDb();
       $recs = $db->getrows("SELECT id FROM overtime_balance WHERE userid = '$userid' AND day = '$day'");
       if (!count($recs))
@@ -266,6 +271,20 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
       return false;
     }
 
+    function _getContracts($begin, $end, $userid)
+    {
+      // Get a list of contracts that intersects with the given begin and end dates. The list of contracts
+      // includes the amount of hours, the start- and enddate and the list of workdays for each contract.
+      $db = &atkGetDb();
+      $sql = "SELECT uc_hours, startdate, enddate, WorkingDays
+              FROM usercontract
+              WHERE userid = '$userid'
+              AND startdate <= '$end'
+              AND (enddate >= '$begin' OR enddate IS NULL)
+              ORDER BY startdate"; /* FIXME: this order is required by enumWorkingDays
+                                             to manage overlapping contracts: the latest wins */
+      return $db->getRows($sql);
+    }
     /**
      * Get contract hours for an employee within given time frame
      *
@@ -276,75 +295,63 @@ $this->debuglog(array("function"=>"updateOvertimeBalance","userid"=>$userid, "da
      */
     function getContractHours($begin, $end, $userid)
     {
-      // Convert the given begindate and enddate to "yyyymmdd" format so we can run calculations on them
-      // in order to determine if a given date is earlier than, equal to or later than another date
-      $begindate = date("Ymd", adodb_mktime(0, 0, 0, substr($begin, 5, 2), substr($begin, 8, 2), substr($begin, 0, 4)));
-      $enddate = date("Ymd", adodb_mktime(0, 0, 0, substr($end, 5, 2), substr($end, 8, 2), substr($end, 0, 4)));
-
-      // Get a list of contracts that intersects with the given begin and end dates. The list of contracts
-      // includes the amount of hours, the start- and enddate and the list of workdays for each contract.
-      $db = &atkGetDb();
-      $sql = "SELECT uc_hours, startdate, enddate, WorkingDays
-              FROM usercontract
-              WHERE userid = '$userid'
-              AND startdate <= '$end'
-              AND (enddate >= '$begin' OR enddate IS NULL)";
-      $contracts = $db->getRows($sql);
-
-      // Start with an empty total
-      $total = 0;
-
-      // If we have found contract(s), we will loop through the list of it and start accumulating the total
-      // amount of hours
-      for ($i=0,$_i=count($contracts); $i<$_i; $i++)
-      {
-         // Get an array of working days that are specified with this contract
-         $workdays = $this->getWorkDays($contracts[$i]["WorkingDays"]);
-
-         // Convert the contract start and enddate to "yyyymmdd" format so we can use it in calculations
-         $contractstartdate = date("Ymd", adodb_mktime(0, 0, 0, substr($contracts[$i]["startdate"], 5, 2), substr($contracts[$i]["startdate"], 8, 2), substr($contracts[$i]["startdate"], 0, 4)));
-         $contractenddate = is_null($contracts[$i]["enddate"]) ? $enddate : date("Ymd", adodb_mktime(0, 0, 0, substr($contracts[$i]["enddate"], 5, 2), substr($contracts[$i]["enddate"], 8, 2), substr($contracts[$i]["enddate"], 0, 4)));
-
-         // If no workingdays are specified, assume the working hours are spread evenly over 7 days
-         $numworkdays = (count($workdays) > 0) ? count($workdays) : 7;
-
-         // The contractend should be changed to the end of the period if it spans over it and the
-         // contractstart should be changed to the start of the period if it starts before the periodstart
-         if ($contractenddate > $enddate) $contractenddate = $enddate;
-         if ($contractstartdate < $begindate) $contractstartdate = $begindate;
-
-         // Calculate the amount of worked days within the period
-         $numdays = $this->getNumDays($contractstartdate, $contractenddate, $workdays);
-
-         // Calculate the amount of weeks (number of working days in the period divided by
-         // the number of weekly working days) and multiply it with the amount of weekly hours
-         $total += ($numdays / $numworkdays) * $contracts[$i]["uc_hours"];
-      }
-
-      // If no contracts are found, we just return 0
-      return $total;
+      return array_sum($this->enumWorkingDays($begin, $end, $userid));
     }
 
-    function getNumDays($begin, $end, $workdays)
+    function getNumDays($begin, $end)
     {
-      $has_workdays = (count($workdays)>0);
+      return count($this->enumWorkDays($begin, $end));
+    }
 
-      $total = 0;
-      $starttime = adodb_mktime(0,0,0,substr($begin,4,2),substr($begin,6,2),substr($begin,0,4));
-      $endtime = adodb_mktime(0,0,0,substr($end,4,2),substr($end,6,2),substr($end,0,4));
+    function enumWorkingDays($begin, $end, $userid, $format='Ymd')
+    {
+      // Convert the given begindate and enddate to "yyyymmdd" format so we can run calculations on them
+      // in order to determine if a given date is earlier than, equal to or later than another date
+      $begindate = dateutil::str2str($begin);
+      $enddate = dateutil::str2str($end);
 
-      $steps = round(($endtime-$starttime)/(60*60*24));
+      $contracts = $this->_getContracts($begin, $end, $userid);
 
-      for($i=0;$i<=$steps;$i++)
+      $workday_array = array();
+      foreach ($contracts as $contract)
       {
-        $dayofweek = date("w", adodb_mktime(0,0,0,substr($begin,4,2),substr($begin,6,2)+$i,substr($begin,0,4)));
+        // Get an array of working days that are specified with this contract
+        $workdays = $this->getWorkDays($contract["WorkingDays"]);
+        // If no workingdays are specified, assume the working hours are spread evenly over 7 days
+        $numworkdays = (count($workdays) > 0) ? count($workdays) : 7;
 
-        if (!$has_workdays || in_array($dayofweek, $workdays))
-        {
-          $total++;
+        // Convert the contract start and enddate to "yyyymmdd" format so we can use it in calculations
+        $contractstartdate = dateutil::str2str($contract["startdate"]);
+        if ( is_null($contracts[$i]["enddate"]) ) {
+          $contractenddate = $enddate;
+        } else {
+          $contractenddate = dateutil::str2str($contract["enddate"]);
+        }
+
+        // The contractend should be changed to the end of the period if it spans over it and the
+        // contractstart should be changed to the start of the period if it starts before the periodstart
+        if ($contractenddate > $enddate) $contractenddate = $enddate;
+        if ($contractstartdate < $begindate) $contractstartdate = $begindate;
+
+        foreach (dateutil::daysBetween($contractstartdate, $contractenddate) as $currentday => $date) {
+          if ( $this->_isWorkday($currentday, $workdays) ) {
+            $workday_array[dateutil::str2str($currentday, $format)] = floatval($contract['uc_hours']) / $numworkdays;
+          }
         }
       }
-      return $total;
+      return $workday_array;
+    }
+
+    function _isWorkday($date, $workdays)
+    {
+      $dayofweek = dateutil::str2str($date, "w");
+      $workday = (count($workdays)==0) || in_array($dayofweek, $workdays);
+      $holyday = $this->scheduler_holidays->isHoliday($date);
+
+      if ( $workday && !$holiday ) {
+        return true;
+      }
+      return false;
     }
 
     /**

@@ -17,8 +17,8 @@
     {
       if ($start==""||$end=="") return 0;
 
-      $d1 = adodb_mktime(0,0,0,substr($start,4,2), substr($start,6,2), substr($start,0,4));
-      $d2 = adodb_mktime(0,0,0,substr($end,4,2), substr($end,6,2), substr($end,0,4));
+      $d1 = adodb_mktime(12,0,0,substr($start,4,2), substr($start,6,2), substr($start,0,4));
+      $d2 = adodb_mktime(12,0,0,substr($end,4,2), substr($end,6,2), substr($end,0,4));
       return floor(($d2-$d1)/(60*60*24));
     }
 
@@ -30,7 +30,19 @@
 
     function str2arr($strdate)
     {
-      return array("year"=>substr($strdate,0,4), "month"=>substr($strdate,4,2), "day"=>substr($strdate,6,2));
+      // parse dates in the common formats yyyymmdd and yyyy-mm-dd
+      if ( strlen($strdate) == 8 ) {
+        return array("year"=>substr($strdate,0,4), "month"=>substr($strdate,4,2), "day"=>substr($strdate,6,2));
+      } elseif ( strlen($strdate) == 10 ) {
+        return array("year"=>substr($strdate,0,4), "month"=>substr($strdate,5,2), "day"=>substr($strdate,8,2));
+      } else {
+        return array();
+      }
+    }
+
+    function str2str($strdate, $format="Ymd")
+    {
+      return dateutil::arr2str(dateutil::str2arr($strdate), $format);
     }
 
     function str2stamp($strdate)
@@ -40,7 +52,7 @@
 
     function arr2stamp($arrdate)
     {
-      return adodb_mktime(0,0,0,$arrdate["month"],$arrdate["day"],$arrdate["year"]);
+      return adodb_mktime(12,0,0,$arrdate["month"],$arrdate["day"],$arrdate["year"]);
     }
 
     function stamp2str($timestamp, $format="Ymd")
@@ -84,24 +96,24 @@
      * Given a date in the form "20010325", this function returns the date of the first
      * day (monday) of that week.
      */
-    function startOfWeek($strdate)
+    function startOfWeek($strdate, $format='Ymd')
     {
-      $viewtime = adodb_mktime(0,0,0,substr($strdate,4,2),substr($strdate,6,2),substr($strdate,0,4));
+      $viewtime = dateutil::str2stamp($strdate);
       $weekday = strftime("%w",$viewtime);
       if ($weekday==0) $weekday=7;
-      return date("Ymd" ,$viewtime-(86400*($weekday-1)));
+      return date($format ,$viewtime-(86400*($weekday-1)));
     }
 
     /*
      * Given a date in the form "20010325", this function returns the date of the last
      * day (sunday) of that week.
      */
-    function endOfWeek($strdate)
+    function endOfWeek($strdate, $format='Ymd')
     {
-      $viewtime = adodb_mktime(0,0,0,substr($strdate,4,2),substr($strdate,6,2),substr($strdate,0,4));
+      $viewtime = dateutil::str2stamp($strdate);
       $weekday = strftime("%w",$viewtime);
       if ($weekday==0) $weekday=7;
-      return date("Ymd" ,$viewtime-(86400*($weekday-7)));
+      return date($format ,$viewtime-(86400*($weekday-7)));
     }
 
     /**

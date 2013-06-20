@@ -2,10 +2,9 @@
 
 /**
  * Module Calendar
- * Class schedule_attendee
+ * Class schedule_holidays
  *
- * This class makes it possible to add attendees to a schedule. These attendees can be employees and contacts.
- * That is why the relation is linked to person.
+ * This class makes it possible to schedule recurrent holidays
  *
  * $Id$
  * @author Sandy Pleyte <sandy@achievo.org>
@@ -45,12 +44,14 @@ class scheduler_holidays extends atkNode
     $this->add(new atkAttribute("id",AF_AUTOKEY));
     $this->add(new atkAttribute("name",AF_OBLIGATORY|AF_SEARCHABLE));
     $this->add(new atkListAttribute("type",array("weekend"),array("weekend"),AF_SEARCHABLE));
-    $this->add(new atkListAttribute("day",array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31),array(),AF_HIDE_LIST|AF_NO_TRANSLATION));
+    $this->add(new atkListAttribute("day",array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31),
+                                          array(),AF_HIDE_LIST|AF_NO_TRANSLATION));
     $this->add(new atkListAttribute("month",$month_options,$month_values,AF_HIDE_LIST));
     $this->add(new atkListAttribute("special",array("easter"),array("easter"),AF_HIDE_LIST));
     $this->add(new atkNumberAttribute("day_offset",AF_HIDE_LIST,3,0));
     $this->add(new atkNumberAttribute("length",AF_HIDE_LIST,2,0));
-    $this->add(new atkListAttribute("weekday",array("monday","tuesday","wednesday","thursday","friday","saturday","sunday"),array(0,1,2,3,4,5,6),AF_HIDE_LIST));
+    $this->add(new atkListAttribute("weekday",array("monday","tuesday","wednesday","thursday","friday","saturday","sunday"),
+                                              array("0","1","2","3","4","5","6"),AF_HIDE_LIST));
     $this->add(new atkListAttribute("moveto",array("ifsatorsunthen","ifsunthen","ifsatorsunthen2"),array("1","2","3"),AF_HIDE_LIST));
     $this->add(new atkManyToOneRelation("schedulecategory", "scheduler.scheduler_category",AF_OBLIGATORY|AF_RELATION_AUTOLINK));
     $this->add(new atkCountryAttribute("country","world",array(),array(),AF_OBLIGATORY|AF_SEARCHABLE));
@@ -97,7 +98,7 @@ class scheduler_holidays extends atkNode
   /**
    * Create custom admin header
    *
-   * @todo Create import/export feature, is the country dropdown still nessecary ?
+   * @todo Create import/export feature, is the country dropdown still necessary ?
    * @return unknown
    */
   function adminHeader()
@@ -175,6 +176,7 @@ class scheduler_holidays extends atkNode
     }
     else
     {
+      //atkDebug("_getHolidays($year)");
       $db_holidays = $this->selectDb();
       $holidays = array();
       $calculator = new calculateHoliday();
@@ -185,8 +187,8 @@ class scheduler_holidays extends atkNode
         {
           $hdate = date("Ymd",$date);
           $holidays[$hdate][] = array("name"=>$holiday["name"],
-                                    "type"=>$holiday["type"],
-                                    "schedulercategory"=>$holiday["schedulecategory"]["id"]);
+                                      "type"=>$holiday["type"],
+                                      "schedulercategory"=>$holiday["schedulecategory"]["id"]);
         }
       }
       $this->_saveHolidays($holidays,$year);
@@ -235,6 +237,6 @@ class scheduler_holidays extends atkNode
       closedir($handle);
     }
   }
-
 }
 ?>
+

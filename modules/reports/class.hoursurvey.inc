@@ -358,7 +358,7 @@ class hoursurvey extends atkNode
 
     if (!isset($userid)||$userid=="")
     {
-      $userid=$g_user["id"];
+      $userid="";//$g_user["id"]; // better default, view_all if allowed
     }
 
     if (!isset($nameswitch)||$nameswitch=="")
@@ -1112,10 +1112,11 @@ class hoursurvey extends atkNode
   function get_employees($user_id)
   {
     $user = getUser();
+    $repUtils = &atknew('report.utils.reportutils');
 
     if (is_array($user))
     {
-      $records = $this->getEmployeesArray($user['id']);
+      $records = $repUtils->getEmployeesArray($user['id']);
 
       if ($user_id == "new" || !$user_id || $user_id=="")
         $sel = " SELECTED";

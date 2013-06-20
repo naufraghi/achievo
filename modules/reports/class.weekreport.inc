@@ -133,7 +133,7 @@ class weekreport extends atkNode
     return $record[0];
   }
 
-  function get_employees($userid)
+  function get_employees($userid, $key="lastname")
   {
     $harvest = atkHarvestModules("getEmpDropDown", '', true);
 
@@ -142,16 +142,19 @@ class weekreport extends atkNode
       if (moduleExists('advancedsecurity'))
 //      $employee_code.='<OPTION VALUE="all">'.atktext("all_users").'</OPTION>';
       $employee_code .= $harvest['advancedsecurity'];
+      atkDebug("Using advancedsecurity");
     }
     else
     {
-
+      atkDebug("NOT using advancedsecurity");
       $db = &atkGetDb();
+
+      if ($key != "userid") {$key = "lastname";}
 
       $sql = "SELECT id, lastname,firstname,userid
             FROM person
             WHERE status='active' AND role = 'employee'
-            ORDER BY lastname
+            ORDER BY $key
            ";
 
       $records = $db->getrows($sql);
@@ -161,7 +164,11 @@ class weekreport extends atkNode
       {
         if ($userid==$records[$i]["id"]) $selected="selected";
         else $selected="";
-        $employee_code.='<OPTION VALUE="'.$records[$i]["id"].'" '.$selected.'>'.$records[$i]["lastname"].', '.$records[$i]["firstname"].'</OPTION>';
+        if ($key == "userid") {
+          $employee_code.='<OPTION VALUE="'.$records[$i]["id"].'" '.$selected.'>'.$records[$i]["userid"].", ".$records[$i]["firstname"]." ".$records[$i]["lastname"].'</OPTION>';
+        } else {
+          $employee_code.='<OPTION VALUE="'.$records[$i]["id"].'" '.$selected.'>'.$records[$i]["lastname"].", ".$records[$i]["firstname"].'</OPTION>';
+        }
       }
       }
     return $employee_code;
@@ -333,22 +340,18 @@ class weekreport extends atkNode
   {
     $sessionmanager = &atkGetSessionManager();
     $startdate = $sessionmanager->pageVar("startdate");
-    if (!isset($startdate)||$startdate=="")	$startdate =  date("Ymd" ,time()-(86400*7));
-    if (is_string($startdate)) $startdate = str_replace("-", "", $startdate);
+    if (!isset($startdate)||$startdate=="")	$startdate = date("Ymd" ,time()-(ONEDAY*7));
     if (is_array($startdate)) $startdate = dateutil::arr2str($startdate);
-    $startdate = dateutil::startOfWeek($startdate);
-    return dateutil::arr2str(dateutil::str2arr($startdate), "Y-m-d");
+    return dateutil::startOfWeek($startdate, "Y-m-d");
   }
 
   function getEnddate()
   {
     $sessionmanager = &atkGetSessionManager();
     $enddate = $sessionmanager->pageVar("enddate");
-    if (!isset($enddate)||$enddate=="")	$enddate =  date("Ymd");
-    if (is_string($enddate)) $enddate = str_replace("-", "", $enddate);
+    if (!isset($enddate)||$enddate=="")	$enddate = date("Ymd");
     if (is_array($enddate)) $enddate = dateutil::arr2str($enddate);
-    $enddate = dateutil::endOfWeek($enddate);
-    return dateutil::arr2str(dateutil::str2arr($enddate), "Y-m-d");
+    return dateutil::endOfWeek($enddate, "Y-m-d");
   }
 
   function action_report(&$handler)
@@ -417,12 +420,8 @@ class weekreport extends atkNode
       $data[] = array('<b>'.atktext('sethoursfilter').'</b>');
 
       // we have to pass a 'dummy' record to the attributes to set their default value.
-      $dummyrec = Array("startdate"=>array("year"=>substr($startdate,0,4),
-                                           "month"=>substr($startdate,5,2),
-                                           "day"=>substr($startdate,8,2)),
-                        "enddate"=>array("year"=>substr($enddate,0,4),
-                                         "month"=>substr($enddate,5,2),
-                                        "day"=>substr($enddate,8,2)));
+      $dummyrec = Array("startdate"=>dateutil::str2arr($startdate),
+                        "enddate"=>dateutil::str2arr($enddate));
 
       if($view_all)
       {
@@ -509,18 +508,12 @@ class weekreport extends atkNode
       $weekdata = array();
 
       // first fill the weeks and start/end dates..
-      $startstamp = adodb_mktime(12,0,0,substr($startdate,5,2),
-                                 substr($startdate,8,2),
-                                 substr($startdate,0,4));
-      $endstamp = adodb_mktime(12,0,0,substr($enddate,5,2),
-                               substr($enddate,8,2),
-                               substr($enddate,0,4));
+      $startstamp = dateutil::str2stamp($startdate);
+      $endstamp = dateutil::str2stamp($enddate);
 
       // overzicht moet beginnen op de eerste dag van de week van de gekozen datum.
-      $realweekstart = startOfWeek($startdate);
-      $realstartstamp = adodb_mktime(12,0,0,substr($realweekstart,5,2),
-                                     substr($realweekstart,8,2),
-                                     substr($realweekstart,0,4));
+      $realweekstart = dateutil::startOfWeek($startdate);
+      $realstartstamp = dateutil::str2stamp($realweekstart);
 
       $nrofdays = ceil(($endstamp-$realstartstamp)/(ONEDAY));
 
@@ -531,8 +524,8 @@ class weekreport extends atkNode
         {
           $key = weekstamp($curstamp);
           $weekdata[$key]["period"] = $key;
-          $weekdata[$key]["startdate"] = strftime("%d-%m-%Y",$curstamp);
-          $weekdata[$key]["enddate"] = strftime("%d-%m-%Y",$curstamp+(6*ONEDAY));
+          $weekdata[$key]["startdate"] = dateutil::stamp2str($curstamp, "Y-m-d");
+          $weekdata[$key]["enddate"] = dateutil::stamp2str($curstamp+(6*ONEDAY), "Y-m-d");
           $i+=6;
         }
       }
@@ -557,18 +550,14 @@ class weekreport extends atkNode
       $db = &atkGetDb();
       $persons = $db->getrows($query);
 
-      $end = endOfWeek(date("Y-m-d", $endstamp));
-      $newendstamp = adodb_mktime(0,0,0,substr($end,5,2),substr($end,8,2)+1,substr($end,0,4));
+      $end = dateutil::endOfWeek(date("Y-m-d", $endstamp));
+      $newendstamp = dateutil::str2stamp($end);
       $balancenode = &atkGetNode("timereg.overtime_balance");
       for ($j=$startstamp;$j<=$newendstamp;$j+=ONEWEEK)
       {
         $weekstamp = weekstamp($j);
-        $start_week = date("Y-m-d", adodb_mktime(12,0,0,substr($weekdata[$weekstamp]["startdate"],3,2),
-                                 substr($weekdata[$weekstamp]["startdate"],0,2),
-                                 substr($weekdata[$weekstamp]["startdate"],6,4)));
-        $end_week = date("Y-m-d", adodb_mktime(12,0,0,substr($weekdata[$weekstamp]["enddate"],3,2),
-                               substr($weekdata[$weekstamp]["enddate"],0,2),
-                               substr($weekdata[$weekstamp]["enddate"],6,4)));
+        $start_week = dateutil::str2str($weekdata[$weekstamp]["startdate"], "Y-m-d");
+        $end_week = dateutil::str2str($weekdata[$weekstamp]["enddate"], "Y-m-d");
         $weekdata[$weekstamp]["period"] = $weekstamp;
         foreach($persons as $person)
         {
@@ -592,9 +581,7 @@ class weekreport extends atkNode
         //is this timeregistration a overtimecompensation?
         $isovertimecompensation = $this->isOvertimeCompensationActivity($raw[$i]["activityid"]);
 
-        $stamp = adodb_mktime(12,0,0,substr($raw[$i]["activitydate"],5,2),
-                                      substr($raw[$i]["activitydate"],8,2),
-                                      substr($raw[$i]["activitydate"],0,4));
+        $stamp = dateutil::str2stamp($raw[$i]["activitydate"]);
         $dow = strftime("%w",$stamp);
         $key = weekstamp($stamp);
         $weekdata[$key]["period"] = $key;
@@ -642,15 +629,15 @@ class weekreport extends atkNode
         {
           $status = "approved";
         }
-        else 
+        else
         {
           $status = "locked";
         }
         if ($locks[$i]["userid"]=="" || $locks[$i]["userid"]==0)
         {
           // Lock is for all users
-          foreach($users_array as $uid)  
-          {        
+          foreach($users_array as $uid)
+          {
             $weekdata[$locks[$i]["period"]]["userdata"][$uid]["status"]=$status;
           }
         }
@@ -678,7 +665,7 @@ class weekreport extends atkNode
           foreach($data["userdata"] as $user => $userdata)
           {
             $record["userid"] = $userdata["name"];
-            $record["balance"] = $balancenode->getBalance(date("Y-m-d", adodb_mktime(0,0,0,substr($data["enddate"],3,2),substr($data["enddate"],0,2),substr($data["enddate"],6,4))), $user);
+            $record["balance"] = $balancenode->getBalance(dateutil::str2str($data["enddate"], "Y-m-d"), $user);
             $record["balance"]["outputtype"] = $outputType;
             $newtotal = 0;
 
@@ -721,7 +708,7 @@ class weekreport extends atkNode
             {
               $cmpstatus = "approved";
             }
-            else 
+            else
             {
               $cmpstatus = "unlocked";
             }
@@ -762,13 +749,12 @@ class weekreport extends atkNode
     //OVERTIMEBALANCEDEBUGGING START
     if ($employeeswitch=="name" && $userid!="all" && atkConfig::get("timereg","overtimebalancedebugging") && atkConfig("debug") > 0)
     {
-      atkimport("modules.utils.dateutil",false);
-      $prestamp = date("Y-m-d", adodb_mktime(0,0,0,substr($rldata[0]["enddate"],3,2),substr($rldata[0]["enddate"],0,2),substr($rldata[0]["enddate"],6,4))  - (7 * 86400));
+      $prestamp = date("Y-m-d", dateutil::str2stamp($rldata[0]["enddate"]) - (7 * ONEDAY));
       $prebalance = $balancenode->getBalance($prestamp, $userid);
       $totalhours = 0;
       $totalcontract = 0;
       $prevbalance = $prebalance["balance"];
-    
+
       foreach($rldata as $rec)
       {
         $totalhours += $rec["total"];
@@ -842,7 +828,7 @@ class weekreport extends atkNode
         $rl->render($this, $rldata, "", '"', '";', "\r\n", "1", "",$suppress);
       }
 
-    
+
   }
 }
 
