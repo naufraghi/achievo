@@ -1,5 +1,7 @@
 <?php
   $setup->installNode("scheduler.scheduler_category");
+  $setup->installNode("scheduler.scheduler_group");
+  $setup->installNode("scheduler.scheduler_group_member");
   $setup->installNode("scheduler.scheduler_userpreferences");
   $setup->installNode("scheduler.scheduler_attendees");
   $setup->installNode("scheduler.scheduler_notes");
@@ -60,7 +62,7 @@
   foreach($templates as $record)
     $et->addDb($record);
 
-  $setup->setVersion(8);
+  $setup->setVersion(9);
   set_time_limit(0);
 
   // Check if there exists a module calendar in the versioninfo
